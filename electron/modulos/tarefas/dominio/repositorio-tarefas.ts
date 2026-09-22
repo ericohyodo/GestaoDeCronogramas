@@ -10,4 +10,6 @@ export interface RepositorioTarefas {
   /** Grava várias tarefas numa única transação (deslocamento em cadeia). */
   salvarVarias(tarefas: readonly Tarefa[]): Promise<void>;
   excluir(id: string): Promise<void>;
+  /** Atualiza só o campo `ordem` de várias tarefas numa única transação. */
+  atualizarOrdens(ordens: { id: string; ordem: number }[]): Promise<void>;
 }

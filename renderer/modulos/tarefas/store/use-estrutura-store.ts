@@ -5,6 +5,7 @@ import type {
   CriarTarefaEntrada,
   EstruturaCronogramaDTO,
   ImpactoDeAtrasoDTO,
+  ReordenarTarefasEntrada,
 } from '@contratos/tarefas.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 
@@ -22,6 +23,7 @@ interface EstadoEstrutura {
   criarFase(entrada: CriarFaseEntrada): Promise<void>;
   renomearFase(id: string, nome: string): Promise<void>;
   excluirFase(id: string): Promise<void>;
+  reordenarTarefas(entrada: ReordenarTarefasEntrada): Promise<void>;
   definirErro(erro: string | null): void;
 }
 
@@ -83,6 +85,12 @@ export const useEstruturaStore = create<EstadoEstrutura>()((set, get) => ({
   async excluirFase(id) {
     const cronogramaId = get().cronogramaId;
     await clienteDesktop.tarefas.excluirFase(id);
+    if (cronogramaId) await get().carregar(cronogramaId);
+  },
+
+  async reordenarTarefas(entrada) {
+    const cronogramaId = get().cronogramaId;
+    await clienteDesktop.tarefas.reordenar(entrada);
     if (cronogramaId) await get().carregar(cronogramaId);
   },
 

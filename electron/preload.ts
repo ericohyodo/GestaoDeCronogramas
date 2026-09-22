@@ -49,6 +49,7 @@ const api: ApiDesktop = {
     criarFase: (entrada) => invocar(CANAIS.tarefas.criarFase, entrada),
     atualizarFase: (entrada) => invocar(CANAIS.tarefas.atualizarFase, entrada),
     excluirFase: (id) => invocar(CANAIS.tarefas.excluirFase, id),
+    reordenar: (entrada) => invocar(CANAIS.tarefas.reordenar, entrada),
   },
   preferencias: {
     obter: () => invocar(CANAIS.preferencias.obter),

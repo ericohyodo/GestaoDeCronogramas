@@ -21,7 +21,7 @@ import { FormularioFase } from './FormularioFase';
 import { GraficoGantt } from './GraficoGantt';
 import { TabelaEstrutura } from './TabelaEstrutura';
 
-const ALTURA_DA_LINHA = 40;
+const ALTURA_DA_LINHA = 28;
 const ALTURA_DO_CABECALHO = 56;
 /** Divisão entre lista e Gantt, em % da largura; arrastável pelo divisor. */
 const DIVISAO_PADRAO = 50;
@@ -54,6 +54,7 @@ export function PainelEstrutura({
   const deslocarSucessoras = useEstruturaStore((estado) => estado.deslocarSucessoras);
   const renomearFase = useEstruturaStore((estado) => estado.renomearFase);
   const excluirFase = useEstruturaStore((estado) => estado.excluirFase);
+  const reordenarTarefas = useEstruturaStore((estado) => estado.reordenarTarefas);
   const definirErro = useEstruturaStore((estado) => estado.definirErro);
 
   const [criandoFase, setCriandoFase] = useState(false);
@@ -190,6 +191,11 @@ export function PainelEstrutura({
               }
               aoExcluirFase={setParaExcluir}
               aoAdicionarTarefa={adicionarTarefa}
+              aoReordenarTarefas={(ordens) =>
+                reordenarTarefas({ cronogramaId, ordens }).catch(
+                  (falha: unknown) => definirErro(mensagemDeErro(falha)),
+                )
+              }
             />
           </div>
 

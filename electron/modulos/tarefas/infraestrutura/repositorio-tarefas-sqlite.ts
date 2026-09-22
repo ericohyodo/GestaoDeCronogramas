@@ -29,6 +29,7 @@ export class RepositorioTarefasSqlite implements RepositorioTarefas {
   private readonly sql;
   private readonly salvarEmTransacao;
   private readonly salvarVariasEmTransacao;
+  private readonly atualizarOrdensEmTransacao;
 
   constructor(db: BancoDeDados) {
     this.sql = {
@@ -88,6 +89,9 @@ export class RepositorioTarefasSqlite implements RepositorioTarefas {
         'INSERT OR IGNORE INTO dependencias_tarefas (tarefa_id, predecessora_id) VALUES (?, ?)',
       ),
       excluir: db.prepare<[string]>('DELETE FROM tarefas WHERE id = ?'),
+      atualizarOrdem: db.prepare<[number, string]>(
+        'UPDATE tarefas SET ordem = ? WHERE id = ?',
+      ),
     };
 
     const gravar = (tarefa: Tarefa) => {
@@ -101,6 +105,11 @@ export class RepositorioTarefasSqlite implements RepositorioTarefas {
     this.salvarVariasEmTransacao = db.transaction((tarefas: readonly Tarefa[]) => {
       for (const tarefa of tarefas) gravar(tarefa);
     });
+    this.atualizarOrdensEmTransacao = db.transaction(
+      (ordens: { id: string; ordem: number }[]) => {
+        for (const item of ordens) this.sql.atualizarOrdem.run(item.ordem, item.id);
+      },
+    );
   }
 
   async listarPorCronograma(cronogramaId: string): Promise<Tarefa[]> {
@@ -137,6 +146,11 @@ export class RepositorioTarefasSqlite implements RepositorioTarefas {
 
   async excluir(id: string): Promise<void> {
     this.sql.excluir.run(id);
+  }
+
+  async atualizarOrdens(ordens: { id: string; ordem: number }[]): Promise<void> {
+    if (ordens.length === 0) return;
+    this.atualizarOrdensEmTransacao(ordens);
   }
 }
 

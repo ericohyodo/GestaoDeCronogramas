@@ -72,6 +72,11 @@ export interface AtualizarFaseEntrada {
   nome: string;
 }
 
+export interface ReordenarTarefasEntrada {
+  cronogramaId: string;
+  ordens: { id: string; ordem: number }[];
+}
+
 /**
  * Linha da estrutura analítica (fases e tarefas já ordenadas, numeradas e com o
  * cálculo de folga/caminho crítico pronto).

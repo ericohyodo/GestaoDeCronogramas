@@ -1,7 +1,8 @@
 'use client';
 
 import clsx from 'clsx';
-import { CheckCircle2, CircleAlert, Plus, Trash2 } from 'lucide-react';
+import { CheckCircle2, CircleAlert, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import type { ResponsavelDTO } from '@contratos/responsaveis.contrato';
 import type { AtualizarTarefaEntrada, LinhaEstruturaDTO } from '@contratos/tarefas.contrato';
 import { formatarDataCurta, formatarDias, somarDias } from '@/compartilhado/formatacao';
@@ -21,6 +22,7 @@ export interface PropsTabelaEstrutura {
   aoRenomearFase: (id: string, nome: string) => void;
   aoExcluirFase: (linha: LinhaEstruturaDTO) => void;
   aoAdicionarTarefa: (faseId: string) => void;
+  aoReordenarTarefas: (ordens: { id: string; ordem: number }[]) => void;
 }
 
 export function TabelaEstrutura({
@@ -35,14 +37,49 @@ export function TabelaEstrutura({
   aoRenomearFase,
   aoExcluirFase,
   aoAdicionarTarefa,
+  aoReordenarTarefas,
 }: PropsTabelaEstrutura) {
   const tarefas = linhas.filter((linha) => linha.tipo === 'tarefa');
   const ativos = responsaveis.filter((responsavel) => responsavel.ativo);
 
+  // ---------------------------------------------------------------------------
+  // Drag-and-drop state
+  // ---------------------------------------------------------------------------
+  const [arrastando, setArrastando] = useState<string | null>(null);
+  const [sobreId, setSobreId] = useState<string | null>(null);
+
+  const handleDrop = (targetId: string) => {
+    if (!arrastando || arrastando === targetId) {
+      setArrastando(null);
+      setSobreId(null);
+      return;
+    }
+    const origem = linhas.find((l) => l.id === arrastando);
+    const destino = linhas.find((l) => l.id === targetId);
+    if (!origem || !destino || origem.faseId !== destino.faseId) {
+      setArrastando(null);
+      setSobreId(null);
+      return;
+    }
+
+    // Tarefas da mesma fase, na ordem atual de exibição.
+    const faseLinhas = linhas.filter(
+      (l) => l.tipo === 'tarefa' && l.faseId === origem.faseId,
+    );
+    const sem = faseLinhas.filter((l) => l.id !== arrastando);
+    const idx = sem.findIndex((l) => l.id === targetId);
+    sem.splice(idx, 0, origem);
+    const ordens = sem.map((t, i) => ({ id: t.id, ordem: i + 1 }));
+    aoReordenarTarefas(ordens);
+    setArrastando(null);
+    setSobreId(null);
+  };
+
   return (
-    // Colunas: N | % | ✓ | Descrição | Responsável | Dep. | Início | Dur. | Conclusão | Ações
+    // Colunas: ⠿ | N | % | ✓ | Descrição | Responsável | Dep. | Início | Dur. | Conclusão | Ações
     <table className="w-full min-w-[480px] table-fixed border-separate border-spacing-0 text-sm">
       <colgroup>
+        <col className="w-5" />
         <col className="w-14" />
         <col className="w-[60px]" />
         <col className="w-9" />
@@ -56,6 +93,9 @@ export function TabelaEstrutura({
       </colgroup>
       <thead>
         <tr>
+          <CabecalhoColuna altura={alturaDoCabecalho}>
+            <span className="sr-only">Ordem</span>
+          </CabecalhoColuna>
           {['N', '%'].map((titulo) => (
             <CabecalhoColuna key={titulo} altura={alturaDoCabecalho}>
               {titulo}
@@ -78,19 +118,39 @@ export function TabelaEstrutura({
       <tbody>
         {linhas.map((linha) => {
           const ehFase = linha.tipo === 'fase';
-          const editavel = ehFase ? podeEditarFases : podeEditarTarefas;
+          // Renomear fase: liberado para quem pode editar tarefas.
+          const editavelNome = ehFase ? podeEditarTarefas : podeEditarTarefas;
+          const arrastandoEsta = arrastando === linha.id;
+          const sobreEsta = sobreId === linha.id && arrastando !== null && arrastando !== linha.id;
 
           return (
             <tr
               key={linha.id}
               style={{ height: alturaDaLinha }}
+              draggable={!ehFase && podeEditarTarefas}
+              onDragStart={() => setArrastando(linha.id)}
+              onDragEnd={() => { setArrastando(null); setSobreId(null); }}
+              onDragOver={(e) => { e.preventDefault(); setSobreId(linha.id); }}
+              onDrop={() => handleDrop(linha.id)}
               className={clsx(
                 'group/linha transition-colors',
                 ehFase ? 'bg-texto/4 font-semibold' : 'hover:bg-primaria/4',
+                arrastandoEsta && 'opacity-40',
+                sobreEsta && 'border-t-2 border-primaria',
               )}
             >
+              {/* Handle de arrasto */}
+              <Celula className="pl-1">
+                {!ehFase && podeEditarTarefas && (
+                  <GripVertical
+                    aria-hidden
+                    className="mx-auto size-3.5 cursor-grab text-texto-sutil/40 opacity-0 transition-opacity group-hover/linha:opacity-100"
+                  />
+                )}
+              </Celula>
+
               {/* N */}
-              <Celula className="pl-4 text-xs tabular-nums text-texto-sutil">{linha.numero}</Celula>
+              <Celula className="pl-1 text-xs tabular-nums text-texto-sutil">{linha.numero}</Celula>
 
               {/* % */}
               <Celula className="tabular-nums">
@@ -130,7 +190,7 @@ export function TabelaEstrutura({
                         percentualConcluido: linha.percentualConcluido === 100 ? 0 : 100,
                       })
                     }
-                    className="flex size-8 items-center justify-center rounded-lg transition-colors hover:bg-texto/6"
+                    className="flex size-7 items-center justify-center rounded-lg transition-colors hover:bg-texto/6"
                   >
                     <CheckCircle2
                       aria-hidden
@@ -144,7 +204,7 @@ export function TabelaEstrutura({
               </Celula>
 
               {/* Descrição */}
-              <Celula style={{ paddingLeft: linha.nivel * 20 }}>
+              <Celula style={{ paddingLeft: linha.nivel * 16 }}>
                 <div className="flex items-center gap-1">
                   {linha.critico && (
                     <span
@@ -155,7 +215,7 @@ export function TabelaEstrutura({
                   )}
                   <CelulaEditavel
                     valor={linha.titulo}
-                    editavel={editavel}
+                    editavel={editavelNome}
                     className={ehFase ? 'font-semibold' : undefined}
                     aoSalvar={(valor) =>
                       ehFase
@@ -184,7 +244,7 @@ export function TabelaEstrutura({
                       aoEditarTarefa({ id: linha.id, responsavelId: evento.target.value || null })
                     }
                     className={clsx(
-                      'w-full truncate rounded-md bg-transparent px-1 py-1 text-sm',
+                      'w-full truncate rounded-md bg-transparent px-1 py-0.5 text-sm',
                       'hover:bg-texto/6 focus:outline-none focus-visible:bg-texto/6',
                       !linha.responsavelId && 'text-texto-sutil',
                     )}

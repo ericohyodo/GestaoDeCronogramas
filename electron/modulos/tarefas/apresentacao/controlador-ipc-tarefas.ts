@@ -13,6 +13,7 @@ import type {
   ExcluirFase,
 } from '../aplicacao/casos-de-uso/gerenciar-fases';
 import type { ObterEstrutura } from '../aplicacao/casos-de-uso/obter-estrutura';
+import type { ReordenarTarefas } from '../aplicacao/casos-de-uso/reordenar-tarefas';
 
 export interface CasosDeUsoTarefas {
   obterEstrutura: ObterEstrutura;
@@ -23,6 +24,7 @@ export interface CasosDeUsoTarefas {
   criarFase: CriarFase;
   atualizarFase: AtualizarFase;
   excluirFase: ExcluirFase;
+  reordenar: ReordenarTarefas;
 }
 
 const esquemaCriar = z.object({
@@ -57,6 +59,11 @@ const esquemaCriarFase = z.object({
 
 const esquemaAtualizarFase = z.object({ id: esquemaId, nome: z.string() });
 
+const esquemaReordenar = z.object({
+  cronogramaId: esquemaId,
+  ordens: z.array(z.object({ id: esquemaId, ordem: z.number().int().min(1) })),
+});
+
 export function registrarIpcTarefas(ipc: RegistradorIpc, casos: CasosDeUsoTarefas): void {
   ipc.registrar(CANAIS.tarefas.obterEstrutura, 'leitura', esquemaId, (cronogramaId) =>
     casos.obterEstrutura.executar(cronogramaId),
@@ -76,10 +83,14 @@ export function registrarIpcTarefas(ipc: RegistradorIpc, casos: CasosDeUsoTarefa
   ipc.registrar(CANAIS.tarefas.criarFase, 'planejamento', esquemaCriarFase, (entrada) =>
     casos.criarFase.executar(entrada),
   );
-  ipc.registrar(CANAIS.tarefas.atualizarFase, 'planejamento', esquemaAtualizarFase, (entrada) =>
+  // Renomear fase: liberado para quem pode editar tarefas (gestor e usuário).
+  ipc.registrar(CANAIS.tarefas.atualizarFase, 'tarefas', esquemaAtualizarFase, (entrada) =>
     casos.atualizarFase.executar(entrada),
   );
   ipc.registrar(CANAIS.tarefas.excluirFase, 'planejamento', esquemaId, (id) =>
     casos.excluirFase.executar(id),
+  );
+  ipc.registrar(CANAIS.tarefas.reordenar, 'tarefas', esquemaReordenar, (entrada) =>
+    casos.reordenar.executar(entrada),
   );
 }

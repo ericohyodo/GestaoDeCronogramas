@@ -12,6 +12,7 @@ import { DeslocarSucessoras } from './aplicacao/casos-de-uso/deslocar-sucessoras
 import { ExcluirTarefa } from './aplicacao/casos-de-uso/excluir-tarefa';
 import { AtualizarFase, CriarFase, ExcluirFase } from './aplicacao/casos-de-uso/gerenciar-fases';
 import { ObterEstrutura } from './aplicacao/casos-de-uso/obter-estrutura';
+import { ReordenarTarefas } from './aplicacao/casos-de-uso/reordenar-tarefas';
 import type { ConsultaDeCronogramas } from './aplicacao/portas/consulta-de-cronogramas';
 import type { ConsultaDeResponsaveis } from './aplicacao/portas/consulta-de-responsaveis';
 import { registrarIpcTarefas } from './apresentacao/controlador-ipc-tarefas';
@@ -60,5 +61,6 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): void {
     ),
     atualizarFase: new AtualizarFase(repositorioFases, deps.relogio),
     excluirFase: new ExcluirFase(repositorioFases),
+    reordenar: new ReordenarTarefas(repositorio),
   });
 }

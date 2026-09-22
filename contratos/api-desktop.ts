@@ -20,6 +20,7 @@ import type {
   CriarTarefaEntrada,
   DeslocarSucessorasEntrada,
   EstruturaCronogramaDTO,
+  ReordenarTarefasEntrada,
   TarefaDTO,
 } from './tarefas.contrato';
 import type {
@@ -65,6 +66,7 @@ export interface ApiDesktop {
     criarFase(entrada: CriarFaseEntrada): Promise<Resultado<null>>;
     atualizarFase(entrada: AtualizarFaseEntrada): Promise<Resultado<null>>;
     excluirFase(id: string): Promise<Resultado<null>>;
+    reordenar(entrada: ReordenarTarefasEntrada): Promise<Resultado<null>>;
   };
   preferencias: {
     obter(): Promise<Resultado<PreferenciasDTO>>;
