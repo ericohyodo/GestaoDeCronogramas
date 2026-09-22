@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { LinhaEstruturaDTO } from '@contratos/tarefas.contrato';
-import { diasEntreDatas, formatarData, formatarDias, hojeIso } from '@/compartilhado/formatacao';
+import { diasEntreDatas, formatarData, formatarDias, hojeIso, somarDias } from '@/compartilhado/formatacao';
 
 interface PropsGraficoGantt {
   linhas: LinhaEstruturaDTO[];
@@ -15,6 +15,7 @@ interface PropsGraficoGantt {
 
 const ALTURA_DA_BARRA = 14;
 const ALTURA_DA_FASE = 8;
+const DIAS_DE_MARGEM = 7;
 const MESES = [
   'jan',
   'fev',
@@ -54,10 +55,12 @@ export function GraficoGantt({
     return () => observador.disconnect();
   }, []);
 
-  const totalDeDias = Math.max(1, diasEntreDatas(inicio, fim) + 1);
+  const inicioComMargem = somarDias(inicio, -DIAS_DE_MARGEM);
+  const fimComMargem = somarDias(fim, DIAS_DE_MARGEM);
+  const totalDeDias = Math.max(1, diasEntreDatas(inicioComMargem, fimComMargem) + 1);
   const pixelsPorDia = largura / totalDeDias;
-  const x = (data: string) => diasEntreDatas(inicio, data) * pixelsPorDia;
-  const xAposOFim = (data: string) => (diasEntreDatas(inicio, data) + 1) * pixelsPorDia;
+  const x = (data: string) => diasEntreDatas(inicioComMargem, data) * pixelsPorDia;
+  const xAposOFim = (data: string) => (diasEntreDatas(inicioComMargem, data) + 1) * pixelsPorDia;
 
   const alturaDoCorpo = Math.max(linhas.length * alturaDaLinha, alturaDaLinha);
   const barras = new Map<string, { x1: number; x2: number; y: number }>();
@@ -71,7 +74,7 @@ export function GraficoGantt({
   });
 
   const hoje = hojeIso();
-  const mostrarHoje = hoje >= inicio && hoje <= fim;
+  const mostrarHoje = hoje >= inicioComMargem && hoje <= fimComMargem;
 
   return (
     <div ref={container} className="min-w-0">
@@ -82,8 +85,8 @@ export function GraficoGantt({
             style={{ height: alturaDoCabecalho }}
           >
             <CabecalhoDoTempo
-              inicio={inicio}
-              fim={fim}
+              inicio={inicioComMargem}
+              fim={fimComMargem}
               largura={largura}
               altura={alturaDoCabecalho}
               pixelsPorDia={pixelsPorDia}
@@ -98,7 +101,7 @@ export function GraficoGantt({
             className="block"
           >
             {/* Divisões de mês, para leitura das datas */}
-            {listarMeses(inicio, fim).map((mes) => (
+            {listarMeses(inicioComMargem, fimComMargem).map((mes) => (
               <line
                 key={mes.inicio}
                 x1={x(mes.inicio)}

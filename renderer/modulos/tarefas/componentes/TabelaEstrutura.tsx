@@ -4,7 +4,7 @@ import clsx from 'clsx';
 import { CheckCircle2, CircleAlert, Plus, Trash2 } from 'lucide-react';
 import type { ResponsavelDTO } from '@contratos/responsaveis.contrato';
 import type { AtualizarTarefaEntrada, LinhaEstruturaDTO } from '@contratos/tarefas.contrato';
-import { formatarDataCurta } from '@/compartilhado/formatacao';
+import { formatarDataCurta, formatarDias, somarDias } from '@/compartilhado/formatacao';
 import { BotaoIcone } from '@/compartilhado/ui/Botao';
 import { CelulaEditavel } from './CelulaEditavel';
 import { SeletorDependencias } from './SeletorDependencias';
@@ -40,23 +40,23 @@ export function TabelaEstrutura({
   const ativos = responsaveis.filter((responsavel) => responsavel.ativo);
 
   return (
-    // A descrição é a única coluna flexível; as demais têm largura fixa e enxuta para
-    // sobrar espaço mesmo com a lista ocupando metade da tela.
-    <table className="w-full min-w-[420px] table-fixed border-separate border-spacing-0 text-sm">
+    // Colunas: N | % | ✓ | Descrição | Responsável | Dep. | Início | Dur. | Conclusão | Ações
+    <table className="w-full min-w-[480px] table-fixed border-separate border-spacing-0 text-sm">
       <colgroup>
         <col className="w-14" />
-        <col className="w-12" />
+        <col className="w-[60px]" />
+        <col className="w-9" />
         <col className="min-w-24" />
         <col className="w-[88px]" />
         <col className="w-12" />
         <col className="w-[88px]" />
+        <col className="w-[72px]" />
         <col className="w-[88px]" />
-        <col className="w-9" />
         <col className="w-8" />
       </colgroup>
       <thead>
         <tr>
-          {['N', '%', 'Descrição', 'Responsável', 'Dep.', 'Início', 'Conclusão'].map((titulo) => (
+          {['N', '%'].map((titulo) => (
             <CabecalhoColuna key={titulo} altura={alturaDoCabecalho}>
               {titulo}
             </CabecalhoColuna>
@@ -65,6 +65,11 @@ export function TabelaEstrutura({
             <CheckCircle2 aria-hidden className="mx-auto size-3.5 text-texto-sutil" />
             <span className="sr-only">Concluir</span>
           </CabecalhoColuna>
+          {['Descrição', 'Responsável', 'Dep.', 'Início', 'Dur.', 'Conclusão'].map((titulo) => (
+            <CabecalhoColuna key={titulo} altura={alturaDoCabecalho}>
+              {titulo}
+            </CabecalhoColuna>
+          ))}
           <CabecalhoColuna altura={alturaDoCabecalho}>
             <span className="sr-only">Ações</span>
           </CabecalhoColuna>
@@ -84,8 +89,10 @@ export function TabelaEstrutura({
                 ehFase ? 'bg-texto/4 font-semibold' : 'hover:bg-primaria/4',
               )}
             >
+              {/* N */}
               <Celula className="pl-4 text-xs tabular-nums text-texto-sutil">{linha.numero}</Celula>
 
+              {/* % */}
               <Celula className="tabular-nums">
                 {ehFase ? (
                   <span className="px-1 text-xs text-texto-secundario">
@@ -106,6 +113,37 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
+              {/* ✓ Concluir */}
+              <Celula>
+                {!ehFase && podeEditarTarefas && (
+                  <button
+                    type="button"
+                    aria-label={
+                      linha.percentualConcluido === 100 ? 'Marcar como pendente' : 'Marcar como concluída'
+                    }
+                    title={
+                      linha.percentualConcluido === 100 ? 'Marcar como pendente' : 'Marcar como concluída'
+                    }
+                    onClick={() =>
+                      aoEditarTarefa({
+                        id: linha.id,
+                        percentualConcluido: linha.percentualConcluido === 100 ? 0 : 100,
+                      })
+                    }
+                    className="flex size-8 items-center justify-center rounded-lg transition-colors hover:bg-texto/6"
+                  >
+                    <CheckCircle2
+                      aria-hidden
+                      className={clsx(
+                        'size-4 transition-colors',
+                        linha.percentualConcluido === 100 ? 'text-sucesso' : 'text-texto-sutil/40',
+                      )}
+                    />
+                  </button>
+                )}
+              </Celula>
+
+              {/* Descrição */}
               <Celula style={{ paddingLeft: linha.nivel * 20 }}>
                 <div className="flex items-center gap-1">
                   {linha.critico && (
@@ -134,6 +172,7 @@ export function TabelaEstrutura({
                 </div>
               </Celula>
 
+              {/* Responsável */}
               <Celula>
                 {ehFase ? (
                   <span className="px-1 text-texto-sutil">—</span>
@@ -156,7 +195,6 @@ export function TabelaEstrutura({
                         {responsavel.nome}
                       </option>
                     ))}
-                    {/* Mantém visível quem já estava atribuído e foi desativado. */}
                     {linha.responsavelId &&
                       !ativos.some((responsavel) => responsavel.id === linha.responsavelId) && (
                         <option value={linha.responsavelId}>{linha.responsavelNome} (inativo)</option>
@@ -165,6 +203,7 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
+              {/* Dep. */}
               <Celula>
                 {ehFase ? (
                   <span className="px-1 text-texto-sutil">—</span>
@@ -178,6 +217,7 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
+              {/* Início */}
               <Celula className="tabular-nums">
                 {ehFase || !linha.dataInicio ? (
                   <span className="px-1 text-xs text-texto-secundario">
@@ -199,6 +239,32 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
+              {/* Duração */}
+              <Celula className="tabular-nums">
+                {ehFase ? (
+                  <span className="px-1 text-xs text-texto-secundario">
+                    {formatarDias(linha.duracaoEmDias)}
+                  </span>
+                ) : (
+                  <CelulaEditavel
+                    valor={String(linha.duracaoEmDias)}
+                    tipo="numero"
+                    min={1}
+                    editavel={podeEditarTarefas && !!linha.dataInicio}
+                    formatar={(valor) => formatarDias(parseInt(valor, 10) || 1)}
+                    className="text-xs"
+                    aoSalvar={(valor) => {
+                      const dias = Math.max(1, parseInt(valor, 10) || 1);
+                      aoEditarTarefa({
+                        id: linha.id,
+                        dataFim: somarDias(linha.dataInicio!, dias - 1),
+                      });
+                    }}
+                  />
+                )}
+              </Celula>
+
+              {/* Conclusão */}
               <Celula className="tabular-nums">
                 {ehFase || !linha.dataFim ? (
                   <span className="px-1 text-xs text-texto-secundario">
@@ -216,31 +282,7 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
-              <Celula>
-                {!ehFase && podeEditarTarefas && (
-                  <button
-                    type="button"
-                    aria-label={linha.percentualConcluido === 100 ? 'Marcar como pendente' : 'Marcar como concluída'}
-                    title={linha.percentualConcluido === 100 ? 'Marcar como pendente' : 'Marcar como concluída'}
-                    onClick={() =>
-                      aoEditarTarefa({
-                        id: linha.id,
-                        percentualConcluido: linha.percentualConcluido === 100 ? 0 : 100,
-                      })
-                    }
-                    className="flex size-8 items-center justify-center rounded-lg transition-colors hover:bg-texto/6"
-                  >
-                    <CheckCircle2
-                      aria-hidden
-                      className={clsx(
-                        'size-4 transition-colors',
-                        linha.percentualConcluido === 100 ? 'text-sucesso' : 'text-texto-sutil/40',
-                      )}
-                    />
-                  </button>
-                )}
-              </Celula>
-
+              {/* Ações */}
               <Celula className="pr-2">
                 <div className="flex justify-end opacity-0 transition-opacity group-focus-within/linha:opacity-100 group-hover/linha:opacity-100">
                   {ehFase
