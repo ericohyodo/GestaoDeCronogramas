@@ -1,0 +1,35 @@
+appId: com.gestaocronogramas.desktop
+productName: Gestão de Cronogramas
+executableName: GestaoDeCronogramas
+copyright: Copyright © 2026
+
+directories:
+  output: dist
+  buildResources: recursos
+
+files:
+  - dist-electron/**
+  - "!dist-electron/**/*.map"
+  - renderer/out/**
+  - package.json
+  # better-sqlite3 traz binários de todas as plataformas; empacotamos só o do Windows x64.
+  - "!node_modules/better-sqlite3/{src,deps}/**"
+  - "!node_modules/better-sqlite3/binding.gyp"
+  - "!node_modules/better-sqlite3/prebuilds/{darwin,linux,linuxmusl}-*.node"
+  - "!node_modules/better-sqlite3/prebuilds/win32-arm64.node"
+  - "!node_modules/node-addon-api/**"
+
+# O .node precisa ficar fora do app.asar para poder ser carregado.
+asarUnpack:
+  - node_modules/better-sqlite3/**
+
+# better-sqlite3 usa Node-API com binários pré-compilados: não há o que recompilar.
+npmRebuild: false
+
+win:
+  target:
+    - target: portable
+      arch: [x64]
+
+portable:
+  artifactName: GestaoDeCronogramas-${version}-portatil.${ext}

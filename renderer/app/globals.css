@@ -1,0 +1,198 @@
+@import 'tailwindcss' source('../');
+
+/* ==========================================================================
+   Tokens — "clean corporativo" com glassmorphism
+   O tema segue `prefers-color-scheme`, que o Electron controla via nativeTheme
+   (preferência salva no SQLite). Não há classe/atributo de tema no HTML.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  --fundo-inicio: #f4f6fa;
+  --fundo-fim: #e8edf4;
+  --mancha-1: rgb(31 78 140 / 0.1);
+  --mancha-2: rgb(14 159 154 / 0.08);
+
+  --superficie: rgb(255 255 255 / 0.72);
+  --superficie-forte: rgb(255 255 255 / 0.88);
+  --superficie-solida: #ffffff;
+  --borda-vidro: rgb(255 255 255 / 0.6);
+  --borda: #d9e0ea;
+
+  --texto: #0f1b2d;
+  --texto-secundario: #4a5a70;
+  --texto-sutil: #7a8699;
+
+  --primaria: #1f4e8c;
+  --primaria-hover: #183e70;
+  --sobre-primaria: #ffffff;
+  --destaque: #0e9f9a;
+
+  --sucesso: #1e8e5a;
+  --alerta: #b7791f;
+  --perigo: #c0392b;
+  --info: #2f6fb5;
+
+  --sombra-vidro: 0 8px 32px rgb(15 27 45 / 0.08);
+  /* Véu sobre o Acrylic: mantém o tom corporativo e a legibilidade com qualquer papel de parede. */
+  --veu-acrylic: rgb(244 246 250 / 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --fundo-inicio: #0b1220;
+    --fundo-fim: #111a2b;
+    --mancha-1: rgb(59 111 182 / 0.18);
+    --mancha-2: rgb(20 184 166 / 0.12);
+
+    --superficie: rgb(22 32 50 / 0.62);
+    --superficie-forte: rgb(22 32 50 / 0.85);
+    --superficie-solida: #162032;
+    --borda-vidro: rgb(255 255 255 / 0.08);
+    --borda: #243247;
+
+    --texto: #e6edf7;
+    --texto-secundario: #a9b6c9;
+    --texto-sutil: #7c8aa0;
+
+    --primaria: #5b8fd6;
+    --primaria-hover: #7aa6e2;
+    --sobre-primaria: #0b1220;
+    --destaque: #2dd4bf;
+
+    --sucesso: #34c38f;
+    --alerta: #e0a63b;
+    --perigo: #e5675a;
+    --info: #6fa8e8;
+
+    --sombra-vidro: 0 8px 32px rgb(0 0 0 / 0.35);
+    --veu-acrylic: rgb(11 18 32 / 0.45);
+  }
+}
+
+/* Expõe os tokens ao Tailwind: bg-superficie, text-texto, border-borda, text-primaria/80... */
+@theme inline {
+  --color-superficie: var(--superficie);
+  --color-superficie-forte: var(--superficie-forte);
+  --color-superficie-solida: var(--superficie-solida);
+  --color-borda-vidro: var(--borda-vidro);
+  --color-borda: var(--borda);
+  --color-texto: var(--texto);
+  --color-texto-secundario: var(--texto-secundario);
+  --color-texto-sutil: var(--texto-sutil);
+  --color-primaria: var(--primaria);
+  --color-primaria-hover: var(--primaria-hover);
+  --color-sobre-primaria: var(--sobre-primaria);
+  --color-destaque: var(--destaque);
+  --color-sucesso: var(--sucesso);
+  --color-alerta: var(--alerta);
+  --color-perigo: var(--perigo);
+  --color-info: var(--info);
+
+  --shadow-vidro: var(--sombra-vidro);
+  --font-sans: 'Inter Variable', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ==========================================================================
+   Utilitários de vidro e da barra de título
+   ========================================================================== */
+
+@utility vidro {
+  background-color: var(--superficie);
+  backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid var(--borda-vidro);
+  box-shadow: var(--sombra-vidro);
+
+  /* Windows com "Efeitos de transparência" desligado */
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--superficie-solida);
+    backdrop-filter: none;
+  }
+}
+
+@utility vidro-forte {
+  background-color: var(--superficie-forte);
+  backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--borda-vidro);
+  box-shadow: var(--sombra-vidro);
+
+  @media (prefers-reduced-transparency: reduce) {
+    background-color: var(--superficie-solida);
+    backdrop-filter: none;
+  }
+}
+
+/* Cor de "tom" para etiquetas e avisos: tom-sucesso, tom-alerta, tom-perigo... */
+@utility tom-* {
+  --tom: --value(--color-*);
+}
+
+/* Fundo translúcido do tom; o texto é misturado com --texto para manter contraste AA. */
+@utility etiqueta {
+  background-color: color-mix(in srgb, var(--tom, var(--texto-sutil)) 14%, transparent);
+  color: color-mix(in srgb, var(--tom, var(--texto-sutil)), var(--texto) 30%);
+}
+
+@utility regiao-arrasto {
+  -webkit-app-region: drag;
+  app-region: drag;
+}
+
+@utility sem-arrasto {
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    font-family: var(--font-sans);
+    color: var(--texto);
+    background: linear-gradient(135deg, var(--fundo-inicio), var(--fundo-fim)) fixed;
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+
+  /* Com Acrylic, o próprio desktop desfocado é o fundo; só aplicamos um véu leve. */
+  html[data-vidro-nativo] body {
+    background: var(--veu-acrylic);
+  }
+
+  html[data-vidro-nativo] .fundo-decorativo {
+    display: none;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--primaria);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--primaria) 25%, transparent);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in srgb, var(--texto-sutil) 45%, transparent) transparent;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}

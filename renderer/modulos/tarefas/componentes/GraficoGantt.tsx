@@ -1,0 +1,339 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import type { LinhaEstruturaDTO } from '@contratos/tarefas.contrato';
+import { diasEntreDatas, formatarData, formatarDias, hojeIso } from '@/compartilhado/formatacao';
+
+interface PropsGraficoGantt {
+  linhas: LinhaEstruturaDTO[];
+  /** Janela do gráfico: início do projeto até a última data das tarefas. */
+  inicio: string;
+  fim: string;
+  alturaDaLinha: number;
+  alturaDoCabecalho: number;
+}
+
+const ALTURA_DA_BARRA = 14;
+const ALTURA_DA_FASE = 8;
+const MESES = [
+  'jan',
+  'fev',
+  'mar',
+  'abr',
+  'mai',
+  'jun',
+  'jul',
+  'ago',
+  'set',
+  'out',
+  'nov',
+  'dez',
+];
+
+/**
+ * Gantt em SVG alinhado linha a linha com a tabela: barras, marcos de fase,
+ * setas de dependência (término → início) e destaque do caminho crítico.
+ */
+export function GraficoGantt({
+  linhas,
+  inicio,
+  fim,
+  alturaDaLinha,
+  alturaDoCabecalho,
+}: PropsGraficoGantt) {
+  const container = useRef<HTMLDivElement>(null);
+  const [largura, setLargura] = useState(0);
+
+  useEffect(() => {
+    const elemento = container.current;
+    if (!elemento) return;
+    const observador = new ResizeObserver(([entrada]) => {
+      if (entrada) setLargura(entrada.contentRect.width);
+    });
+    observador.observe(elemento);
+    return () => observador.disconnect();
+  }, []);
+
+  const totalDeDias = Math.max(1, diasEntreDatas(inicio, fim) + 1);
+  const pixelsPorDia = largura / totalDeDias;
+  const x = (data: string) => diasEntreDatas(inicio, data) * pixelsPorDia;
+  const xAposOFim = (data: string) => (diasEntreDatas(inicio, data) + 1) * pixelsPorDia;
+
+  const alturaDoCorpo = Math.max(linhas.length * alturaDaLinha, alturaDaLinha);
+  const barras = new Map<string, { x1: number; x2: number; y: number }>();
+  linhas.forEach((linha, indice) => {
+    if (!linha.dataInicio || !linha.dataFim) return;
+    barras.set(linha.id, {
+      x1: x(linha.dataInicio),
+      x2: xAposOFim(linha.dataFim),
+      y: indice * alturaDaLinha + alturaDaLinha / 2,
+    });
+  });
+
+  const hoje = hojeIso();
+  const mostrarHoje = hoje >= inicio && hoje <= fim;
+
+  return (
+    <div ref={container} className="min-w-0">
+      {largura > 0 && (
+        <>
+          <div
+            className="vidro-forte sticky top-0 z-20 border-b border-borda"
+            style={{ height: alturaDoCabecalho }}
+          >
+            <CabecalhoDoTempo
+              inicio={inicio}
+              fim={fim}
+              largura={largura}
+              altura={alturaDoCabecalho}
+              pixelsPorDia={pixelsPorDia}
+            />
+          </div>
+
+          <svg
+            width={largura}
+            height={alturaDoCorpo}
+            role="img"
+            aria-label="Gráfico de Gantt do cronograma"
+            className="block"
+          >
+            {/* Divisões de mês, para leitura das datas */}
+            {listarMeses(inicio, fim).map((mes) => (
+              <line
+                key={mes.inicio}
+                x1={x(mes.inicio)}
+                x2={x(mes.inicio)}
+                y1={0}
+                y2={alturaDoCorpo}
+                stroke="var(--borda)"
+                strokeWidth={1}
+              />
+            ))}
+
+            {linhas.map((_, indice) =>
+              indice % 2 === 1 ? (
+                <rect
+                  key={indice}
+                  x={0}
+                  y={indice * alturaDaLinha}
+                  width={largura}
+                  height={alturaDaLinha}
+                  fill="var(--texto)"
+                  opacity={0.02}
+                />
+              ) : null,
+            )}
+
+            {mostrarHoje && (
+              <line
+                x1={x(hoje)}
+                x2={x(hoje)}
+                y1={0}
+                y2={alturaDoCorpo}
+                stroke="var(--destaque)"
+                strokeWidth={1.5}
+                strokeDasharray="4 3"
+              >
+                <title>Hoje</title>
+              </line>
+            )}
+
+            {/* Setas de dependência: saem do fim da predecessora e entram no início da sucessora */}
+            {linhas.flatMap((linha) =>
+              linha.dependencias.map((idPredecessora) => {
+                const origem = barras.get(idPredecessora);
+                const destino = barras.get(linha.id);
+                if (!origem || !destino) return null;
+                const cor = linha.critico ? 'var(--perigo)' : 'var(--texto-sutil)';
+                return (
+                  <g key={`${idPredecessora}-${linha.id}`} opacity={linha.critico ? 0.9 : 0.55}>
+                    <path
+                      d={caminhoDaSeta(origem, destino, alturaDaLinha)}
+                      fill="none"
+                      stroke={cor}
+                      strokeWidth={1.25}
+                    />
+                    <polygon
+                      points={`${destino.x1},${destino.y} ${destino.x1 - 5},${destino.y - 3.5} ${destino.x1 - 5},${destino.y + 3.5}`}
+                      fill={cor}
+                    />
+                  </g>
+                );
+              }),
+            )}
+
+            {linhas.map((linha, indice) => {
+              const barra = barras.get(linha.id);
+              if (!barra) return null;
+              const largura2 = Math.max(barra.x2 - barra.x1, 2);
+              const y = indice * alturaDaLinha;
+              const descricao = `${linha.titulo}: ${formatarData(linha.dataInicio!)} a ${formatarData(linha.dataFim!)} · ${formatarDias(linha.duracaoEmDias)} · ${linha.percentualConcluido}%${linha.critico ? ' · caminho crítico' : ''}`;
+
+              if (linha.tipo === 'fase') {
+                return (
+                  <g key={linha.id}>
+                    <title>{descricao}</title>
+                    <rect
+                      x={barra.x1}
+                      y={y + (alturaDaLinha - ALTURA_DA_FASE) / 2}
+                      width={largura2}
+                      height={ALTURA_DA_FASE}
+                      rx={2}
+                      fill="var(--texto-secundario)"
+                      opacity={0.55}
+                    />
+                  </g>
+                );
+              }
+
+              const cor = linha.critico ? 'var(--perigo)' : 'var(--primaria)';
+              return (
+                <g key={linha.id}>
+                  <title>{descricao}</title>
+                  <rect
+                    x={barra.x1}
+                    y={y + (alturaDaLinha - ALTURA_DA_BARRA) / 2}
+                    width={largura2}
+                    height={ALTURA_DA_BARRA}
+                    rx={3}
+                    fill={cor}
+                    opacity={0.22}
+                  />
+                  <rect
+                    x={barra.x1}
+                    y={y + (alturaDaLinha - ALTURA_DA_BARRA) / 2}
+                    width={(largura2 * linha.percentualConcluido) / 100}
+                    height={ALTURA_DA_BARRA}
+                    rx={3}
+                    fill={cor}
+                  />
+                </g>
+              );
+            })}
+          </svg>
+        </>
+      )}
+    </div>
+  );
+}
+
+function CabecalhoDoTempo({
+  inicio,
+  fim,
+  largura,
+  altura,
+  pixelsPorDia,
+}: {
+  inicio: string;
+  fim: string;
+  largura: number;
+  altura: number;
+  pixelsPorDia: number;
+}) {
+  const meses = listarMeses(inicio, fim);
+  const x = (data: string) => diasEntreDatas(inicio, data) * pixelsPorDia;
+  // Em janelas curtas cabe a régua de semanas embaixo dos meses.
+  const semanas = pixelsPorDia * 7 >= 26 ? listarSemanas(inicio, fim) : [];
+
+  return (
+    <svg width={largura} height={altura} aria-hidden className="block">
+      {meses.map((mes) => {
+        const inicioDoMes = Math.max(x(mes.inicio), 0);
+        const fimDoMes = Math.min(x(mes.fimExclusivo), largura);
+        return (
+          <g key={mes.inicio}>
+            <line
+              x1={inicioDoMes}
+              x2={inicioDoMes}
+              y1={0}
+              y2={altura}
+              stroke="var(--borda)"
+              strokeWidth={1}
+            />
+            {fimDoMes - inicioDoMes > 34 && (
+              <text
+                x={(inicioDoMes + fimDoMes) / 2}
+                y={20}
+                textAnchor="middle"
+                fontSize={11}
+                fontWeight={600}
+                fill="var(--texto-secundario)"
+              >
+                {mes.rotulo}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {semanas.map((semana) => (
+        <text
+          key={semana}
+          x={x(semana) + pixelsPorDia * 3.5}
+          y={altura - 12}
+          textAnchor="middle"
+          fontSize={10}
+          fill="var(--texto-sutil)"
+          className="tabular-nums"
+        >
+          {semana.slice(8, 10)}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
+/** Cotovelo em "S" quando a sucessora começa antes do fim da predecessora. */
+function caminhoDaSeta(
+  origem: { x2: number; y: number },
+  destino: { x1: number; y: number },
+  alturaDaLinha: number,
+): string {
+  const recuo = 7;
+  const entrada = destino.x1 - 5;
+  if (entrada > origem.x2 + recuo) {
+    return `M ${origem.x2} ${origem.y} H ${origem.x2 + recuo} V ${destino.y} H ${entrada}`;
+  }
+  const desvio = destino.y > origem.y ? alturaDaLinha / 2 : -alturaDaLinha / 2;
+  const meio = origem.y + desvio;
+  return `M ${origem.x2} ${origem.y} H ${origem.x2 + recuo} V ${meio} H ${destino.x1 - recuo - 5} V ${destino.y} H ${entrada}`;
+}
+
+interface Mes {
+  inicio: string;
+  fimExclusivo: string;
+  rotulo: string;
+}
+
+function listarMeses(inicio: string, fim: string): Mes[] {
+  const meses: Mes[] = [];
+  const atual = new Date(`${inicio}T00:00:00Z`);
+  atual.setUTCDate(1);
+  const limite = new Date(`${fim}T00:00:00Z`);
+
+  while (atual <= limite) {
+    const proximo = new Date(atual);
+    proximo.setUTCMonth(proximo.getUTCMonth() + 1);
+    meses.push({
+      inicio: atual.toISOString().slice(0, 10),
+      fimExclusivo: proximo.toISOString().slice(0, 10),
+      rotulo: `${MESES[atual.getUTCMonth()]}/${String(atual.getUTCFullYear()).slice(2)}`,
+    });
+    atual.setUTCMonth(atual.getUTCMonth() + 1);
+  }
+  return meses;
+}
+
+/** Segundas-feiras dentro da janela. */
+function listarSemanas(inicio: string, fim: string): string[] {
+  const semanas: string[] = [];
+  const atual = new Date(`${inicio}T00:00:00Z`);
+  atual.setUTCDate(atual.getUTCDate() + ((8 - atual.getUTCDay()) % 7));
+  const limite = new Date(`${fim}T00:00:00Z`);
+
+  while (atual <= limite) {
+    semanas.push(atual.toISOString().slice(0, 10));
+    atual.setUTCDate(atual.getUTCDate() + 7);
+  }
+  return semanas;
+}

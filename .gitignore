@@ -1,0 +1,21 @@
+# dependências
+node_modules/
+
+# builds
+dist/
+dist-electron/
+renderer/.next/
+renderer/out/
+renderer/next-env.d.ts
+*.tsbuildinfo
+
+# dados locais
+dados-dev/
+*.db
+*.db-journal
+
+# ambiente / SO
+.env*
+.DS_Store
+Thumbs.db
+*.log
