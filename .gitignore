@@ -9,13 +9,23 @@ renderer/out/
 renderer/next-env.d.ts
 *.tsbuildinfo
 
-# dados locais
+# dados locais (o banco tem dados reais de projetos e pessoas)
 dados-dev/
 *.db
 *.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
 
-# ambiente / SO
+# testes
+coverage/
+
+# ambiente / SO / editores
 .env*
 .DS_Store
 Thumbs.db
 *.log
+.vscode/
+.idea/
+.claude/settings.local.json
