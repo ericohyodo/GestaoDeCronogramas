@@ -1,17 +1,24 @@
 import { z } from 'zod';
 import { CANAIS } from '@contratos/canais';
 import { SITUACOES_TAREFA } from '@contratos/tarefas.contrato';
-import { esquemaData, esquemaId } from '../../../nucleo/infraestrutura/ipc/esquemas';
+import {
+  esquemaData,
+  esquemaId,
+  esquemaSemEntrada,
+} from '../../../nucleo/infraestrutura/ipc/esquemas';
 import type { RegistradorIpc } from '../../../nucleo/infraestrutura/ipc/registrador-ipc';
 import type { AtualizarTarefa } from '../aplicacao/casos-de-uso/atualizar-tarefa';
+import type { CopiarEstrutura } from '../aplicacao/casos-de-uso/copiar-estrutura';
 import type { CriarTarefa } from '../aplicacao/casos-de-uso/criar-tarefa';
 import type { DeslocarSucessoras } from '../aplicacao/casos-de-uso/deslocar-sucessoras';
+import type { DuplicarTarefa } from '../aplicacao/casos-de-uso/duplicar-tarefa';
 import type { ExcluirTarefa } from '../aplicacao/casos-de-uso/excluir-tarefa';
 import type {
   AtualizarFase,
   CriarFase,
   ExcluirFase,
 } from '../aplicacao/casos-de-uso/gerenciar-fases';
+import type { ListarAgenda } from '../aplicacao/casos-de-uso/listar-agenda';
 import type { ObterEstrutura } from '../aplicacao/casos-de-uso/obter-estrutura';
 import type { ReordenarTarefas } from '../aplicacao/casos-de-uso/reordenar-tarefas';
 
@@ -25,6 +32,9 @@ export interface CasosDeUsoTarefas {
   atualizarFase: AtualizarFase;
   excluirFase: ExcluirFase;
   reordenar: ReordenarTarefas;
+  duplicar: DuplicarTarefa;
+  copiarEstrutura: CopiarEstrutura;
+  listarAgenda: ListarAgenda;
 }
 
 const esquemaCriar = z.object({
@@ -64,6 +74,8 @@ const esquemaReordenar = z.object({
   ordens: z.array(z.object({ id: esquemaId, ordem: z.number().int().min(1) })),
 });
 
+const esquemaCopiarEstrutura = z.object({ origemId: esquemaId, destinoId: esquemaId });
+
 export function registrarIpcTarefas(ipc: RegistradorIpc, casos: CasosDeUsoTarefas): void {
   ipc.registrar(CANAIS.tarefas.obterEstrutura, 'leitura', esquemaId, (cronogramaId) =>
     casos.obterEstrutura.executar(cronogramaId),
@@ -92,5 +104,13 @@ export function registrarIpcTarefas(ipc: RegistradorIpc, casos: CasosDeUsoTarefa
   );
   ipc.registrar(CANAIS.tarefas.reordenar, 'tarefas', esquemaReordenar, (entrada) =>
     casos.reordenar.executar(entrada),
+  );
+  ipc.registrar(CANAIS.tarefas.duplicar, 'tarefas', esquemaId, (id) => casos.duplicar.executar(id));
+  // Usar um cronograma como modelo cria estrutura nova: trabalho de planejamento.
+  ipc.registrar(CANAIS.tarefas.copiarEstrutura, 'planejamento', esquemaCopiarEstrutura, (entrada) =>
+    casos.copiarEstrutura.executar(entrada),
+  );
+  ipc.registrar(CANAIS.tarefas.listarAgenda, 'leitura', esquemaSemEntrada, () =>
+    casos.listarAgenda.executar(),
   );
 }

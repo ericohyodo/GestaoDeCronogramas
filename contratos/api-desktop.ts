@@ -16,10 +16,12 @@ import type {
   AtualizarFaseEntrada,
   AtualizarTarefaEntrada,
   AtualizarTarefaSaida,
+  CopiarEstruturaEntrada,
   CriarFaseEntrada,
   CriarTarefaEntrada,
   DeslocarSucessorasEntrada,
   EstruturaCronogramaDTO,
+  ItemAgendaDTO,
   ReordenarTarefasEntrada,
   TarefaDTO,
 } from './tarefas.contrato';
@@ -67,6 +69,9 @@ export interface ApiDesktop {
     atualizarFase(entrada: AtualizarFaseEntrada): Promise<Resultado<null>>;
     excluirFase(id: string): Promise<Resultado<null>>;
     reordenar(entrada: ReordenarTarefasEntrada): Promise<Resultado<null>>;
+    duplicar(id: string): Promise<Resultado<TarefaDTO>>;
+    copiarEstrutura(entrada: CopiarEstruturaEntrada): Promise<Resultado<null>>;
+    listarAgenda(): Promise<Resultado<ItemAgendaDTO[]>>;
   };
   preferencias: {
     obter(): Promise<Resultado<PreferenciasDTO>>;

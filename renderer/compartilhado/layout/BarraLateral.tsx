@@ -21,7 +21,7 @@ const ITENS: ItemNavegacao[] = [
   { rotulo: 'Cronogramas', icone: CalendarRange, href: '/', rotas: ['/', '/cronograma'] },
   { rotulo: 'Recursos', icone: Users, href: '/recursos/', rotas: ['/recursos'] },
   { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
-  { rotulo: 'Relatórios', icone: BarChart3 },
+  { rotulo: 'Relatórios', icone: BarChart3, href: '/relatorios/', rotas: ['/relatorios'] },
 ];
 
 export function BarraLateral({

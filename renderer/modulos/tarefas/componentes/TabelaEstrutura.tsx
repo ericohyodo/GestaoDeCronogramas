@@ -1,8 +1,8 @@
 'use client';
 
 import clsx from 'clsx';
-import { CheckCircle2, CircleAlert, GripVertical, Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { CheckCircle2, CircleAlert, CopyPlus, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { type CSSProperties, type ReactNode, useState } from 'react';
 import type { ResponsavelDTO } from '@contratos/responsaveis.contrato';
 import type { AtualizarTarefaEntrada, LinhaEstruturaDTO } from '@contratos/tarefas.contrato';
 import { formatarDataCurta, formatarDias, somarDias } from '@/compartilhado/formatacao';
@@ -17,13 +17,24 @@ export interface PropsTabelaEstrutura {
   podeEditarFases: boolean;
   alturaDaLinha: number;
   alturaDoCabecalho: number;
+  /** Sem Gantt ao lado: colunas mais largas e linhas que crescem com o texto. */
+  modoEdicao: boolean;
   aoEditarTarefa: (entrada: AtualizarTarefaEntrada) => void;
   aoExcluirTarefa: (linha: LinhaEstruturaDTO) => void;
+  aoDuplicarTarefa: (id: string) => void;
   aoRenomearFase: (id: string, nome: string) => void;
   aoExcluirFase: (linha: LinhaEstruturaDTO) => void;
   aoAdicionarTarefa: (faseId: string) => void;
   aoReordenarTarefas: (ordens: { id: string; ordem: number }[]) => void;
 }
+
+// ⠿ | N | % | ✓ | Descrição | Responsável | Dep. | Início | Dur. | Conclusão | Ações
+const LARGURAS_PADRAO = ['w-5', 'w-10', 'w-[60px]', 'w-9', '', 'w-[88px]', 'w-12', 'w-20', 'w-16', 'w-20', 'w-14'];
+const LARGURAS_EDICAO = ['w-6', 'w-16', 'w-[72px]', 'w-10', '', 'w-44', 'w-24', 'w-32', 'w-24', 'w-32', 'w-20'];
+
+/** Soma das colunas fixas + ~170px para a Descrição. Abaixo disso a Descrição sumiria. */
+export const LARGURA_MINIMA_TABELA = 744;
+const LARGURA_MINIMA_TABELA_EDICAO = 980;
 
 export function TabelaEstrutura({
   linhas,
@@ -32,8 +43,10 @@ export function TabelaEstrutura({
   podeEditarFases,
   alturaDaLinha,
   alturaDoCabecalho,
+  modoEdicao,
   aoEditarTarefa,
   aoExcluirTarefa,
+  aoDuplicarTarefa,
   aoRenomearFase,
   aoExcluirFase,
   aoAdicionarTarefa,
@@ -42,70 +55,59 @@ export function TabelaEstrutura({
   const tarefas = linhas.filter((linha) => linha.tipo === 'tarefa');
   const ativos = responsaveis.filter((responsavel) => responsavel.ativo);
 
-  // ---------------------------------------------------------------------------
-  // Drag-and-drop state
-  // ---------------------------------------------------------------------------
   const [arrastando, setArrastando] = useState<string | null>(null);
   const [sobreId, setSobreId] = useState<string | null>(null);
 
-  const handleDrop = (targetId: string) => {
-    if (!arrastando || arrastando === targetId) {
-      setArrastando(null);
-      setSobreId(null);
-      return;
-    }
-    const origem = linhas.find((l) => l.id === arrastando);
-    const destino = linhas.find((l) => l.id === targetId);
-    if (!origem || !destino || origem.faseId !== destino.faseId) {
-      setArrastando(null);
-      setSobreId(null);
-      return;
-    }
-
-    // Tarefas da mesma fase, na ordem atual de exibição.
-    const faseLinhas = linhas.filter(
-      (l) => l.tipo === 'tarefa' && l.faseId === origem.faseId,
-    );
-    const sem = faseLinhas.filter((l) => l.id !== arrastando);
-    const idx = sem.findIndex((l) => l.id === targetId);
-    sem.splice(idx, 0, origem);
-    const ordens = sem.map((t, i) => ({ id: t.id, ordem: i + 1 }));
-    aoReordenarTarefas(ordens);
+  const encerrarArrasto = () => {
     setArrastando(null);
     setSobreId(null);
   };
 
+  const soltarSobre = (alvoId: string) => {
+    const origem = linhas.find((linha) => linha.id === arrastando);
+    const alvo = linhas.find((linha) => linha.id === alvoId);
+    encerrarArrasto();
+    if (!origem || !alvo || origem.id === alvo.id || alvo.tipo !== 'tarefa') return;
+    if (origem.faseId !== alvo.faseId) return;
+
+    const daFase = linhas.filter((linha) => linha.tipo === 'tarefa' && linha.faseId === origem.faseId);
+    const reordenadas = daFase.filter((linha) => linha.id !== origem.id);
+    reordenadas.splice(
+      reordenadas.findIndex((linha) => linha.id === alvo.id),
+      0,
+      origem,
+    );
+    aoReordenarTarefas(reordenadas.map((linha, indice) => ({ id: linha.id, ordem: indice + 1 })));
+  };
+
+  const larguras = modoEdicao ? LARGURAS_EDICAO : LARGURAS_PADRAO;
+  // Fora do modo edição a altura é fixa: cada linha precisa bater pixel a pixel com a do Gantt.
+  const alturas = {
+    '--altura-celula': modoEdicao ? 'auto' : `${alturaDaLinha - 1}px`,
+    '--altura-minima-celula': `${alturaDaLinha - 1}px`,
+    '--respiro-celula': modoEdicao ? '4px' : '0px',
+    minWidth: modoEdicao ? LARGURA_MINIMA_TABELA_EDICAO : LARGURA_MINIMA_TABELA,
+  } as CSSProperties;
+
   return (
-    // Colunas: ⠿ | N | % | ✓ | Descrição | Responsável | Dep. | Início | Dur. | Conclusão | Ações
-    <table className="w-full min-w-[480px] table-fixed border-separate border-spacing-0 text-sm">
+    <table style={alturas} className="w-full table-fixed border-separate border-spacing-0 text-sm">
       <colgroup>
-        <col className="w-5" />
-        <col className="w-14" />
-        <col className="w-[60px]" />
-        <col className="w-9" />
-        <col className="min-w-24" />
-        <col className="w-[88px]" />
-        <col className="w-12" />
-        <col className="w-[88px]" />
-        <col className="w-[72px]" />
-        <col className="w-[88px]" />
-        <col className="w-8" />
+        {larguras.map((largura, indice) => (
+          <col key={indice} className={largura || undefined} />
+        ))}
       </colgroup>
       <thead>
         <tr>
           <CabecalhoColuna altura={alturaDoCabecalho}>
             <span className="sr-only">Ordem</span>
           </CabecalhoColuna>
-          {['N', '%'].map((titulo) => (
-            <CabecalhoColuna key={titulo} altura={alturaDoCabecalho}>
-              {titulo}
-            </CabecalhoColuna>
-          ))}
+          <CabecalhoColuna altura={alturaDoCabecalho}>N</CabecalhoColuna>
+          <CabecalhoColuna altura={alturaDoCabecalho}>%</CabecalhoColuna>
           <CabecalhoColuna altura={alturaDoCabecalho}>
             <CheckCircle2 aria-hidden className="mx-auto size-3.5 text-texto-sutil" />
             <span className="sr-only">Concluir</span>
           </CabecalhoColuna>
-          {['Descrição', 'Responsável', 'Dep.', 'Início', 'Dur.', 'Conclusão'].map((titulo) => (
+          {['Descrição', modoEdicao ? 'Responsável' : 'Resp.', 'Dep.', 'Início', 'Dur.', modoEdicao ? 'Conclusão' : 'Fim'].map((titulo) => (
             <CabecalhoColuna key={titulo} altura={alturaDoCabecalho}>
               {titulo}
             </CabecalhoColuna>
@@ -118,46 +120,43 @@ export function TabelaEstrutura({
       <tbody>
         {linhas.map((linha) => {
           const ehFase = linha.tipo === 'fase';
-          // Renomear fase: liberado para quem pode editar tarefas.
-          const editavelNome = ehFase ? podeEditarTarefas : podeEditarTarefas;
-          const arrastandoEsta = arrastando === linha.id;
-          const sobreEsta = sobreId === linha.id && arrastando !== null && arrastando !== linha.id;
+          const arrastavel = !ehFase && podeEditarTarefas;
+          const alvoDoArrasto = sobreId === linha.id && arrastando !== null && arrastando !== linha.id;
 
           return (
             <tr
               key={linha.id}
-              style={{ height: alturaDaLinha }}
-              draggable={!ehFase && podeEditarTarefas}
-              onDragStart={() => setArrastando(linha.id)}
-              onDragEnd={() => { setArrastando(null); setSobreId(null); }}
-              onDragOver={(e) => { e.preventDefault(); setSobreId(linha.id); }}
-              onDrop={() => handleDrop(linha.id)}
+              draggable={arrastavel}
+              onDragStart={arrastavel ? () => setArrastando(linha.id) : undefined}
+              onDragEnd={encerrarArrasto}
+              onDragOver={(evento) => {
+                if (!arrastando) return;
+                evento.preventDefault();
+                setSobreId(linha.id);
+              }}
+              onDrop={() => soltarSobre(linha.id)}
               className={clsx(
                 'group/linha transition-colors',
                 ehFase ? 'bg-texto/4 font-semibold' : 'hover:bg-primaria/4',
-                arrastandoEsta && 'opacity-40',
-                sobreEsta && 'border-t-2 border-primaria',
+                arrastando === linha.id && 'opacity-40',
+                // Borda em <tr> some no modelo `border-separate`; a sombra nas células faz o papel.
+                alvoDoArrasto && '[&>td]:shadow-[inset_0_2px_0_var(--primaria)]',
               )}
             >
-              {/* Handle de arrasto */}
-              <Celula className="pl-1">
-                {!ehFase && podeEditarTarefas && (
+              <Celula>
+                {arrastavel && (
                   <GripVertical
                     aria-hidden
-                    className="mx-auto size-3.5 cursor-grab text-texto-sutil/40 opacity-0 transition-opacity group-hover/linha:opacity-100"
+                    className="mx-auto size-3.5 cursor-grab text-texto-sutil opacity-0 transition-opacity group-hover/linha:opacity-100"
                   />
                 )}
               </Celula>
 
-              {/* N */}
-              <Celula className="pl-1 text-xs tabular-nums text-texto-sutil">{linha.numero}</Celula>
+              <Celula className="text-xs tabular-nums text-texto-sutil">{linha.numero}</Celula>
 
-              {/* % */}
               <Celula className="tabular-nums">
                 {ehFase ? (
-                  <span className="px-1 text-xs text-texto-secundario">
-                    {linha.percentualConcluido}%
-                  </span>
+                  <span className="px-1 text-xs text-texto-secundario">{linha.percentualConcluido}%</span>
                 ) : (
                   <CelulaEditavel
                     valor={String(linha.percentualConcluido)}
@@ -173,7 +172,6 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
-              {/* ✓ Concluir */}
               <Celula>
                 {!ehFase && podeEditarTarefas && (
                   <button
@@ -190,7 +188,7 @@ export function TabelaEstrutura({
                         percentualConcluido: linha.percentualConcluido === 100 ? 0 : 100,
                       })
                     }
-                    className="flex size-7 items-center justify-center rounded-lg transition-colors hover:bg-texto/6"
+                    className="mx-auto flex size-6 items-center justify-center rounded-md transition-colors hover:bg-texto/6"
                   >
                     <CheckCircle2
                       aria-hidden
@@ -203,9 +201,8 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
-              {/* Descrição */}
-              <Celula style={{ paddingLeft: linha.nivel * 16 }}>
-                <div className="flex items-center gap-1">
+              <Celula style={{ paddingLeft: 4 + linha.nivel * 16 }}>
+                <div className="flex w-full min-w-0 items-center gap-1">
                   {linha.critico && (
                     <span
                       aria-label="No caminho crítico"
@@ -215,7 +212,8 @@ export function TabelaEstrutura({
                   )}
                   <CelulaEditavel
                     valor={linha.titulo}
-                    editavel={editavelNome}
+                    editavel={podeEditarTarefas}
+                    quebrarTexto={modoEdicao}
                     className={ehFase ? 'font-semibold' : undefined}
                     aoSalvar={(valor) =>
                       ehFase
@@ -232,7 +230,6 @@ export function TabelaEstrutura({
                 </div>
               </Celula>
 
-              {/* Responsável */}
               <Celula>
                 {ehFase ? (
                   <span className="px-1 text-texto-sutil">—</span>
@@ -240,9 +237,10 @@ export function TabelaEstrutura({
                   <select
                     value={linha.responsavelId ?? ''}
                     disabled={!podeEditarTarefas}
-                    onChange={(evento) =>
-                      aoEditarTarefa({ id: linha.id, responsavelId: evento.target.value || null })
-                    }
+                    onChange={(evento) => {
+                      aoEditarTarefa({ id: linha.id, responsavelId: evento.target.value || null });
+                      evento.currentTarget.blur();
+                    }}
                     className={clsx(
                       'w-full truncate rounded-md bg-transparent px-1 py-0.5 text-sm',
                       'hover:bg-texto/6 focus:outline-none focus-visible:bg-texto/6',
@@ -263,7 +261,6 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
-              {/* Dep. */}
               <Celula>
                 {ehFase ? (
                   <span className="px-1 text-texto-sutil">—</span>
@@ -277,7 +274,6 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
-              {/* Início */}
               <Celula className="tabular-nums">
                 {ehFase || !linha.dataInicio ? (
                   <span className="px-1 text-xs text-texto-secundario">
@@ -299,10 +295,9 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
-              {/* Duração */}
               <Celula className="tabular-nums">
                 {ehFase ? (
-                  <span className="px-1 text-xs text-texto-secundario">
+                  <span className="whitespace-nowrap px-1 text-xs text-texto-secundario">
                     {formatarDias(linha.duracaoEmDias)}
                   </span>
                 ) : (
@@ -315,16 +310,12 @@ export function TabelaEstrutura({
                     className="text-xs"
                     aoSalvar={(valor) => {
                       const dias = Math.max(1, parseInt(valor, 10) || 1);
-                      aoEditarTarefa({
-                        id: linha.id,
-                        dataFim: somarDias(linha.dataInicio!, dias - 1),
-                      });
+                      aoEditarTarefa({ id: linha.id, dataFim: somarDias(linha.dataInicio!, dias - 1) });
                     }}
                   />
                 )}
               </Celula>
 
-              {/* Conclusão */}
               <Celula className="tabular-nums">
                 {ehFase || !linha.dataFim ? (
                   <span className="px-1 text-xs text-texto-secundario">
@@ -342,30 +333,40 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
-              {/* Ações */}
-              <Celula className="pr-2">
-                <div className="flex justify-end opacity-0 transition-opacity group-focus-within/linha:opacity-100 group-hover/linha:opacity-100">
+              <Celula className="justify-end pr-1">
+                <div className="flex opacity-0 transition-opacity group-focus-within/linha:opacity-100 group-hover/linha:opacity-100">
                   {ehFase
                     ? podeEditarFases && (
                         <>
                           <BotaoIcone
                             icone={Plus}
+                            tamanho="xs"
                             rotulo={`Adicionar tarefa em ${linha.titulo}`}
                             onClick={() => aoAdicionarTarefa(linha.id)}
                           />
                           <BotaoIcone
                             icone={Trash2}
+                            tamanho="xs"
                             rotulo={`Excluir a fase ${linha.titulo}`}
                             onClick={() => aoExcluirFase(linha)}
                           />
                         </>
                       )
                     : podeEditarTarefas && (
-                        <BotaoIcone
-                          icone={Trash2}
-                          rotulo={`Excluir ${linha.titulo}`}
-                          onClick={() => aoExcluirTarefa(linha)}
-                        />
+                        <>
+                          <BotaoIcone
+                            icone={CopyPlus}
+                            tamanho="xs"
+                            rotulo={`Duplicar ${linha.titulo}`}
+                            onClick={() => aoDuplicarTarefa(linha.id)}
+                          />
+                          <BotaoIcone
+                            icone={Trash2}
+                            tamanho="xs"
+                            rotulo={`Excluir ${linha.titulo}`}
+                            onClick={() => aoExcluirTarefa(linha)}
+                          />
+                        </>
                       )}
                 </div>
               </Celula>
@@ -377,7 +378,7 @@ export function TabelaEstrutura({
   );
 }
 
-function CabecalhoColuna({ children, altura }: { children: React.ReactNode; altura: number }) {
+function CabecalhoColuna({ children, altura }: { children: ReactNode; altura: number }) {
   return (
     <th
       scope="col"
@@ -389,18 +390,29 @@ function CabecalhoColuna({ children, altura }: { children: React.ReactNode; altu
   );
 }
 
+/**
+ * A altura vem de variáveis CSS definidas na tabela. Com altura fixa, um controle mais alto que a
+ * linha transborda visualmente em vez de esticá-la (e desalinhar o Gantt).
+ */
 function Celula({
   children,
   className,
   style,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   className?: string;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
 }) {
   return (
-    <td style={style} className={clsx('border-b border-borda/60 px-1 align-middle', className)}>
-      {children}
+    <td style={style} className="border-b border-borda/60 px-1 py-0 align-middle">
+      <div
+        className={clsx(
+          'flex h-(--altura-celula) min-h-(--altura-minima-celula) items-center py-(--respiro-celula)',
+          className,
+        )}
+      >
+        {children}
+      </div>
     </td>
   );
 }

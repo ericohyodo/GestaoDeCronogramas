@@ -24,6 +24,9 @@ interface EstadoEstrutura {
   renomearFase(id: string, nome: string): Promise<void>;
   excluirFase(id: string): Promise<void>;
   reordenarTarefas(entrada: ReordenarTarefasEntrada): Promise<void>;
+  duplicarTarefa(id: string): Promise<void>;
+  /** Copia fases e tarefas para outro cronograma (vazio); não mexe na estrutura em tela. */
+  copiarEstrutura(origemId: string, destinoId: string): Promise<void>;
   definirErro(erro: string | null): void;
 }
 
@@ -92,6 +95,16 @@ export const useEstruturaStore = create<EstadoEstrutura>()((set, get) => ({
     const cronogramaId = get().cronogramaId;
     await clienteDesktop.tarefas.reordenar(entrada);
     if (cronogramaId) await get().carregar(cronogramaId);
+  },
+
+  async duplicarTarefa(id) {
+    const cronogramaId = get().cronogramaId;
+    await clienteDesktop.tarefas.duplicar(id);
+    if (cronogramaId) await get().carregar(cronogramaId);
+  },
+
+  async copiarEstrutura(origemId, destinoId) {
+    await clienteDesktop.tarefas.copiarEstrutura({ origemId, destinoId });
   },
 
   definirErro(erro) {

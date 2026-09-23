@@ -13,8 +13,8 @@ interface PropsGraficoGantt {
   alturaDoCabecalho: number;
 }
 
-const ALTURA_DA_BARRA = 14;
-const ALTURA_DA_FASE = 8;
+const ALTURA_DA_BARRA = 20;
+const ALTURA_DA_FASE = 12;
 const DIAS_DE_MARGEM = 7;
 const MESES = [
   'jan',

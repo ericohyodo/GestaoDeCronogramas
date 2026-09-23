@@ -9,10 +9,10 @@ import type { RepositorioResponsaveis } from '../../electron/modulos/responsavei
 import type { Responsavel } from '../../electron/modulos/responsaveis/dominio/responsavel';
 import type { ConsultaDeCronogramas } from '../../electron/modulos/tarefas/aplicacao/portas/consulta-de-cronogramas';
 import type { ConsultaDeResponsaveis } from '../../electron/modulos/tarefas/aplicacao/portas/consulta-de-responsaveis';
-import type { Fase } from '../../electron/modulos/tarefas/dominio/fase';
+import { Fase } from '../../electron/modulos/tarefas/dominio/fase';
 import type { RepositorioFases } from '../../electron/modulos/tarefas/dominio/repositorio-fases';
 import type { RepositorioTarefas } from '../../electron/modulos/tarefas/dominio/repositorio-tarefas';
-import type { Tarefa } from '../../electron/modulos/tarefas/dominio/tarefa';
+import { Tarefa } from '../../electron/modulos/tarefas/dominio/tarefa';
 import type { HashDeSenha } from '../../electron/modulos/usuarios/aplicacao/portas/hash-de-senha';
 import type { RepositorioUsuarios } from '../../electron/modulos/usuarios/dominio/repositorio-usuarios';
 import type { Usuario } from '../../electron/modulos/usuarios/dominio/usuario';
@@ -79,6 +79,30 @@ export class RepositorioTarefasEmMemoria implements RepositorioTarefas {
   async excluir(id: string) {
     this.itens.delete(id);
   }
+  async atualizarOrdens(ordens: { id: string; ordem: number }[]) {
+    for (const { id, ordem } of ordens) {
+      const t = this.itens.get(id);
+      if (!t) continue;
+      this.itens.set(
+        id,
+        Tarefa.reconstituir({
+          id: t.id,
+          cronogramaId: t.cronogramaId,
+          faseId: t.faseId,
+          titulo: t.titulo,
+          descricao: t.descricao,
+          periodo: t.periodo,
+          percentualConcluido: t.percentualConcluido,
+          situacao: t.situacao,
+          responsavelId: t.responsavelId,
+          dependencias: t.dependencias,
+          ordem,
+          criadoEm: t.criadoEm,
+          atualizadoEm: t.atualizadoEm,
+        }),
+      );
+    }
+  }
 }
 
 export class RepositorioFasesEmMemoria implements RepositorioFases {
@@ -101,6 +125,23 @@ export class RepositorioFasesEmMemoria implements RepositorioFases {
   }
   async excluir(id: string) {
     this.itens.delete(id);
+  }
+  async atualizarOrdens(ordens: { id: string; ordem: number }[]) {
+    for (const { id, ordem } of ordens) {
+      const f = this.itens.get(id);
+      if (!f) continue;
+      this.itens.set(
+        id,
+        Fase.reconstituir({
+          id: f.id,
+          cronogramaId: f.cronogramaId,
+          nome: f.nome,
+          ordem,
+          criadoEm: f.criadoEm,
+          atualizadoEm: f.atualizadoEm,
+        }),
+      );
+    }
   }
 }
 
@@ -181,12 +222,20 @@ export class ConsultaDeCronogramasFalsa implements ConsultaDeCronogramas {
     private readonly periodos = new Map<string, { inicio: string; fim: string }>([
       ['cron-1', { inicio: '2026-10-01', fim: '2026-12-31' }],
     ]),
+    readonly arquivados = new Set<string>(),
   ) {}
   async existe(cronogramaId: string) {
     return this.periodos.has(cronogramaId);
   }
   async obterPeriodo(cronogramaId: string) {
     return this.periodos.get(cronogramaId) ?? null;
+  }
+  async listar() {
+    return [...this.periodos.keys()].map((id) => ({
+      id,
+      nome: `Projeto ${id}`,
+      arquivado: this.arquivados.has(id),
+    }));
   }
 }
 

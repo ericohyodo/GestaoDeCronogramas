@@ -7,10 +7,13 @@ import type { Relogio } from '../../nucleo/aplicacao/portas/relogio';
 import type { BancoDeDados } from '../../nucleo/infraestrutura/banco/conexao-sqlite';
 import type { RegistradorIpc } from '../../nucleo/infraestrutura/ipc/registrador-ipc';
 import { AtualizarTarefa } from './aplicacao/casos-de-uso/atualizar-tarefa';
+import { CopiarEstrutura } from './aplicacao/casos-de-uso/copiar-estrutura';
 import { CriarTarefa } from './aplicacao/casos-de-uso/criar-tarefa';
 import { DeslocarSucessoras } from './aplicacao/casos-de-uso/deslocar-sucessoras';
+import { DuplicarTarefa } from './aplicacao/casos-de-uso/duplicar-tarefa';
 import { ExcluirTarefa } from './aplicacao/casos-de-uso/excluir-tarefa';
 import { AtualizarFase, CriarFase, ExcluirFase } from './aplicacao/casos-de-uso/gerenciar-fases';
+import { ListarAgenda } from './aplicacao/casos-de-uso/listar-agenda';
 import { ObterEstrutura } from './aplicacao/casos-de-uso/obter-estrutura';
 import { ReordenarTarefas } from './aplicacao/casos-de-uso/reordenar-tarefas';
 import type { ConsultaDeCronogramas } from './aplicacao/portas/consulta-de-cronogramas';
@@ -62,5 +65,19 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): void {
     atualizarFase: new AtualizarFase(repositorioFases, deps.relogio),
     excluirFase: new ExcluirFase(repositorioFases),
     reordenar: new ReordenarTarefas(repositorio),
+    duplicar: new DuplicarTarefa(repositorio, repositorioFases, deps.relogio, deps.geradorDeId),
+    copiarEstrutura: new CopiarEstrutura(
+      repositorio,
+      repositorioFases,
+      deps.consultaDeCronogramas,
+      deps.relogio,
+      deps.geradorDeId,
+    ),
+    listarAgenda: new ListarAgenda(
+      repositorio,
+      repositorioFases,
+      deps.consultaDeCronogramas,
+      deps.consultaDeResponsaveis,
+    ),
   });
 }

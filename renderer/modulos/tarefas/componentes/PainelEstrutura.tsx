@@ -1,6 +1,6 @@
 'use client';
 
-import { GanttChartSquare, Layers, ListTodo, Maximize2, Plus } from 'lucide-react';
+import { GanttChartSquare, Layers, ListTodo, Maximize2, PencilLine, Plus } from 'lucide-react';
 import { type PointerEvent, useCallback, useEffect, useRef, useState } from 'react';
 import type { ResponsavelDTO } from '@contratos/responsaveis.contrato';
 import type {
@@ -19,9 +19,11 @@ import { useEstruturaStore } from '../store/use-estrutura-store';
 import { DialogoDeslocamento } from './DialogoDeslocamento';
 import { FormularioFase } from './FormularioFase';
 import { GraficoGantt } from './GraficoGantt';
-import { TabelaEstrutura } from './TabelaEstrutura';
+import { LARGURA_MINIMA_TABELA, TabelaEstrutura } from './TabelaEstrutura';
 
 const ALTURA_DA_LINHA = 28;
+/** No modo edição não há Gantt para alinhar: linhas mais altas, que crescem com o texto. */
+const ALTURA_DA_LINHA_EDICAO = 40;
 const ALTURA_DO_CABECALHO = 56;
 /** Divisão entre lista e Gantt, em % da largura; arrastável pelo divisor. */
 const DIVISAO_PADRAO = 50;
@@ -55,6 +57,7 @@ export function PainelEstrutura({
   const renomearFase = useEstruturaStore((estado) => estado.renomearFase);
   const excluirFase = useEstruturaStore((estado) => estado.excluirFase);
   const reordenarTarefas = useEstruturaStore((estado) => estado.reordenarTarefas);
+  const duplicarTarefa = useEstruturaStore((estado) => estado.duplicarTarefa);
   const definirErro = useEstruturaStore((estado) => estado.definirErro);
 
   const [criandoFase, setCriandoFase] = useState(false);
@@ -62,6 +65,7 @@ export function PainelEstrutura({
   const [tarefaDoImpacto, setTarefaDoImpacto] = useState<string | null>(null);
   const [paraExcluir, setParaExcluir] = useState<LinhaEstruturaDTO | null>(null);
   const [divisao, setDivisao] = useState(DIVISAO_PADRAO);
+  const [modoEdicao, setModoEdicao] = useState(false);
   const refScroll = useRef<HTMLDivElement>(null);
 
   const enquadrar = () => {
@@ -139,6 +143,14 @@ export function PainelEstrutura({
           <Botao icone={Maximize2} onClick={enquadrar}>
             Enquadrar
           </Botao>
+          <Botao
+            icone={modoEdicao ? GanttChartSquare : PencilLine}
+            aria-pressed={modoEdicao}
+            onClick={() => setModoEdicao((ativo) => !ativo)}
+            className={modoEdicao ? 'border-primaria text-primaria' : undefined}
+          >
+            {modoEdicao ? 'Mostrar Gantt' : 'Modo edição'}
+          </Botao>
           {podeEditarAlgo && (
             <>
               {podeEditarFases && (
@@ -176,16 +188,23 @@ export function PainelEstrutura({
         )
       ) : (
         <div ref={refScroll} className="flex min-h-0 flex-1 overflow-y-auto border-t border-borda/60">
-          <div style={{ width: `${divisao}%` }} className="min-w-0 shrink-0">
+          <div
+            style={modoEdicao ? undefined : { width: `${divisao}%`, minWidth: LARGURA_MINIMA_TABELA }}
+            className={modoEdicao ? 'min-w-0 flex-1' : 'min-w-0 shrink-0'}
+          >
             <TabelaEstrutura
               linhas={linhas}
               responsaveis={responsaveis}
               podeEditarTarefas={podeEditarTarefas}
               podeEditarFases={podeEditarFases}
-              alturaDaLinha={ALTURA_DA_LINHA}
+              alturaDaLinha={modoEdicao ? ALTURA_DA_LINHA_EDICAO : ALTURA_DA_LINHA}
               alturaDoCabecalho={ALTURA_DO_CABECALHO}
+              modoEdicao={modoEdicao}
               aoEditarTarefa={editarTarefa}
               aoExcluirTarefa={setParaExcluir}
+              aoDuplicarTarefa={(id) =>
+                duplicarTarefa(id).catch((falha: unknown) => definirErro(mensagemDeErro(falha)))
+              }
               aoRenomearFase={(id, nome) =>
                 renomearFase(id, nome).catch((falha: unknown) => definirErro(mensagemDeErro(falha)))
               }
@@ -199,24 +218,28 @@ export function PainelEstrutura({
             />
           </div>
 
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="Ajustar a divisão entre a lista e o Gantt"
-            onPointerDown={arrastarDivisor}
-            className="w-1.5 shrink-0 cursor-col-resize bg-borda/60 transition-colors hover:bg-primaria/60"
-          />
+          {!modoEdicao && (
+            <>
+              <div
+                role="separator"
+                aria-orientation="vertical"
+                aria-label="Ajustar a divisão entre a lista e o Gantt"
+                onPointerDown={arrastarDivisor}
+                className="w-1.5 shrink-0 cursor-col-resize bg-borda/60 transition-colors hover:bg-primaria/60"
+              />
 
-          {/* `flex-1` em vez de porcentagem: o divisor ocupa 6px e não pode estourar a largura. */}
-          <div className="min-w-0 flex-1 pr-2">
-            <GraficoGantt
-              linhas={linhas}
-              inicio={estrutura?.inicio ?? periodo.inicio}
-              fim={estrutura?.fim ?? periodo.fim}
-              alturaDaLinha={ALTURA_DA_LINHA}
-              alturaDoCabecalho={ALTURA_DO_CABECALHO}
-            />
-          </div>
+              {/* `flex-1` em vez de porcentagem: o divisor ocupa 6px e não pode estourar a largura. */}
+              <div className="min-w-0 flex-1 pr-2">
+                <GraficoGantt
+                  linhas={linhas}
+                  inicio={estrutura?.inicio ?? periodo.inicio}
+                  fim={estrutura?.fim ?? periodo.fim}
+                  alturaDaLinha={ALTURA_DA_LINHA}
+                  alturaDoCabecalho={ALTURA_DO_CABECALHO}
+                />
+              </div>
+            </>
+          )}
         </div>
       )}
 

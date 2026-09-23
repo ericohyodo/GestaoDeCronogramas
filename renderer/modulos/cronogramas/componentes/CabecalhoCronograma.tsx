@@ -3,7 +3,7 @@
 import { ArrowLeft, CalendarDays, Pencil, Timer, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import type { CronogramaDTO } from '@contratos/cronogramas.contrato';
 import { formatarDias, formatarPeriodo } from '@/compartilhado/formatacao';
 import { Botao } from '@/compartilhado/ui/Botao';
@@ -18,9 +18,11 @@ interface PropsCabecalhoCronograma {
   cronograma: CronogramaDTO;
   /** Só o perfil de planejamento edita ou exclui o cronograma. */
   podeEditar: boolean;
+  /** Ações de outros módulos, compostas pela tela (ex.: usar como modelo). */
+  acoesExtras?: ReactNode;
 }
 
-export function CabecalhoCronograma({ cronograma, podeEditar }: PropsCabecalhoCronograma) {
+export function CabecalhoCronograma({ cronograma, podeEditar, acoesExtras }: PropsCabecalhoCronograma) {
   const router = useRouter();
   const excluir = useCronogramasStore((estado) => estado.excluir);
   const [editando, setEditando] = useState(false);
@@ -55,16 +57,19 @@ export function CabecalhoCronograma({ cronograma, podeEditar }: PropsCabecalhoCr
           </div>
         }
         acoes={
-          podeEditar && (
-            <>
-              <Botao icone={Pencil} onClick={() => setEditando(true)}>
-                Editar
-              </Botao>
-              <Botao variante="fantasma" icone={Trash2} onClick={() => setExcluindo(true)}>
-                Excluir
-              </Botao>
-            </>
-          )
+          <>
+            {acoesExtras}
+            {podeEditar && (
+              <>
+                <Botao icone={Pencil} onClick={() => setEditando(true)}>
+                  Editar
+                </Botao>
+                <Botao variante="fantasma" icone={Trash2} onClick={() => setExcluindo(true)}>
+                  Excluir
+                </Botao>
+              </>
+            )}
+          </>
         }
       />
       {cronograma.descricao && (

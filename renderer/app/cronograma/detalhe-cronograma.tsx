@@ -1,11 +1,11 @@
 'use client';
 
-import { SearchX } from 'lucide-react';
+import { Copy, SearchX } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
-import { classeBotao } from '@/compartilhado/ui/Botao';
+import { Botao, classeBotao } from '@/compartilhado/ui/Botao';
 import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { CabecalhoCronograma } from '@/modulos/cronogramas/componentes/CabecalhoCronograma';
@@ -13,6 +13,7 @@ import { useCronogramasStore } from '@/modulos/cronogramas/store/use-cronogramas
 import { useResponsaveisStore } from '@/modulos/responsaveis/store/use-responsaveis-store';
 import { PainelEstrutura } from '@/modulos/tarefas/componentes/PainelEstrutura';
 import { usePermissao } from '@/modulos/usuarios/store/use-sessao-store';
+import { DialogoUsarComoModelo } from './dialogo-usar-como-modelo';
 
 /** Compõe os módulos Cronogramas, Tarefas e Responsáveis; os módulos não se conhecem entre si. */
 export function DetalheCronograma() {
@@ -26,6 +27,7 @@ export function DetalheCronograma() {
 
   // A falha fica associada ao id: ao navegar para outro cronograma, o erro anterior some sozinho.
   const [falha, setFalha] = useState<{ id: string; mensagem: string } | null>(null);
+  const [usandoComoModelo, setUsandoComoModelo] = useState(false);
   const erro = falha?.id === id ? falha.mensagem : null;
 
   useEffect(() => {
@@ -60,7 +62,22 @@ export function DetalheCronograma() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5 p-6">
-      <CabecalhoCronograma cronograma={cronograma} podeEditar={podeEditarFases} />
+      <CabecalhoCronograma
+        cronograma={cronograma}
+        podeEditar={podeEditarFases}
+        acoesExtras={
+          podeEditarFases && (
+            <Botao icone={Copy} onClick={() => setUsandoComoModelo(true)}>
+              Usar como modelo
+            </Botao>
+          )
+        }
+      />
+      <DialogoUsarComoModelo
+        aberto={usandoComoModelo}
+        modelo={cronograma}
+        aoFechar={() => setUsandoComoModelo(false)}
+      />
       <PainelEstrutura
         cronogramaId={cronograma.id}
         periodo={{ inicio: cronograma.dataInicio, fim: cronograma.dataFim }}

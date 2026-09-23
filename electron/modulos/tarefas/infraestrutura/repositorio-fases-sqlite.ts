@@ -13,8 +13,13 @@ interface LinhaFase {
 
 export class RepositorioFasesSqlite implements RepositorioFases {
   private readonly sql;
+  private readonly atualizarOrdensEmTransacao;
 
   constructor(db: BancoDeDados) {
+    const atualizarOrdem = db.prepare<[number, string]>('UPDATE fases SET ordem = ? WHERE id = ?');
+    this.atualizarOrdensEmTransacao = db.transaction((ordens: { id: string; ordem: number }[]) => {
+      for (const item of ordens) atualizarOrdem.run(item.ordem, item.id);
+    });
     this.sql = {
       listarPorCronograma: db.prepare<[string], LinhaFase>(
         'SELECT * FROM fases WHERE cronograma_id = ? ORDER BY ordem',
@@ -60,6 +65,11 @@ export class RepositorioFasesSqlite implements RepositorioFases {
 
   async excluir(id: string): Promise<void> {
     this.sql.excluir.run(id);
+  }
+
+  async atualizarOrdens(ordens: { id: string; ordem: number }[]): Promise<void> {
+    if (ordens.length === 0) return;
+    this.atualizarOrdensEmTransacao(ordens);
   }
 }
 

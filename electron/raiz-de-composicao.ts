@@ -73,6 +73,7 @@ export async function montarAplicacao(opcoes: {
     consultaDeCronogramas: {
       existe: (id) => cronogramas.consultas.existe(id),
       obterPeriodo: (id) => cronogramas.consultas.obterPeriodo(id),
+      listar: () => cronogramas.consultas.listar(),
     },
     consultaDeResponsaveis: {
       obterNomes: (ids) => responsaveis.consultas.obterNomes(ids),

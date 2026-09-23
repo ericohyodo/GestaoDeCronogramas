@@ -77,6 +77,26 @@ export interface ReordenarTarefasEntrada {
   ordens: { id: string; ordem: number }[];
 }
 
+/** Copia fases e tarefas de um cronograma para outro recém-criado (uso como modelo). */
+export interface CopiarEstruturaEntrada {
+  origemId: string;
+  destinoId: string;
+}
+
+/** Tarefa de qualquer cronograma não arquivado, com os nomes prontos para os relatórios. */
+export interface ItemAgendaDTO {
+  tarefaId: string;
+  titulo: string;
+  cronogramaId: string;
+  cronogramaNome: string;
+  faseNome: string | null;
+  responsavelId: string | null;
+  responsavelNome: string | null;
+  dataInicio: string;
+  dataFim: string;
+  percentualConcluido: number;
+}
+
 /**
  * Linha da estrutura analítica (fases e tarefas já ordenadas, numeradas e com o
  * cálculo de folga/caminho crítico pronto).

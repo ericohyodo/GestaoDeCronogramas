@@ -36,6 +36,9 @@ export const CANAIS = {
     atualizarFase: 'tarefas:atualizar-fase',
     excluirFase: 'tarefas:excluir-fase',
     reordenar: 'tarefas:reordenar',
+    duplicar: 'tarefas:duplicar',
+    copiarEstrutura: 'tarefas:copiar-estrutura',
+    listarAgenda: 'tarefas:listar-agenda',
   },
   preferencias: {
     obter: 'preferencias:obter',

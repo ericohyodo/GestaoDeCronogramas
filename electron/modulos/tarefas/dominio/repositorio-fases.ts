@@ -7,4 +7,6 @@ export interface RepositorioFases {
   proximaOrdemDeTopo(cronogramaId: string): Promise<number>;
   salvar(fase: Fase): Promise<void>;
   excluir(id: string): Promise<void>;
+  /** Atualiza só o campo `ordem` de várias fases numa única transação. */
+  atualizarOrdens(ordens: { id: string; ordem: number }[]): Promise<void>;
 }

@@ -26,6 +26,7 @@ export interface ModuloCronogramas {
   consultas: {
     existe(id: string): Promise<boolean>;
     obterPeriodo(id: string): Promise<{ inicio: string; fim: string } | null>;
+    listar(): Promise<{ id: string; nome: string; arquivado: boolean }[]>;
   };
 }
 
@@ -46,6 +47,13 @@ export function montarModuloCronogramas(deps: DependenciasModuloCronogramas): Mo
       async obterPeriodo(id) {
         const cronograma = await repositorio.obterPorId(id);
         return cronograma ? { inicio: cronograma.periodo.inicio, fim: cronograma.periodo.fim } : null;
+      },
+      async listar() {
+        return (await repositorio.listar()).map((cronograma) => ({
+          id: cronograma.id,
+          nome: cronograma.nome,
+          arquivado: cronograma.situacao === 'arquivado',
+        }));
       },
     },
   };

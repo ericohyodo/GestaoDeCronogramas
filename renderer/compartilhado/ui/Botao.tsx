@@ -3,7 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import type { ComponentProps } from 'react';
 
 type Variante = 'primario' | 'secundario' | 'fantasma' | 'perigo';
-type Tamanho = 'sm' | 'md';
+type Tamanho = 'xs' | 'sm' | 'md';
 
 const VARIANTES: Record<Variante, string> = {
   primario: 'bg-primaria text-sobre-primaria shadow-sm hover:bg-primaria-hover',
@@ -14,11 +14,13 @@ const VARIANTES: Record<Variante, string> = {
 };
 
 const TAMANHOS: Record<Tamanho, string> = {
+  xs: 'h-6 gap-1 px-2 text-xs',
   sm: 'h-8 gap-1.5 px-2.5 text-xs',
   md: 'h-9 gap-2 px-3.5 text-sm',
 };
 
 const TAMANHOS_ICONE: Record<Tamanho, string> = {
+  xs: 'size-6',
   sm: 'size-8',
   md: 'size-9',
 };
@@ -53,7 +55,7 @@ export function Botao({
       className={clsx(BASE, VARIANTES[variante], TAMANHOS[tamanho], className)}
       {...props}
     >
-      {Icone && <Icone aria-hidden className={tamanho === 'sm' ? 'size-3.5' : 'size-4'} />}
+      {Icone && <Icone aria-hidden className={tamanho === 'md' ? 'size-4' : 'size-3.5'} />}
       {children}
     </button>
   );
@@ -84,7 +86,7 @@ export function BotaoIcone({
       className={clsx(BASE, VARIANTES[variante], TAMANHOS_ICONE[tamanho], className)}
       {...props}
     >
-      <Icone aria-hidden className="size-4" />
+      <Icone aria-hidden className={tamanho === 'xs' ? 'size-3.5' : 'size-4'} />
     </button>
   );
 }
