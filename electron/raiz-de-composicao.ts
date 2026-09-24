@@ -4,6 +4,7 @@ import type { AparenciaDTO } from '@contratos/aparencia.contrato';
 import { CANAIS } from '@contratos/canais';
 import { suportaVidroNativo } from './janela/aparencia';
 import { montarModuloCronogramas } from './modulos/cronogramas';
+import { montarModuloImpressao } from './modulos/impressao';
 import { montarModuloPreferencias } from './modulos/preferencias';
 import { montarModuloResponsaveis } from './modulos/responsaveis';
 import { montarModuloTarefas } from './modulos/tarefas';
@@ -33,6 +34,9 @@ export interface Aplicacao {
  */
 export async function montarAplicacao(opcoes: {
   ehUrlConfiavel(url: string): boolean;
+  /** Origem do renderer, sem barra final (`app://-` ou o servidor de desenvolvimento). */
+  urlDoRenderer: string;
+  caminhoDoPreload: string;
 }): Promise<Aplicacao> {
   const pasta = resolverPastaDoBanco();
   garantirPastaGravavel(pasta);
@@ -79,6 +83,13 @@ export async function montarAplicacao(opcoes: {
       obterNomes: (ids) => responsaveis.consultas.obterNomes(ids),
       existe: (id) => responsaveis.consultas.existe(id),
     },
+  });
+
+  montarModuloImpressao({
+    ipc,
+    urlBase: opcoes.urlDoRenderer,
+    caminhoDoPreload: opcoes.caminhoDoPreload,
+    consultaDeCronogramas: { obterNome: (id) => cronogramas.consultas.obterNome(id) },
   });
 
   const preferencias = montarModuloPreferencias({ db, ipc });

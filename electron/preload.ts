@@ -54,6 +54,9 @@ const api: ApiDesktop = {
     copiarEstrutura: (entrada) => invocar(CANAIS.tarefas.copiarEstrutura, entrada),
     listarAgenda: () => invocar(CANAIS.tarefas.listarAgenda),
   },
+  impressao: {
+    exportarPdf: (cronogramaId) => invocar(CANAIS.impressao.exportarPdf, cronogramaId),
+  },
   preferencias: {
     obter: () => invocar(CANAIS.preferencias.obter),
     definirTema: (tema) => invocar(CANAIS.preferencias.definirTema, tema),

@@ -7,6 +7,7 @@ import { type Aplicacao, montarAplicacao } from './raiz-de-composicao';
 /** Definida pelo script `npm run dev`: carrega o servidor do Next.js em vez do export estático. */
 const URL_DESENVOLVIMENTO = process.env.ELECTRON_RENDERER_URL;
 const URL_INICIAL = URL_DESENVOLVIMENTO ?? `${ORIGEM_APP}/`;
+const CAMINHO_DO_PRELOAD = path.join(__dirname, 'preload.js');
 
 function ehUrlConfiavel(url: string): boolean {
   if (URL_DESENVOLVIMENTO && url.startsWith(URL_DESENVOLVIMENTO)) return true;
@@ -37,7 +38,11 @@ if (!app.requestSingleInstanceLock()) {
 
 async function iniciar(): Promise<void> {
   try {
-    aplicacao = await montarAplicacao({ ehUrlConfiavel });
+    aplicacao = await montarAplicacao({
+      ehUrlConfiavel,
+      urlDoRenderer: URL_INICIAL.replace(/\/$/, ''),
+      caminhoDoPreload: CAMINHO_DO_PRELOAD,
+    });
   } catch (erro) {
     falharAoIniciar(erro);
     return;
@@ -48,7 +53,7 @@ async function iniciar(): Promise<void> {
 
   janela = criarJanelaPrincipal({
     url: URL_INICIAL,
-    caminhoDoPreload: path.join(__dirname, 'preload.js'),
+    caminhoDoPreload: CAMINHO_DO_PRELOAD,
     vidroNativo: aplicacao.aparencia.vidroNativo,
     ehUrlConfiavel,
   });

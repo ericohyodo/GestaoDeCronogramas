@@ -196,3 +196,20 @@
     }
   }
 }
+
+/* PDF do cronograma (rota /impressao): sempre papel branco, qualquer que seja o tema. */
+@media print {
+  html,
+  body {
+    height: auto;
+    background: #fff !important;
+    color: #0f1b2d;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Indicador do Next.js em desenvolvimento. */
+  nextjs-portal {
+    display: none !important;
+  }
+}

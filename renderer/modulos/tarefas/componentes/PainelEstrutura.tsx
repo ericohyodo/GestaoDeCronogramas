@@ -19,7 +19,8 @@ import { useEstruturaStore } from '../store/use-estrutura-store';
 import { DialogoDeslocamento } from './DialogoDeslocamento';
 import { FormularioFase } from './FormularioFase';
 import { GraficoGantt } from './GraficoGantt';
-import { LARGURA_MINIMA_TABELA, TabelaEstrutura } from './TabelaEstrutura';
+import { DialogoEvidencia } from './DialogoEvidencia';
+import { LARGURA_MINIMA_TABELA, linhasExibidas, TabelaEstrutura } from './TabelaEstrutura';
 
 const ALTURA_DA_LINHA = 28;
 /** No modo edição não há Gantt para alinhar: linhas mais altas, que crescem com o texto. */
@@ -66,10 +67,23 @@ export function PainelEstrutura({
   const [paraExcluir, setParaExcluir] = useState<LinhaEstruturaDTO | null>(null);
   const [divisao, setDivisao] = useState(DIVISAO_PADRAO);
   const [modoEdicao, setModoEdicao] = useState(false);
+  const [fasesRecolhidas, setFasesRecolhidas] = useState<ReadonlySet<string>>(new Set());
+  const [evidenciaAberta, setEvidenciaAberta] = useState<LinhaEstruturaDTO | null>(null);
+
+  const alternarFase = (faseId: string) =>
+    setFasesRecolhidas((atuais) => {
+      const novas = new Set(atuais);
+      if (!novas.delete(faseId)) novas.add(faseId);
+      return novas;
+    });
   const refScroll = useRef<HTMLDivElement>(null);
+
+  // Trocar a `key` do Gantt recria o componente e desfaz o zoom horizontal.
+  const [versaoDoEnquadramento, setVersaoDoEnquadramento] = useState(0);
 
   const enquadrar = () => {
     setDivisao(DIVISAO_PADRAO);
+    setVersaoDoEnquadramento((versao) => versao + 1);
     refScroll.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -200,6 +214,9 @@ export function PainelEstrutura({
               alturaDaLinha={modoEdicao ? ALTURA_DA_LINHA_EDICAO : ALTURA_DA_LINHA}
               alturaDoCabecalho={ALTURA_DO_CABECALHO}
               modoEdicao={modoEdicao}
+              fasesRecolhidas={fasesRecolhidas}
+              aoAlternarFase={alternarFase}
+              aoAbrirEvidencia={setEvidenciaAberta}
               aoEditarTarefa={editarTarefa}
               aoExcluirTarefa={setParaExcluir}
               aoDuplicarTarefa={(id) =>
@@ -231,7 +248,8 @@ export function PainelEstrutura({
               {/* `flex-1` em vez de porcentagem: o divisor ocupa 6px e não pode estourar a largura. */}
               <div className="min-w-0 flex-1 pr-2">
                 <GraficoGantt
-                  linhas={linhas}
+                  key={versaoDoEnquadramento}
+                  linhas={linhasExibidas(linhas, fasesRecolhidas)}
                   inicio={estrutura?.inicio ?? periodo.inicio}
                   fim={estrutura?.fim ?? periodo.fim}
                   alturaDaLinha={ALTURA_DA_LINHA}
@@ -255,6 +273,12 @@ export function PainelEstrutura({
           setImpacto(null);
           setTarefaDoImpacto(null);
         }}
+      />
+      <DialogoEvidencia
+        tarefa={evidenciaAberta}
+        editavel={podeEditarTarefas}
+        aoSalvar={(id, evidencia) => editarTarefa({ id, evidencia })}
+        aoFechar={() => setEvidenciaAberta(null)}
       />
       <DialogoConfirmacao
         aberto={paraExcluir !== null}

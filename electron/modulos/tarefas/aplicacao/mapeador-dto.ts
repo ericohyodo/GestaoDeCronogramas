@@ -14,6 +14,7 @@ export function paraTarefaDTO(tarefa: Tarefa): TarefaDTO {
     percentualConcluido: tarefa.percentualConcluido,
     situacao: tarefa.situacao,
     responsavelId: tarefa.responsavelId,
+    evidencia: tarefa.evidencia,
     dependencias: tarefa.dependencias,
     ordem: tarefa.ordem,
     criadoEm: tarefa.criadoEm.toISOString(),

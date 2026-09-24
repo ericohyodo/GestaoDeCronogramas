@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import clsx from 'clsx';
+import { type PointerEvent, useEffect, useRef, useState } from 'react';
 import type { LinhaEstruturaDTO } from '@contratos/tarefas.contrato';
 import { diasEntreDatas, formatarData, formatarDias, hojeIso, somarDias } from '@/compartilhado/formatacao';
 
@@ -16,6 +17,31 @@ interface PropsGraficoGantt {
 const ALTURA_DA_BARRA = 20;
 const ALTURA_DA_FASE = 12;
 const DIAS_DE_MARGEM = 7;
+const ZOOM_POR_PASSO = 1.25;
+/** Limite do zoom: além disso cada dia ocuparia mais que isto e não há o que ganhar. */
+const PIXELS_POR_DIA_MAXIMO = 64;
+/** Com esta escala cabe o número de cada dia no cabeçalho. */
+const PIXELS_POR_DIA_PARA_MOSTRAR_DIAS = 22;
+
+/**
+ * Zoom só horizontal: muda a escala do tempo, nunca a altura das linhas, que precisa bater com a
+ * lista. O deslocamento é aplicado no desenho (e não com uma barra de rolagem), porque um
+ * contêiner com rolagem horizontal quebraria o cabeçalho fixo no topo.
+ */
+interface Vista {
+  zoom: number;
+  /** Pixels já rolados para a direita, na escala atual. */
+  deslocamento: number;
+}
+
+function limitarVista(vista: Vista, largura: number, zoomMaximo: number): Vista {
+  const zoom = Math.min(zoomMaximo, Math.max(1, vista.zoom));
+  const deslocamento = Math.min(largura * zoom - largura, Math.max(0, vista.deslocamento));
+  return { zoom, deslocamento };
+}
+
+const zoomMaximoPara = (largura: number, totalDeDias: number) =>
+  largura > 0 ? Math.max(1, (PIXELS_POR_DIA_MAXIMO * totalDeDias) / largura) : 1;
 const MESES = [
   'jan',
   'fev',
@@ -58,9 +84,76 @@ export function GraficoGantt({
   const inicioComMargem = somarDias(inicio, -DIAS_DE_MARGEM);
   const fimComMargem = somarDias(fim, DIAS_DE_MARGEM);
   const totalDeDias = Math.max(1, diasEntreDatas(inicioComMargem, fimComMargem) + 1);
-  const pixelsPorDia = largura / totalDeDias;
-  const x = (data: string) => diasEntreDatas(inicioComMargem, data) * pixelsPorDia;
-  const xAposOFim = (data: string) => (diasEntreDatas(inicioComMargem, data) + 1) * pixelsPorDia;
+
+  const [vistaDesejada, setVistaDesejada] = useState<Vista>({ zoom: 1, deslocamento: 0 });
+
+  // Ctrl + roda: zoom ancorado no cursor. Shift + roda ou gesto horizontal: desloca.
+  // Listener nativo porque o onWheel do React é passivo e não impede o zoom da página.
+  useEffect(() => {
+    const elemento = container.current;
+    if (!elemento) return;
+    const aoRolar = (evento: WheelEvent) => {
+      const caixa = elemento.getBoundingClientRect();
+      if (caixa.width === 0) return;
+      const zoomMaximo = zoomMaximoPara(caixa.width, totalDeDias);
+
+      if (evento.ctrlKey) {
+        evento.preventDefault();
+        const cursor = evento.clientX - caixa.left;
+        // Proporcional ao giro: um "clique" da roda (~100px) dá ZOOM_POR_PASSO, e a pinça do
+        // touchpad, que manda muitos eventos pequenos, fica suave.
+        const fator = Math.exp((-evento.deltaY / 100) * Math.log(ZOOM_POR_PASSO));
+        setVistaDesejada((atual) => {
+          const vista = limitarVista(atual, caixa.width, zoomMaximo);
+          const zoom = Math.min(zoomMaximo, Math.max(1, vista.zoom * fator));
+          // O dia que estava sob o cursor continua sob o cursor depois do zoom.
+          const deslocamento = ((vista.deslocamento + cursor) / vista.zoom) * zoom - cursor;
+          return limitarVista({ zoom, deslocamento }, caixa.width, zoomMaximo);
+        });
+        return;
+      }
+
+      const horizontal = evento.shiftKey ? evento.deltaY : evento.deltaX;
+      if (horizontal === 0) return;
+      evento.preventDefault();
+      setVistaDesejada((atual) =>
+        limitarVista(
+          { ...atual, deslocamento: atual.deslocamento + horizontal },
+          caixa.width,
+          zoomMaximo,
+        ),
+      );
+    };
+    elemento.addEventListener('wheel', aoRolar, { passive: false });
+    return () => elemento.removeEventListener('wheel', aoRolar);
+  }, [totalDeDias]);
+
+  // A largura muda com a janela e com o divisor: a vista é sempre reenquadrada nos limites.
+  const zoomMaximo = zoomMaximoPara(largura, totalDeDias);
+  const { zoom, deslocamento } = limitarVista(vistaDesejada, largura, zoomMaximo);
+  const pixelsPorDia = (largura * zoom) / totalDeDias;
+  const x = (data: string) => diasEntreDatas(inicioComMargem, data) * pixelsPorDia - deslocamento;
+  const xAposOFim = (data: string) => x(data) + pixelsPorDia;
+
+  const arrastar = (evento: PointerEvent<SVGSVGElement>) => {
+    if (zoom <= 1 || evento.button !== 0) return;
+    const origem = evento.clientX;
+    const deslocamentoInicial = deslocamento;
+    const mover = (movimento: globalThis.PointerEvent) =>
+      setVistaDesejada(
+        limitarVista(
+          { zoom, deslocamento: deslocamentoInicial - (movimento.clientX - origem) },
+          largura,
+          zoomMaximo,
+        ),
+      );
+    const soltar = () => {
+      window.removeEventListener('pointermove', mover);
+      window.removeEventListener('pointerup', soltar);
+    };
+    window.addEventListener('pointermove', mover);
+    window.addEventListener('pointerup', soltar);
+  };
 
   const alturaDoCorpo = Math.max(linhas.length * alturaDaLinha, alturaDaLinha);
   const barras = new Map<string, { x1: number; x2: number; y: number }>();
@@ -83,6 +176,7 @@ export function GraficoGantt({
           <div
             className="vidro-forte sticky top-0 z-20 border-b border-borda"
             style={{ height: alturaDoCabecalho }}
+            title="Ctrl + roda do mouse: zoom na horizontal · arraste ou Shift + roda: mover"
           >
             <CabecalhoDoTempo
               inicio={inicioComMargem}
@@ -90,15 +184,22 @@ export function GraficoGantt({
               largura={largura}
               altura={alturaDoCabecalho}
               pixelsPorDia={pixelsPorDia}
+              deslocamento={deslocamento}
             />
+            {zoom > 1 && (
+              <span className="pointer-events-none absolute right-1.5 top-1 rounded bg-primaria/12 px-1.5 text-[10px] font-semibold tabular-nums text-primaria">
+                {Math.round(zoom * 100)}%
+              </span>
+            )}
           </div>
 
           <svg
             width={largura}
             height={alturaDoCorpo}
+            onPointerDown={arrastar}
+            className={clsx('block', zoom > 1 && 'cursor-grab active:cursor-grabbing')}
             role="img"
             aria-label="Gráfico de Gantt do cronograma"
-            className="block"
           >
             {/* Divisões de mês, para leitura das datas */}
             {listarMeses(inicioComMargem, fimComMargem).map((mes) => (
@@ -226,33 +327,41 @@ function CabecalhoDoTempo({
   largura,
   altura,
   pixelsPorDia,
+  deslocamento,
 }: {
   inicio: string;
   fim: string;
   largura: number;
   altura: number;
   pixelsPorDia: number;
+  deslocamento: number;
 }) {
   const meses = listarMeses(inicio, fim);
-  const x = (data: string) => diasEntreDatas(inicio, data) * pixelsPorDia;
-  // Em janelas curtas cabe a régua de semanas embaixo dos meses.
-  const semanas = pixelsPorDia * 7 >= 26 ? listarSemanas(inicio, fim) : [];
+  const x = (data: string) => diasEntreDatas(inicio, data) * pixelsPorDia - deslocamento;
+  const visivel = (data: string) => x(data) > -pixelsPorDia * 7 && x(data) < largura;
+  // Quanto mais zoom, mais fina a régua: dias, depois semanas, depois só os meses.
+  const mostrarDias = pixelsPorDia >= PIXELS_POR_DIA_PARA_MOSTRAR_DIAS;
+  const dias = mostrarDias ? listarDias(inicio, fim).filter(visivel) : [];
+  const semanas = !mostrarDias && pixelsPorDia * 7 >= 26 ? listarSemanas(inicio, fim).filter(visivel) : [];
 
   return (
     <svg width={largura} height={altura} aria-hidden className="block">
       {meses.map((mes) => {
         const inicioDoMes = Math.max(x(mes.inicio), 0);
         const fimDoMes = Math.min(x(mes.fimExclusivo), largura);
+        if (fimDoMes <= 0 || inicioDoMes >= largura) return null;
         return (
           <g key={mes.inicio}>
-            <line
-              x1={inicioDoMes}
-              x2={inicioDoMes}
-              y1={0}
-              y2={altura}
-              stroke="var(--borda)"
-              strokeWidth={1}
-            />
+            {x(mes.inicio) >= 0 && (
+              <line
+                x1={inicioDoMes}
+                x2={inicioDoMes}
+                y1={0}
+                y2={altura}
+                stroke="var(--borda)"
+                strokeWidth={1}
+              />
+            )}
             {fimDoMes - inicioDoMes > 34 && (
               <text
                 x={(inicioDoMes + fimDoMes) / 2}
@@ -282,8 +391,31 @@ function CabecalhoDoTempo({
           {semana.slice(8, 10)}
         </text>
       ))}
+
+      {dias.map((dia) => {
+        const fimDeSemana = [0, 6].includes(new Date(`${dia}T00:00:00Z`).getUTCDay());
+        return (
+          <text
+            key={dia}
+            x={x(dia) + pixelsPorDia / 2}
+            y={altura - 12}
+            textAnchor="middle"
+            fontSize={10}
+            fill={fimDeSemana ? 'var(--texto-sutil)' : 'var(--texto-secundario)'}
+            opacity={fimDeSemana ? 0.6 : 1}
+            className="tabular-nums"
+          >
+            {dia.slice(8, 10)}
+          </text>
+        );
+      })}
     </svg>
   );
+}
+
+function listarDias(inicio: string, fim: string): string[] {
+  const total = diasEntreDatas(inicio, fim);
+  return Array.from({ length: total + 1 }, (_, indice) => somarDias(inicio, indice));
 }
 
 /** Cotovelo em "S" quando a sucessora começa antes do fim da predecessora. */

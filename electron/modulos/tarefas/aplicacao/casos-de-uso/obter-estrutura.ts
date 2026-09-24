@@ -116,6 +116,7 @@ export class ObterEstrutura implements CasoDeUso<string, EstruturaCronogramaDTO>
       responsavelNome: tarefa.responsavelId
         ? (nomesDeResponsaveis.get(tarefa.responsavelId) ?? null)
         : null,
+      evidencia: tarefa.evidencia,
       dependencias,
       dependenciasNumeros: dependencias.map((id) => numeroPorTarefa.get(id) ?? '?'),
       critico: calculo.criticas.has(tarefa.id),
@@ -178,6 +179,7 @@ function paraLinhaDeFase(fase: Fase, numero: string, subtarefas: Tarefa[]): Linh
     situacao: null,
     responsavelId: null,
     responsavelNome: null,
+    evidencia: null,
     dependencias: [],
     dependenciasNumeros: [],
     critico: false,

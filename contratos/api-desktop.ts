@@ -4,6 +4,7 @@ import type {
   CriarCronogramaEntrada,
   CronogramaDTO,
 } from './cronogramas.contrato';
+import type { ExportacaoPdfDTO } from './impressao.contrato';
 import type { PreferenciasDTO, TemaDTO } from './preferencias.contrato';
 import type {
   AtualizarResponsavelEntrada,
@@ -72,6 +73,10 @@ export interface ApiDesktop {
     duplicar(id: string): Promise<Resultado<TarefaDTO>>;
     copiarEstrutura(entrada: CopiarEstruturaEntrada): Promise<Resultado<null>>;
     listarAgenda(): Promise<Resultado<ItemAgendaDTO[]>>;
+  };
+  impressao: {
+    /** Pergunta onde salvar, gera o PDF (dashboard + lista de atividades) e o abre. */
+    exportarPdf(cronogramaId: string): Promise<Resultado<ExportacaoPdfDTO | null>>;
   };
   preferencias: {
     obter(): Promise<Resultado<PreferenciasDTO>>;

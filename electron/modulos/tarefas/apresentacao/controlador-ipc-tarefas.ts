@@ -56,6 +56,7 @@ const esquemaAtualizar = z.object({
   percentualConcluido: z.number().optional(),
   situacao: z.enum(SITUACOES_TAREFA).optional(),
   responsavelId: esquemaId.nullable().optional(),
+  evidencia: z.string().nullable().optional(),
   dependencias: z.array(esquemaId).optional(),
 });
 

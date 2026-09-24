@@ -15,6 +15,7 @@ interface LinhaTarefa {
   percentual_concluido: number;
   situacao: string;
   responsavel_id: string | null;
+  evidencia: string | null;
   ordem: number;
   criado_em: string;
   atualizado_em: string;
@@ -68,10 +69,11 @@ export class RepositorioTarefasSqlite implements RepositorioTarefas {
       salvar: db.prepare<[LinhaTarefa]>(`
         INSERT INTO tarefas
           (id, cronograma_id, fase_id, titulo, descricao, data_inicio, data_fim,
-           percentual_concluido, situacao, responsavel_id, ordem, criado_em, atualizado_em)
+           percentual_concluido, situacao, responsavel_id, evidencia, ordem, criado_em, atualizado_em)
         VALUES
           (@id, @cronograma_id, @fase_id, @titulo, @descricao, @data_inicio, @data_fim,
-           @percentual_concluido, @situacao, @responsavel_id, @ordem, @criado_em, @atualizado_em)
+           @percentual_concluido, @situacao, @responsavel_id, @evidencia, @ordem, @criado_em,
+           @atualizado_em)
         ON CONFLICT (id) DO UPDATE SET
           fase_id              = excluded.fase_id,
           titulo               = excluded.titulo,
@@ -81,6 +83,7 @@ export class RepositorioTarefasSqlite implements RepositorioTarefas {
           percentual_concluido = excluded.percentual_concluido,
           situacao             = excluded.situacao,
           responsavel_id       = excluded.responsavel_id,
+          evidencia            = excluded.evidencia,
           ordem                = excluded.ordem,
           atualizado_em        = excluded.atualizado_em
       `),
@@ -165,6 +168,7 @@ function paraEntidade(linha: LinhaTarefa, dependencias: string[]): Tarefa {
     percentualConcluido: linha.percentual_concluido,
     situacao: linha.situacao as SituacaoTarefa,
     responsavelId: linha.responsavel_id,
+    evidencia: linha.evidencia,
     dependencias,
     ordem: linha.ordem,
     criadoEm: new Date(linha.criado_em),
@@ -184,6 +188,7 @@ function paraLinha(tarefa: Tarefa): LinhaTarefa {
     percentual_concluido: tarefa.percentualConcluido,
     situacao: tarefa.situacao,
     responsavel_id: tarefa.responsavelId,
+    evidencia: tarefa.evidencia,
     ordem: tarefa.ordem,
     criado_em: tarefa.criadoEm.toISOString(),
     atualizado_em: tarefa.atualizadoEm.toISOString(),

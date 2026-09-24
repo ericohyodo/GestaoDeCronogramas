@@ -1,11 +1,21 @@
 'use client';
 
 import clsx from 'clsx';
-import { CheckCircle2, CircleAlert, CopyPlus, GripVertical, Plus, Trash2 } from 'lucide-react';
+import {
+  CheckCircle2,
+  ChevronRight,
+  CircleAlert,
+  CopyPlus,
+  FileCheck2,
+  FileText,
+  GripVertical,
+  Plus,
+  Trash2,
+} from 'lucide-react';
 import { type CSSProperties, type ReactNode, useState } from 'react';
 import type { ResponsavelDTO } from '@contratos/responsaveis.contrato';
 import type { AtualizarTarefaEntrada, LinhaEstruturaDTO } from '@contratos/tarefas.contrato';
-import { formatarDataCurta, formatarDias, somarDias } from '@/compartilhado/formatacao';
+import { diasEntreDatas, formatarDataCurta, formatarDias, somarDias } from '@/compartilhado/formatacao';
 import { BotaoIcone } from '@/compartilhado/ui/Botao';
 import { CelulaEditavel } from './CelulaEditavel';
 import { SeletorDependencias } from './SeletorDependencias';
@@ -26,15 +36,27 @@ export interface PropsTabelaEstrutura {
   aoExcluirFase: (linha: LinhaEstruturaDTO) => void;
   aoAdicionarTarefa: (faseId: string) => void;
   aoReordenarTarefas: (ordens: { id: string; ordem: number }[]) => void;
+  aoAbrirEvidencia: (linha: LinhaEstruturaDTO) => void;
+  /** Só exibição: as tarefas dessas fases somem da lista (e do Gantt, que usa o mesmo filtro). */
+  fasesRecolhidas: ReadonlySet<string>;
+  aoAlternarFase: (faseId: string) => void;
 }
 
-// ⠿ | N | % | ✓ | Descrição | Responsável | Dep. | Início | Dur. | Conclusão | Ações
-const LARGURAS_PADRAO = ['w-5', 'w-10', 'w-[60px]', 'w-9', '', 'w-[88px]', 'w-12', 'w-20', 'w-16', 'w-20', 'w-14'];
-const LARGURAS_EDICAO = ['w-6', 'w-16', 'w-[72px]', 'w-10', '', 'w-44', 'w-24', 'w-32', 'w-24', 'w-32', 'w-20'];
+// ⠿ | N | % | ✓ | Descrição | Responsável | Dep. | Início | Dur. | Conclusão | Evid. | Ações
+const LARGURAS_PADRAO = ['w-5', 'w-10', 'w-[60px]', 'w-9', '', 'w-[88px]', 'w-12', 'w-20', 'w-16', 'w-20', 'w-10', 'w-14'];
+const LARGURAS_EDICAO = ['w-6', 'w-16', 'w-[72px]', 'w-10', '', 'w-44', 'w-24', 'w-32', 'w-24', 'w-32', 'w-20', 'w-20'];
 
 /** Soma das colunas fixas + ~170px para a Descrição. Abaixo disso a Descrição sumiria. */
-export const LARGURA_MINIMA_TABELA = 744;
-const LARGURA_MINIMA_TABELA_EDICAO = 980;
+export const LARGURA_MINIMA_TABELA = 784;
+const LARGURA_MINIMA_TABELA_EDICAO = 1060;
+
+export function linhasExibidas(
+  linhas: LinhaEstruturaDTO[],
+  fasesRecolhidas: ReadonlySet<string>,
+): LinhaEstruturaDTO[] {
+  if (fasesRecolhidas.size === 0) return linhas;
+  return linhas.filter((linha) => !(linha.faseId && fasesRecolhidas.has(linha.faseId)));
+}
 
 export function TabelaEstrutura({
   linhas,
@@ -51,9 +73,30 @@ export function TabelaEstrutura({
   aoExcluirFase,
   aoAdicionarTarefa,
   aoReordenarTarefas,
+  aoAbrirEvidencia,
+  fasesRecolhidas,
+  aoAlternarFase,
 }: PropsTabelaEstrutura) {
   const tarefas = linhas.filter((linha) => linha.tipo === 'tarefa');
   const ativos = responsaveis.filter((responsavel) => responsavel.ativo);
+  const porId = new Map(linhas.map((linha) => [linha.id, linha]));
+
+  /**
+   * Resolve o alerta de dependência: começa no dia seguinte ao fim da predecessora que termina
+   * por último, mantendo a duração. Se o término atrasar, o painel oferece deslocar as sucessoras.
+   */
+  const ajusteDoConflito = (linha: LinhaEstruturaDTO) => {
+    const predecessoras = linha.dependencias.flatMap((id) => porId.get(id) ?? []);
+    const ultima = predecessoras.reduce<LinhaEstruturaDTO | null>(
+      (maisTardia, atual) =>
+        atual.dataFim && (!maisTardia?.dataFim || atual.dataFim > maisTardia.dataFim) ? atual : maisTardia,
+      null,
+    );
+    if (!ultima?.dataFim || !linha.dataInicio || !linha.dataFim) return null;
+    const novoInicio = somarDias(ultima.dataFim, 1);
+    const novoFim = somarDias(linha.dataFim, diasEntreDatas(linha.dataInicio, novoInicio));
+    return { predecessora: ultima, novoInicio, novoFim };
+  };
 
   const [arrastando, setArrastando] = useState<string | null>(null);
   const [sobreId, setSobreId] = useState<string | null>(null);
@@ -107,7 +150,15 @@ export function TabelaEstrutura({
             <CheckCircle2 aria-hidden className="mx-auto size-3.5 text-texto-sutil" />
             <span className="sr-only">Concluir</span>
           </CabecalhoColuna>
-          {['Descrição', modoEdicao ? 'Responsável' : 'Resp.', 'Dep.', 'Início', 'Dur.', modoEdicao ? 'Conclusão' : 'Fim'].map((titulo) => (
+          {[
+            'Descrição',
+            modoEdicao ? 'Responsável' : 'Resp.',
+            'Dep.',
+            'Início',
+            'Dur.',
+            modoEdicao ? 'Conclusão' : 'Fim',
+            modoEdicao ? 'Evidência' : 'Evid.',
+          ].map((titulo) => (
             <CabecalhoColuna key={titulo} altura={alturaDoCabecalho}>
               {titulo}
             </CabecalhoColuna>
@@ -118,8 +169,9 @@ export function TabelaEstrutura({
         </tr>
       </thead>
       <tbody>
-        {linhas.map((linha) => {
+        {linhasExibidas(linhas, fasesRecolhidas).map((linha) => {
           const ehFase = linha.tipo === 'fase';
+          const recolhida = ehFase && fasesRecolhidas.has(linha.id);
           const arrastavel = !ehFase && podeEditarTarefas;
           const alvoDoArrasto = sobreId === linha.id && arrastando !== null && arrastando !== linha.id;
 
@@ -201,8 +253,24 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
-              <Celula style={{ paddingLeft: 4 + linha.nivel * 16 }}>
+              {/* Subtarefas recuadas o bastante para o título ficar sob o da fase (depois da seta). */}
+              <Celula style={{ paddingLeft: 4 + linha.nivel * 20 }}>
                 <div className="flex w-full min-w-0 items-center gap-1">
+                  {ehFase && (
+                    <button
+                      type="button"
+                      aria-expanded={!recolhida}
+                      aria-label={`${recolhida ? 'Expandir' : 'Recolher'} ${linha.titulo}`}
+                      title={recolhida ? 'Expandir fase' : 'Recolher fase'}
+                      onClick={() => aoAlternarFase(linha.id)}
+                      className="flex size-4 shrink-0 items-center justify-center rounded text-texto-sutil hover:bg-texto/8 hover:text-texto"
+                    >
+                      <ChevronRight
+                        aria-hidden
+                        className={clsx('size-3.5 transition-transform', !recolhida && 'rotate-90')}
+                      />
+                    </button>
+                  )}
                   {linha.critico && (
                     <span
                       aria-label="No caminho crítico"
@@ -222,9 +290,16 @@ export function TabelaEstrutura({
                     }
                   />
                   {linha.conflitoDeDependencia && (
-                    <CircleAlert
-                      aria-label="Começa antes do fim de uma predecessora"
-                      className="size-3.5 shrink-0 text-alerta"
+                    <AlertaDeDependencia
+                      ajuste={ajusteDoConflito(linha)}
+                      podeAjustar={podeEditarTarefas}
+                      aoAjustar={(ajuste) =>
+                        aoEditarTarefa({
+                          id: linha.id,
+                          dataInicio: ajuste.novoInicio,
+                          dataFim: ajuste.novoFim,
+                        })
+                      }
                     />
                   )}
                 </div>
@@ -333,6 +408,29 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
+              <Celula className="justify-center">
+                {!ehFase &&
+                  (linha.evidencia || podeEditarTarefas ? (
+                    <button
+                      type="button"
+                      aria-label={
+                        linha.evidencia ? `Ver evidência de ${linha.titulo}` : `Registrar evidência de ${linha.titulo}`
+                      }
+                      title={linha.evidencia ?? 'Registrar evidência'}
+                      onClick={() => aoAbrirEvidencia(linha)}
+                      className="flex size-6 items-center justify-center rounded-md transition-colors hover:bg-texto/6"
+                    >
+                      {linha.evidencia ? (
+                        <FileCheck2 aria-hidden className="size-4 text-primaria" />
+                      ) : (
+                        <FileText aria-hidden className="size-4 text-texto-sutil/40" />
+                      )}
+                    </button>
+                  ) : (
+                    <span className="text-texto-sutil">—</span>
+                  ))}
+              </Celula>
+
               <Celula className="justify-end pr-1">
                 <div className="flex opacity-0 transition-opacity group-focus-within/linha:opacity-100 group-hover/linha:opacity-100">
                   {ehFase
@@ -375,6 +473,43 @@ export function TabelaEstrutura({
         })}
       </tbody>
     </table>
+  );
+}
+
+interface AjusteDoConflito {
+  predecessora: LinhaEstruturaDTO;
+  novoInicio: string;
+  novoFim: string;
+}
+
+function AlertaDeDependencia({
+  ajuste,
+  podeAjustar,
+  aoAjustar,
+}: {
+  ajuste: AjusteDoConflito | null;
+  podeAjustar: boolean;
+  aoAjustar: (ajuste: AjusteDoConflito) => void;
+}) {
+  const motivo = ajuste
+    ? `Começa antes do fim da ${ajuste.predecessora.numero}, que termina em ${formatarDataCurta(ajuste.predecessora.dataFim!)}.`
+    : 'Começa antes do fim de uma predecessora.';
+
+  if (!ajuste || !podeAjustar) {
+    return <CircleAlert aria-label={motivo} className="size-3.5 shrink-0 text-alerta" />;
+  }
+
+  const acao = `Clique para começar em ${formatarDataCurta(ajuste.novoInicio)}, mantendo a duração.`;
+  return (
+    <button
+      type="button"
+      aria-label={`${motivo} ${acao}`}
+      title={`${motivo}\n${acao}`}
+      onClick={() => aoAjustar(ajuste)}
+      className="flex size-5 shrink-0 items-center justify-center rounded-md text-alerta transition-colors hover:bg-alerta/15"
+    >
+      <CircleAlert aria-hidden className="size-3.5" />
+    </button>
   );
 }
 

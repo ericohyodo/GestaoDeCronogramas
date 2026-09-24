@@ -15,6 +15,7 @@ export interface TarefaDTO {
   percentualConcluido: number;
   situacao: SituacaoTarefaDTO;
   responsavelId: string | null;
+  evidencia: string | null;
   /** Ids das tarefas predecessoras (término → início). */
   dependencias: string[];
   ordem: number;
@@ -41,6 +42,8 @@ export interface AtualizarTarefaEntrada {
   percentualConcluido?: number;
   situacao?: SituacaoTarefaDTO;
   responsavelId?: string | null;
+  /** Texto vazio ou `null` apaga a evidência. */
+  evidencia?: string | null;
   dependencias?: string[];
 }
 
@@ -118,6 +121,8 @@ export interface LinhaEstruturaDTO {
   situacao: SituacaoTarefaDTO | null;
   responsavelId: string | null;
   responsavelNome: string | null;
+  /** Sempre `null` nas fases. */
+  evidencia: string | null;
   dependencias: string[];
   /** Números das predecessoras, para exibir na coluna Dependência. */
   dependenciasNumeros: string[];

@@ -60,6 +60,7 @@ export const clienteDesktop = {
   responsaveis: grupo('responsaveis'),
   cronogramas: grupo('cronogramas'),
   tarefas: grupo('tarefas'),
+  impressao: grupo('impressao'),
   preferencias: grupo('preferencias'),
 };
 

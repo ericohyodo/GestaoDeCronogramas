@@ -141,6 +141,30 @@ describe('Banco SQLite', () => {
     expect(await tarefas.listarPorCronograma('c1')).toEqual([]);
   });
 
+  it('grava a evidência e reordena tarefas e fases', async () => {
+    const cronogramas = new RepositorioCronogramasSqlite(db);
+    const tarefas = new RepositorioTarefasSqlite(db);
+    const fases = new RepositorioFasesSqlite(db);
+    const periodo = Periodo.criar('2026-11-01', '2026-11-30');
+
+    await cronogramas.salvar(Cronograma.criar({ id: 'c1', nome: 'X', periodo, agora }));
+    await fases.salvar(Fase.criar({ id: 'f1', cronogramaId: 'c1', nome: 'Fase 1', ordem: 1, agora }));
+    const tarefa = Tarefa.criar({ id: 't1', cronogramaId: 'c1', titulo: 'A', periodo, ordem: 2, agora });
+    tarefa.registrarEvidencia('  PPAP aprovado em 12/10  ', agora);
+    await tarefas.salvar(tarefa);
+
+    expect((await tarefas.obterPorId('t1'))?.evidencia).toBe('PPAP aprovado em 12/10');
+
+    await tarefas.atualizarOrdens([{ id: 't1', ordem: 1 }]);
+    await fases.atualizarOrdens([{ id: 'f1', ordem: 2 }]);
+    expect((await tarefas.obterPorId('t1'))?.ordem).toBe(1);
+    expect((await fases.obterPorId('f1'))?.ordem).toBe(2);
+
+    tarefa.registrarEvidencia('   ', agora);
+    await tarefas.salvar(tarefa);
+    expect((await tarefas.obterPorId('t1'))?.evidencia).toBeNull();
+  });
+
   it('persiste usuários com login único, sem diferenciar maiúsculas', async () => {
     const repositorio = new RepositorioUsuariosSqlite(db);
     const usuario = Usuario.criar({

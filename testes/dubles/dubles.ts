@@ -95,6 +95,7 @@ export class RepositorioTarefasEmMemoria implements RepositorioTarefas {
           percentualConcluido: t.percentualConcluido,
           situacao: t.situacao,
           responsavelId: t.responsavelId,
+          evidencia: t.evidencia,
           dependencias: t.dependencias,
           ordem,
           criadoEm: t.criadoEm,

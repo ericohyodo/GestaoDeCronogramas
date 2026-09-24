@@ -12,6 +12,7 @@ import { MenuDoUsuario } from '@/modulos/usuarios/componentes/MenuDoUsuario';
 import { useSessaoStore } from '@/modulos/usuarios/store/use-sessao-store';
 
 const ROTA_DE_LOGIN = '/login/';
+const ROTA_DE_IMPRESSAO = '/impressao';
 
 /**
  * Guarda de sessão e moldura do aplicativo. Quem decide de fato é o processo principal
@@ -39,6 +40,9 @@ export function AppShell({ children }: { children: ReactNode }) {
   }, [autenticado, carregando, naTelaDeLogin, router, sessao]);
 
   const permissoes = sessao?.permissoes ?? [];
+
+  // A rota de impressão é aberta numa janela invisível para virar PDF: sem moldura nem fundo.
+  if (rota.startsWith(ROTA_DE_IMPRESSAO)) return autenticado ? children : null;
 
   return (
     <>

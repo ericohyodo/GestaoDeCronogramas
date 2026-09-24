@@ -5,6 +5,7 @@ import { migracao0003 } from './0003-preferencias';
 import { migracao0004 } from './0004-usuarios';
 import { migracao0005 } from './0005-responsaveis';
 import { migracao0006 } from './0006-fases-e-dependencias';
+import { migracao0007 } from './0007-evidencia-das-tarefas';
 
 export const MIGRACOES: readonly Migracao[] = [
   migracao0001,
@@ -13,4 +14,5 @@ export const MIGRACOES: readonly Migracao[] = [
   migracao0004,
   migracao0005,
   migracao0006,
+  migracao0007,
 ];

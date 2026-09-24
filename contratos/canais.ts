@@ -40,6 +40,9 @@ export const CANAIS = {
     copiarEstrutura: 'tarefas:copiar-estrutura',
     listarAgenda: 'tarefas:listar-agenda',
   },
+  impressao: {
+    exportarPdf: 'impressao:exportar-pdf',
+  },
   preferencias: {
     obter: 'preferencias:obter',
     definirTema: 'preferencias:definir-tema',
