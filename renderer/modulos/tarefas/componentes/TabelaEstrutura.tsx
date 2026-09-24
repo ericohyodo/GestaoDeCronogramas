@@ -2,6 +2,7 @@
 
 import clsx from 'clsx';
 import {
+  CalendarRange,
   CheckCircle2,
   ChevronRight,
   CircleAlert,
@@ -34,6 +35,7 @@ export interface PropsTabelaEstrutura {
   aoDuplicarTarefa: (id: string) => void;
   aoRenomearFase: (id: string, nome: string) => void;
   aoExcluirFase: (linha: LinhaEstruturaDTO) => void;
+  aoAjustarDatasDaFase: (linha: LinhaEstruturaDTO) => void;
   aoAdicionarTarefa: (faseId: string) => void;
   aoReordenarTarefas: (ordens: { id: string; ordem: number }[]) => void;
   aoAbrirEvidencia: (linha: LinhaEstruturaDTO) => void;
@@ -42,13 +44,13 @@ export interface PropsTabelaEstrutura {
   aoAlternarFase: (faseId: string) => void;
 }
 
-// ⠿ | N | % | ✓ | Descrição | Responsável | Dep. | Início | Dur. | Conclusão | Evid. | Ações
-const LARGURAS_PADRAO = ['w-5', 'w-10', 'w-[60px]', 'w-9', '', 'w-[88px]', 'w-12', 'w-20', 'w-16', 'w-20', 'w-10', 'w-14'];
-const LARGURAS_EDICAO = ['w-6', 'w-16', 'w-[72px]', 'w-10', '', 'w-44', 'w-24', 'w-32', 'w-24', 'w-32', 'w-20', 'w-20'];
+// ⠿ | N | % | ✓ | Descrição | Responsável | Dep. | Início | Dur. | Fim | Efetiva | Evid. | Ações
+const LARGURAS_PADRAO = ['w-5', 'w-10', 'w-[60px]', 'w-9', '', 'w-[88px]', 'w-12', 'w-20', 'w-16', 'w-20', 'w-20', 'w-10', 'w-[76px]'];
+const LARGURAS_EDICAO = ['w-6', 'w-16', 'w-[72px]', 'w-10', '', 'w-44', 'w-24', 'w-32', 'w-24', 'w-32', 'w-32', 'w-20', 'w-20'];
 
 /** Soma das colunas fixas + ~170px para a Descrição. Abaixo disso a Descrição sumiria. */
-export const LARGURA_MINIMA_TABELA = 784;
-const LARGURA_MINIMA_TABELA_EDICAO = 1060;
+export const LARGURA_MINIMA_TABELA = 884;
+const LARGURA_MINIMA_TABELA_EDICAO = 1188;
 
 export function linhasExibidas(
   linhas: LinhaEstruturaDTO[],
@@ -71,6 +73,7 @@ export function TabelaEstrutura({
   aoDuplicarTarefa,
   aoRenomearFase,
   aoExcluirFase,
+  aoAjustarDatasDaFase,
   aoAdicionarTarefa,
   aoReordenarTarefas,
   aoAbrirEvidencia,
@@ -156,7 +159,8 @@ export function TabelaEstrutura({
             'Dep.',
             'Início',
             'Dur.',
-            modoEdicao ? 'Conclusão' : 'Fim',
+            modoEdicao ? 'Término' : 'Fim',
+            modoEdicao ? 'Data efetiva' : 'Efet.',
             modoEdicao ? 'Evidência' : 'Evid.',
           ].map((titulo) => (
             <CabecalhoColuna key={titulo} altura={alturaDoCabecalho}>
@@ -408,6 +412,21 @@ export function TabelaEstrutura({
                 )}
               </Celula>
 
+              <Celula className="tabular-nums">
+                {ehFase ? (
+                  <span className="px-1 text-xs text-texto-sutil">—</span>
+                ) : (
+                  <CelulaEditavel
+                    valor={linha.dataEfetiva ?? ''}
+                    tipo="data"
+                    editavel={podeEditarTarefas}
+                    formatar={formatarDataCurta}
+                    className="text-xs"
+                    aoSalvar={(valor) => aoEditarTarefa({ id: linha.id, dataEfetiva: valor || null })}
+                  />
+                )}
+              </Celula>
+
               <Celula className="justify-center">
                 {!ehFase &&
                   (linha.evidencia || podeEditarTarefas ? (
@@ -441,6 +460,12 @@ export function TabelaEstrutura({
                             tamanho="xs"
                             rotulo={`Adicionar tarefa em ${linha.titulo}`}
                             onClick={() => aoAdicionarTarefa(linha.id)}
+                          />
+                          <BotaoIcone
+                            icone={CalendarRange}
+                            tamanho="xs"
+                            rotulo={`Ajustar as datas das tarefas de ${linha.titulo}`}
+                            onClick={() => aoAjustarDatasDaFase(linha)}
                           />
                           <BotaoIcone
                             icone={Trash2}

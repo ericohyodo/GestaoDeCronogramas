@@ -17,6 +17,7 @@ import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { useEstruturaStore } from '../store/use-estrutura-store';
 import { DialogoDeslocamento } from './DialogoDeslocamento';
+import { FormularioDatasDaFase } from './FormularioDatasDaFase';
 import { FormularioFase } from './FormularioFase';
 import { GraficoGantt } from './GraficoGantt';
 import { DialogoEvidencia } from './DialogoEvidencia';
@@ -62,6 +63,7 @@ export function PainelEstrutura({
   const definirErro = useEstruturaStore((estado) => estado.definirErro);
 
   const [criandoFase, setCriandoFase] = useState(false);
+  const [faseParaAjustar, setFaseParaAjustar] = useState<LinhaEstruturaDTO | null>(null);
   const [impacto, setImpacto] = useState<ImpactoDeAtrasoDTO | null>(null);
   const [tarefaDoImpacto, setTarefaDoImpacto] = useState<string | null>(null);
   const [paraExcluir, setParaExcluir] = useState<LinhaEstruturaDTO | null>(null);
@@ -151,6 +153,12 @@ export function PainelEstrutura({
               <span aria-hidden className="size-1.5 rounded-full bg-perigo" />
               caminho crítico
             </span>
+            {linhas.some((linha) => linha.dataEfetiva) && (
+              <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden className="size-1.5 rounded-full bg-sucesso" />
+                linha mestra (datas efetivas)
+              </span>
+            )}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -226,6 +234,7 @@ export function PainelEstrutura({
                 renomearFase(id, nome).catch((falha: unknown) => definirErro(mensagemDeErro(falha)))
               }
               aoExcluirFase={setParaExcluir}
+              aoAjustarDatasDaFase={setFaseParaAjustar}
               aoAdicionarTarefa={adicionarTarefa}
               aoReordenarTarefas={(ordens) =>
                 reordenarTarefas({ cronogramaId, ordens }).catch(
@@ -265,6 +274,11 @@ export function PainelEstrutura({
         aberto={criandoFase}
         cronogramaId={cronogramaId}
         aoFechar={() => setCriandoFase(false)}
+      />
+      <FormularioDatasDaFase
+        fase={faseParaAjustar}
+        quantidadeDeTarefas={linhas.filter((linha) => linha.faseId === faseParaAjustar?.id).length}
+        aoFechar={() => setFaseParaAjustar(null)}
       />
       <DialogoDeslocamento
         impacto={impacto}

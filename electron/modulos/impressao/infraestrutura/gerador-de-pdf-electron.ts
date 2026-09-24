@@ -12,14 +12,14 @@ export interface OpcoesGeradorDePdf {
 }
 
 /**
- * Abre a rota /impressao numa janela invisível e usa o motor de impressão do Chromium.
+ * Abre a rota de impressão numa janela invisível e usa o motor de impressão do Chromium.
  * A sessão de login vive no processo principal, então a janela já nasce autenticada e as
  * permissões dos canais IPC valem para ela também.
  */
 export class GeradorDePdfElectron implements GeradorDePdf {
   constructor(private readonly opcoes: OpcoesGeradorDePdf) {}
 
-  async gerar(cronogramaId: string, titulo: string): Promise<Uint8Array> {
+  async gerar(rota: string, titulo: string): Promise<Uint8Array> {
     const janela = new BrowserWindow({
       show: false,
       width: 1000,
@@ -35,7 +35,7 @@ export class GeradorDePdfElectron implements GeradorDePdf {
       },
     });
     try {
-      await janela.loadURL(`${this.opcoes.urlBase}/impressao/?id=${encodeURIComponent(cronogramaId)}`);
+      await janela.loadURL(`${this.opcoes.urlBase}${rota}`);
       await esperarPaginaPronta(janela.webContents);
       return await janela.webContents.printToPDF({
         pageSize: 'A4',

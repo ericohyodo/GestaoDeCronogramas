@@ -11,6 +11,7 @@ import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { CabecalhoCronograma } from '@/modulos/cronogramas/componentes/CabecalhoCronograma';
 import { useCronogramasStore } from '@/modulos/cronogramas/store/use-cronogramas-store';
+import { AnaliseComIa } from '@/modulos/ia/componentes/AnaliseComIa';
 import { useResponsaveisStore } from '@/modulos/responsaveis/store/use-responsaveis-store';
 import { PainelEstrutura } from '@/modulos/tarefas/componentes/PainelEstrutura';
 import { usePermissao } from '@/modulos/usuarios/store/use-sessao-store';
@@ -83,6 +84,7 @@ export function DetalheCronograma() {
         podeEditar={podeEditarFases}
         acoesExtras={
           <>
+            <AnaliseComIa cronogramaId={cronograma.id} />
             <Botao icone={Printer} onClick={() => void imprimir(cronograma.id)} disabled={gerandoPdf}>
               {gerandoPdf ? 'Gerando PDF…' : 'Imprimir'}
             </Botao>

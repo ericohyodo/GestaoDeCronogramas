@@ -40,6 +40,7 @@ export class AtualizarTarefa implements CasoDeUso<AtualizarTarefaEntrada, Atuali
     }
     if (entrada.situacao !== undefined) tarefa.alterarSituacao(entrada.situacao, agora);
     if (entrada.evidencia !== undefined) tarefa.registrarEvidencia(entrada.evidencia, agora);
+    if (entrada.dataEfetiva !== undefined) tarefa.registrarDataEfetiva(entrada.dataEfetiva, agora);
 
     if (entrada.responsavelId !== undefined) {
       if (entrada.responsavelId && !(await this.consultaDeResponsaveis.existe(entrada.responsavelId))) {

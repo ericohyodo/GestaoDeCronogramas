@@ -15,6 +15,7 @@ export function paraTarefaDTO(tarefa: Tarefa): TarefaDTO {
     situacao: tarefa.situacao,
     responsavelId: tarefa.responsavelId,
     evidencia: tarefa.evidencia,
+    dataEfetiva: tarefa.dataEfetiva,
     dependencias: tarefa.dependencias,
     ordem: tarefa.ordem,
     criadoEm: tarefa.criadoEm.toISOString(),

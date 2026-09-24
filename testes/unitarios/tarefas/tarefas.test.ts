@@ -95,6 +95,22 @@ describe('Casos de uso de tarefas', () => {
     ).rejects.toThrow(ErroDeValidacao);
   });
 
+  it('registra a data efetiva sem mexer no período planejado, e a apaga com null', async () => {
+    const { id } = await criarTarefa.executar(entrada('Execução'));
+    expect((await repositorio.obterPorId(id))?.dataEfetiva).toBeNull();
+
+    const { tarefa } = await atualizarTarefa.executar({ id, dataEfetiva: '2026-10-09' });
+    expect(tarefa).toMatchObject({ dataEfetiva: '2026-10-09', dataInicio: '2026-10-01', dataFim: '2026-10-05' });
+
+    const { tarefa: apagada } = await atualizarTarefa.executar({ id, dataEfetiva: null });
+    expect(apagada.dataEfetiva).toBeNull();
+  });
+
+  it.each(['2026-02-30', '09/10/2026', ''])('rejeita data efetiva "%s"', async (data) => {
+    const { id } = await criarTarefa.executar(entrada('Execução'));
+    await expect(atualizarTarefa.executar({ id, dataEfetiva: data })).rejects.toThrow(ErroDeValidacao);
+  });
+
   describe('dependências', () => {
     it('recusa predecessora de outro cronograma e dependência circular', async () => {
       const a = await criarTarefa.executar(entrada('A'));

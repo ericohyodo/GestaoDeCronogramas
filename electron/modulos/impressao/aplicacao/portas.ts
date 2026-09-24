@@ -1,6 +1,7 @@
-/** Desenha a página de impressão do cronograma e devolve o PDF. */
+/** Desenha uma página de impressão do renderer e devolve o PDF. */
 export interface GeradorDePdf {
-  gerar(cronogramaId: string, titulo: string): Promise<Uint8Array>;
+  /** `rota`: caminho do renderer com a busca (ex.: `/impressao/?id=…`). `titulo` vai no rodapé. */
+  gerar(rota: string, titulo: string): Promise<Uint8Array>;
 }
 
 /** Onde o PDF vai parar: a pessoa escolhe o arquivo, e ele é gravado e aberto. */
@@ -13,4 +14,9 @@ export interface DestinoDoArquivo {
 /** O módulo não conhece Cronogramas: a raiz de composição liga esta porta à API pública dele. */
 export interface ConsultaDeCronogramas {
   obterNome(cronogramaId: string): Promise<string | null>;
+}
+
+/** Porta para o arquivo de análises do módulo IA. */
+export interface ConsultaDeAnalises {
+  obterResumo(analiseId: string): Promise<{ titulo: string; geradaEm: string } | null>;
 }

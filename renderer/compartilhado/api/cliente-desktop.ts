@@ -61,6 +61,7 @@ export const clienteDesktop = {
   cronogramas: grupo('cronogramas'),
   tarefas: grupo('tarefas'),
   impressao: grupo('impressao'),
+  ia: grupo('ia'),
   preferencias: grupo('preferencias'),
 };
 

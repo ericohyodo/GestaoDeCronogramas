@@ -7,6 +7,7 @@ import {
   esquemaSemEntrada,
 } from '../../../nucleo/infraestrutura/ipc/esquemas';
 import type { RegistradorIpc } from '../../../nucleo/infraestrutura/ipc/registrador-ipc';
+import type { AjustarDatasDaFase } from '../aplicacao/casos-de-uso/ajustar-datas-da-fase';
 import type { AtualizarTarefa } from '../aplicacao/casos-de-uso/atualizar-tarefa';
 import type { CopiarEstrutura } from '../aplicacao/casos-de-uso/copiar-estrutura';
 import type { CriarTarefa } from '../aplicacao/casos-de-uso/criar-tarefa';
@@ -28,6 +29,7 @@ export interface CasosDeUsoTarefas {
   atualizar: AtualizarTarefa;
   excluir: ExcluirTarefa;
   deslocarSucessoras: DeslocarSucessoras;
+  ajustarDatasDaFase: AjustarDatasDaFase;
   criarFase: CriarFase;
   atualizarFase: AtualizarFase;
   excluirFase: ExcluirFase;
@@ -57,10 +59,13 @@ const esquemaAtualizar = z.object({
   situacao: z.enum(SITUACOES_TAREFA).optional(),
   responsavelId: esquemaId.nullable().optional(),
   evidencia: z.string().nullable().optional(),
+  dataEfetiva: esquemaData.nullable().optional(),
   dependencias: z.array(esquemaId).optional(),
 });
 
 const esquemaDeslocar = z.object({ tarefaId: esquemaId, dias: z.number() });
+
+const esquemaAjustarDatasDaFase = z.object({ faseId: esquemaId, dataInicio: esquemaData, dataFim: esquemaData });
 
 const esquemaCriarFase = z.object({
   cronogramaId: esquemaId,
@@ -92,7 +97,10 @@ export function registrarIpcTarefas(ipc: RegistradorIpc, casos: CasosDeUsoTarefa
     casos.deslocarSucessoras.executar(entrada),
   );
 
-  // Estruturar o cronograma em fases é trabalho de planejamento.
+  // Estruturar o cronograma em fases (e reenquadrar as datas de uma fase inteira) é planejamento.
+  ipc.registrar(CANAIS.tarefas.ajustarDatasDaFase, 'planejamento', esquemaAjustarDatasDaFase, (entrada) =>
+    casos.ajustarDatasDaFase.executar(entrada),
+  );
   ipc.registrar(CANAIS.tarefas.criarFase, 'planejamento', esquemaCriarFase, (entrada) =>
     casos.criarFase.executar(entrada),
   );

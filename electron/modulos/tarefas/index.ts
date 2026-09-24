@@ -6,6 +6,7 @@ import type { GeradorDeId } from '../../nucleo/aplicacao/portas/gerador-de-id';
 import type { Relogio } from '../../nucleo/aplicacao/portas/relogio';
 import type { BancoDeDados } from '../../nucleo/infraestrutura/banco/conexao-sqlite';
 import type { RegistradorIpc } from '../../nucleo/infraestrutura/ipc/registrador-ipc';
+import { AjustarDatasDaFase } from './aplicacao/casos-de-uso/ajustar-datas-da-fase';
 import { AtualizarTarefa } from './aplicacao/casos-de-uso/atualizar-tarefa';
 import { CopiarEstrutura } from './aplicacao/casos-de-uso/copiar-estrutura';
 import { CriarTarefa } from './aplicacao/casos-de-uso/criar-tarefa';
@@ -33,17 +34,25 @@ export interface DependenciasModuloTarefas {
   consultaDeResponsaveis: ConsultaDeResponsaveis;
 }
 
-export function montarModuloTarefas(deps: DependenciasModuloTarefas): void {
+export interface ModuloTarefas {
+  /** Consultas que o módulo oferece aos demais módulos. */
+  consultas: {
+    obterEstrutura(cronogramaId: string): ReturnType<ObterEstrutura['executar']>;
+  };
+}
+
+export function montarModuloTarefas(deps: DependenciasModuloTarefas): ModuloTarefas {
   const repositorio = new RepositorioTarefasSqlite(deps.db);
   const repositorioFases = new RepositorioFasesSqlite(deps.db);
+  const obterEstrutura = new ObterEstrutura(
+    repositorio,
+    repositorioFases,
+    deps.consultaDeCronogramas,
+    deps.consultaDeResponsaveis,
+  );
 
   registrarIpcTarefas(deps.ipc, {
-    obterEstrutura: new ObterEstrutura(
-      repositorio,
-      repositorioFases,
-      deps.consultaDeCronogramas,
-      deps.consultaDeResponsaveis,
-    ),
+    obterEstrutura,
     criar: new CriarTarefa(
       repositorio,
       repositorioFases,
@@ -55,6 +64,7 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): void {
     atualizar: new AtualizarTarefa(repositorio, deps.consultaDeResponsaveis, deps.relogio),
     excluir: new ExcluirTarefa(repositorio),
     deslocarSucessoras: new DeslocarSucessoras(repositorio, deps.relogio),
+    ajustarDatasDaFase: new AjustarDatasDaFase(repositorio, repositorioFases, deps.relogio),
     criarFase: new CriarFase(
       repositorioFases,
       repositorio,
@@ -80,4 +90,6 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): void {
       deps.consultaDeResponsaveis,
     ),
   });
+
+  return { consultas: { obterEstrutura: (cronogramaId) => obterEstrutura.executar(cronogramaId) } };
 }

@@ -197,8 +197,32 @@
   }
 }
 
-/* PDF do cronograma (rota /impressao): sempre papel branco, qualquer que seja o tema. */
+/* PDFs (rotas /impressao e /impressao-analise): sempre papel branco, qualquer que seja o tema. */
 @media print {
+  /* Componentes que usam os tokens do tema saem com as cores do tema claro. */
+  :root {
+    color-scheme: light;
+    --superficie: #ffffff;
+    --superficie-forte: #ffffff;
+    --superficie-solida: #ffffff;
+    --borda: #d9e0ea;
+    --texto: #0f1b2d;
+    --texto-secundario: #4a5a70;
+    --texto-sutil: #7a8699;
+    --primaria: #1f4e8c;
+    --sobre-primaria: #ffffff;
+    --destaque: #0e9f9a;
+    --sucesso: #1e8e5a;
+    --alerta: #b7791f;
+    --perigo: #c0392b;
+    --info: #2f6fb5;
+  }
+
+  /* Cada item do relatório fica inteiro numa página. */
+  [data-analise-impressa] li {
+    break-inside: avoid;
+  }
+
   html,
   body {
     height: auto;

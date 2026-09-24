@@ -4,6 +4,7 @@ import type { AparenciaDTO } from '@contratos/aparencia.contrato';
 import { CANAIS } from '@contratos/canais';
 import { suportaVidroNativo } from './janela/aparencia';
 import { montarModuloCronogramas } from './modulos/cronogramas';
+import { montarModuloIa } from './modulos/ia';
 import { montarModuloImpressao } from './modulos/impressao';
 import { montarModuloPreferencias } from './modulos/preferencias';
 import { montarModuloResponsaveis } from './modulos/responsaveis';
@@ -69,7 +70,7 @@ export async function montarAplicacao(opcoes: {
 
   const responsaveis = montarModuloResponsaveis({ db, ipc, relogio, geradorDeId });
   const cronogramas = montarModuloCronogramas({ db, ipc, relogio, geradorDeId });
-  montarModuloTarefas({
+  const tarefas = montarModuloTarefas({
     db,
     ipc,
     relogio,
@@ -85,11 +86,26 @@ export async function montarAplicacao(opcoes: {
     },
   });
 
+  const ia = montarModuloIa({
+    db,
+    ipc,
+    relogio,
+    geradorDeId,
+    consultaDeCronograma: {
+      obterResumo: (id) => cronogramas.consultas.obterResumo(id),
+      listarIdsAtivos: async () =>
+        (await cronogramas.consultas.listar()).filter((c) => !c.arquivado).map((c) => c.id),
+    },
+    consultaDeEstrutura: { obterEstrutura: (id) => tarefas.consultas.obterEstrutura(id) },
+    quemEstaUsando: { nomeDoUsuarioAtual: () => usuarios.consultas.nomeDoUsuarioAtual() },
+  });
+
   montarModuloImpressao({
     ipc,
     urlBase: opcoes.urlDoRenderer,
     caminhoDoPreload: opcoes.caminhoDoPreload,
     consultaDeCronogramas: { obterNome: (id) => cronogramas.consultas.obterNome(id) },
+    consultaDeAnalises: { obterResumo: (id) => ia.consultas.obterResumoDaAnalise(id) },
   });
 
   const preferencias = montarModuloPreferencias({ db, ipc });

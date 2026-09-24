@@ -1,5 +1,5 @@
 import { ErroDeValidacao } from '../../../nucleo/dominio/erro-de-dominio';
-import type { Periodo } from '../../../nucleo/dominio/periodo';
+import { ehDataValida, type Periodo } from '../../../nucleo/dominio/periodo';
 import { exigirTexto, normalizarTextoOpcional } from '../../../nucleo/dominio/texto';
 import { type SituacaoTarefa, validarSituacaoTarefa } from './situacao-tarefa';
 
@@ -20,6 +20,8 @@ export interface PropsTarefa {
   responsavelId: string | null;
   /** Texto que comprova a entrega; `null` enquanto não foi registrado. */
   evidencia: string | null;
+  /** Data (AAAA-MM-DD) em que a tarefa foi de fato concluída; independe do período planejado. */
+  dataEfetiva: string | null;
   /** Ids das predecessoras (término → início). O ciclo é barrado pelo serviço de cálculo. */
   dependencias: string[];
   ordem: number;
@@ -54,6 +56,7 @@ export class Tarefa {
       situacao: 'pendente',
       responsavelId: dados.responsavelId ?? null,
       evidencia: null,
+      dataEfetiva: null,
       dependencias: [],
       ordem: dados.ordem,
       criadoEm: dados.agora,
@@ -80,6 +83,9 @@ export class Tarefa {
   }
   get evidencia(): string | null {
     return this.props.evidencia;
+  }
+  get dataEfetiva(): string | null {
+    return this.props.dataEfetiva;
   }
   get dependencias(): string[] {
     return [...this.props.dependencias];
@@ -147,6 +153,15 @@ export class Tarefa {
     const texto = normalizarTextoOpcional(evidencia);
     this.props.evidencia =
       texto === null ? null : exigirTexto(texto, 'A evidência', TAMANHO_MAXIMO_EVIDENCIA);
+    this.props.atualizadoEm = agora;
+  }
+
+  /** `null` apaga a data efetiva. */
+  registrarDataEfetiva(data: string | null, agora: Date): void {
+    if (data !== null && !ehDataValida(data)) {
+      throw new ErroDeValidacao('Data efetiva inválida (use AAAA-MM-DD).');
+    }
+    this.props.dataEfetiva = data;
     this.props.atualizadoEm = agora;
   }
 

@@ -1,7 +1,18 @@
 'use client';
 
 import clsx from 'clsx';
-import { BarChart3, CalendarRange, type LucideIcon, PanelLeftClose, UserCog, Users } from 'lucide-react';
+import {
+  BarChart3,
+  CalendarRange,
+  FileClock,
+  type LucideIcon,
+  MessageSquareText,
+  PanelLeftClose,
+  ScrollText,
+  Settings,
+  UserCog,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { PermissaoDTO } from '@contratos/sessao.contrato';
@@ -22,6 +33,22 @@ const ITENS: ItemNavegacao[] = [
   { rotulo: 'Recursos', icone: Users, href: '/recursos/', rotas: ['/recursos'] },
   { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
   { rotulo: 'Relatórios', icone: BarChart3, href: '/relatorios/', rotas: ['/relatorios'] },
+  { rotulo: 'Análises', icone: FileClock, href: '/analises/', rotas: ['/analises'] },
+  { rotulo: 'Chat com IA', icone: MessageSquareText, href: '/chat/', rotas: ['/chat'] },
+  {
+    rotulo: 'Instruções da IA',
+    icone: ScrollText,
+    href: '/instrucoes-ia/',
+    rotas: ['/instrucoes-ia'],
+    permissao: 'planejamento',
+  },
+  {
+    rotulo: 'Configurações',
+    icone: Settings,
+    href: '/configuracoes/',
+    rotas: ['/configuracoes'],
+    permissao: 'administracao',
+  },
 ];
 
 export function BarraLateral({

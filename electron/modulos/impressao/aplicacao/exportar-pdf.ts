@@ -18,7 +18,7 @@ export class ExportarPdf implements CasoDeUso<string, ExportacaoPdfDTO | null> {
     const caminho = await this.destino.escolher(`${nomeDeArquivo(nome)}.pdf`);
     if (caminho === null) return null;
 
-    const pdf = await this.gerador.gerar(cronogramaId, nome);
+    const pdf = await this.gerador.gerar(`/impressao/?id=${encodeURIComponent(cronogramaId)}`, nome);
     await this.destino.gravarEAbrir(caminho, pdf);
     return { caminho };
   }

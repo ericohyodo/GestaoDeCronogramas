@@ -1,3 +1,8 @@
+import type {
+  AnaliseArquivadaDTO,
+  RepositorioDeAnalises,
+  TipoDeAnaliseDTO,
+} from '../../electron/modulos/ia/aplicacao/portas';
 import type { GeradorDeId } from '../../electron/nucleo/aplicacao/portas/gerador-de-id';
 import type { Relogio } from '../../electron/nucleo/aplicacao/portas/relogio';
 import type { Cronograma } from '../../electron/modulos/cronogramas/dominio/cronograma';
@@ -30,6 +35,42 @@ export class GeradorDeIdSequencial implements GeradorDeId {
   gerar(): string {
     this.contador += 1;
     return `${this.prefixo}-${this.contador}`;
+  }
+}
+
+export class ArquivoDeAnalisesEmMemoria implements RepositorioDeAnalises {
+  readonly analises: AnaliseArquivadaDTO[] = [];
+  async salvar(analise: AnaliseArquivadaDTO) {
+    this.analises.push(analise);
+  }
+  async listar() {
+    return [...this.analises]
+      .sort((a, b) => b.geradaEm.localeCompare(a.geradaEm))
+      .map(({ id, tipo, cronogramaId, titulo, modelo, saude, geradaEm, geradaPor }) => ({
+        id,
+        tipo,
+        cronogramaId,
+        titulo,
+        modelo,
+        saude,
+        geradaEm,
+        geradaPor,
+      }));
+  }
+  async obter(id: string) {
+    return this.analises.find((analise) => analise.id === id) ?? null;
+  }
+  async ultima(tipo: TipoDeAnaliseDTO, cronogramaId: string | null) {
+    const candidatas = this.analises
+      .filter((a) => a.tipo === tipo && (tipo === 'portfolio' || a.cronogramaId === cronogramaId))
+      .sort((a, b) => b.geradaEm.localeCompare(a.geradaEm));
+    return candidatas[0] ?? null;
+  }
+  async excluir(id: string) {
+    const indice = this.analises.findIndex((analise) => analise.id === id);
+    if (indice < 0) return false;
+    this.analises.splice(indice, 1);
+    return true;
   }
 }
 
@@ -96,6 +137,7 @@ export class RepositorioTarefasEmMemoria implements RepositorioTarefas {
           situacao: t.situacao,
           responsavelId: t.responsavelId,
           evidencia: t.evidencia,
+          dataEfetiva: t.dataEfetiva,
           dependencias: t.dependencias,
           ordem,
           criadoEm: t.criadoEm,

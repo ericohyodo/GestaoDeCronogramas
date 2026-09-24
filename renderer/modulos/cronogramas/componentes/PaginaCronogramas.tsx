@@ -1,7 +1,7 @@
 'use client';
 
 import { CalendarRange, Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import type { CronogramaDTO, SituacaoCronogramaDTO } from '@contratos/cronogramas.contrato';
 import { Botao } from '@/compartilhado/ui/Botao';
 import { CabecalhoPagina } from '@/compartilhado/ui/CabecalhoPagina';
@@ -18,7 +18,14 @@ type Edicao = { modo: 'criar' } | { modo: 'editar'; cronograma: CronogramaDTO } 
 
 const INDICADORES: SituacaoCronogramaDTO[] = ['planejado', 'em_andamento', 'concluido'];
 
-export function PaginaCronogramas({ podeEditar }: { podeEditar: boolean }) {
+export function PaginaCronogramas({
+  podeEditar,
+  acoesExtras,
+}: {
+  podeEditar: boolean;
+  /** Ações de outros módulos, compostas pela página (ex.: análise do portfólio com IA). */
+  acoesExtras?: ReactNode;
+}) {
   const { itens, carregando, erro, carregar, excluir, limparErro } = useCronogramasStore();
   const [edicao, setEdicao] = useState<Edicao>(null);
   const [paraExcluir, setParaExcluir] = useState<CronogramaDTO | null>(null);
@@ -35,11 +42,14 @@ export function PaginaCronogramas({ podeEditar }: { podeEditar: boolean }) {
         titulo="Cronogramas"
         descricao="Planeje períodos, acompanhe a situação e organize as tarefas de cada cronograma."
         acoes={
-          podeEditar && (
-            <Botao variante="primario" icone={Plus} onClick={novo}>
-              Novo cronograma
-            </Botao>
-          )
+          <>
+            {acoesExtras}
+            {podeEditar && (
+              <Botao variante="primario" icone={Plus} onClick={novo}>
+                Novo cronograma
+              </Botao>
+            )}
+          </>
         }
       />
 

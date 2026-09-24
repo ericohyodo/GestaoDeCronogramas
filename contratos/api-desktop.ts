@@ -4,6 +4,19 @@ import type {
   CriarCronogramaEntrada,
   CronogramaDTO,
 } from './cronogramas.contrato';
+import type {
+  AnaliseArquivadaDTO,
+  AnaliseCronogramaDTO,
+  AnalisePortfolioDTO,
+  ConfigurarIaEntrada,
+  ConversarComIaEntrada,
+  EstadoIaDTO,
+  InstrucoesIaDTO,
+  RespostaDoChatDTO,
+  ResumoDeAnaliseDTO,
+  SalvarInstrucoesIaEntrada,
+  UltimaAnaliseEntrada,
+} from './ia.contrato';
 import type { ExportacaoPdfDTO } from './impressao.contrato';
 import type { PreferenciasDTO, TemaDTO } from './preferencias.contrato';
 import type {
@@ -21,6 +34,7 @@ import type {
   CriarFaseEntrada,
   CriarTarefaEntrada,
   DeslocarSucessorasEntrada,
+  AjustarDatasDaFaseEntrada,
   EstruturaCronogramaDTO,
   ItemAgendaDTO,
   ReordenarTarefasEntrada,
@@ -66,6 +80,8 @@ export interface ApiDesktop {
     atualizar(entrada: AtualizarTarefaEntrada): Promise<Resultado<AtualizarTarefaSaida>>;
     excluir(id: string): Promise<Resultado<null>>;
     deslocarSucessoras(entrada: DeslocarSucessorasEntrada): Promise<Resultado<null>>;
+    /** Devolve quantas tarefas da fase foram ajustadas. */
+    ajustarDatasDaFase(entrada: AjustarDatasDaFaseEntrada): Promise<Resultado<number>>;
     criarFase(entrada: CriarFaseEntrada): Promise<Resultado<null>>;
     atualizarFase(entrada: AtualizarFaseEntrada): Promise<Resultado<null>>;
     excluirFase(id: string): Promise<Resultado<null>>;
@@ -77,6 +93,31 @@ export interface ApiDesktop {
   impressao: {
     /** Pergunta onde salvar, gera o PDF (dashboard + lista de atividades) e o abre. */
     exportarPdf(cronogramaId: string): Promise<Resultado<ExportacaoPdfDTO | null>>;
+    /** PDF de uma análise do arquivo. */
+    exportarAnalisePdf(analiseId: string): Promise<Resultado<ExportacaoPdfDTO | null>>;
+  };
+  ia: {
+    estado(): Promise<Resultado<EstadoIaDTO>>;
+    /** Só administrador. Testa a chave na API antes de salvar. */
+    configurar(entrada: ConfigurarIaEntrada): Promise<Resultado<EstadoIaDTO>>;
+    removerChave(): Promise<Resultado<EstadoIaDTO>>;
+    /** Envia o cronograma à Claude API e devolve o relatório. Não altera nenhum dado. */
+    analisar(cronogramaId: string): Promise<Resultado<AnaliseCronogramaDTO>>;
+    /** Visão macro de todos os cronogramas não arquivados. Não altera nenhum dado. */
+    analisarPortfolio(): Promise<Resultado<AnalisePortfolioDTO>>;
+    /** Chat: responde perguntas sobre todos os cronogramas em andamento. Só lê, não altera nada. */
+    conversar(entrada: ConversarComIaEntrada): Promise<Resultado<RespostaDoChatDTO>>;
+    /** Arquivo de análises: toda análise gerada fica salva, da mais nova para a mais antiga. */
+    listarAnalises(): Promise<Resultado<ResumoDeAnaliseDTO[]>>;
+    obterAnalise(id: string): Promise<Resultado<AnaliseArquivadaDTO>>;
+    /** A mais recente do cronograma (ou do portfólio); `null` se ainda não houver. */
+    ultimaAnalise(entrada: UltimaAnaliseEntrada): Promise<Resultado<AnaliseArquivadaDTO | null>>;
+    /** Administrador e gestor. */
+    excluirAnalise(id: string): Promise<Resultado<null>>;
+    /** Administrador e gestor: checklist e orientações que a IA recebe. */
+    obterInstrucoes(): Promise<Resultado<InstrucoesIaDTO>>;
+    salvarInstrucoes(entrada: SalvarInstrucoesIaEntrada): Promise<Resultado<InstrucoesIaDTO>>;
+    restaurarChecklist(): Promise<Resultado<InstrucoesIaDTO>>;
   };
   preferencias: {
     obter(): Promise<Resultado<PreferenciasDTO>>;

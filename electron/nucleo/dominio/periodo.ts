@@ -50,7 +50,7 @@ function paraUtc(data: string): number {
   return Date.parse(`${data}T00:00:00Z`);
 }
 
-function ehDataValida(valor: string): boolean {
+export function ehDataValida(valor: string): boolean {
   if (!FORMATO_DATA.test(valor)) return false;
   const instante = paraUtc(valor);
   // Rejeita datas inexistentes como 2026-02-30, que o Date "corrige" para março.

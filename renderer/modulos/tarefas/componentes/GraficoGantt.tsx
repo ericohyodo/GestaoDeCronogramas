@@ -59,7 +59,8 @@ const MESES = [
 
 /**
  * Gantt em SVG alinhado linha a linha com a tabela: barras, marcos de fase,
- * setas de dependência (término → início) e destaque do caminho crítico.
+ * setas de dependência (término → início), destaque do caminho crítico e a linha mestra
+ * (caminho real, pelas datas efetivas de conclusão).
  */
 export function GraficoGantt({
   linhas,
@@ -165,6 +166,20 @@ export function GraficoGantt({
       y: indice * alturaDaLinha + alturaDaLinha / 2,
     });
   });
+
+  // A tabela e o gráfico usam as mesmas linhas, então a posição vertical é a da linha da tarefa.
+  const pontosDaLinhaMestra = linhas.flatMap((linha, indice) =>
+    linha.tipo === 'tarefa' && linha.dataEfetiva
+      ? [
+          {
+            id: linha.id,
+            x: xAposOFim(linha.dataEfetiva),
+            y: indice * alturaDaLinha + alturaDaLinha / 2,
+            descricao: `${linha.titulo}: concluída em ${formatarData(linha.dataEfetiva)}${linha.dataFim ? ` (previsto ${formatarData(linha.dataFim)})` : ''}`,
+          },
+        ]
+      : [],
+  );
 
   const hoje = hojeIso();
   const mostrarHoje = hoje >= inicioComMargem && hoje <= fimComMargem;
@@ -314,6 +329,27 @@ export function GraficoGantt({
                 </g>
               );
             })}
+
+            {/* Linha mestra: liga, de cima para baixo, a data em que cada tarefa foi de fato concluída */}
+            {pontosDaLinhaMestra.length > 0 && (
+              <g>
+                {pontosDaLinhaMestra.length > 1 && (
+                  <polyline
+                    points={pontosDaLinhaMestra.map((ponto) => `${ponto.x},${ponto.y}`).join(' ')}
+                    fill="none"
+                    stroke="var(--sucesso)"
+                    strokeWidth={2}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                  />
+                )}
+                {pontosDaLinhaMestra.map((ponto) => (
+                  <circle key={ponto.id} cx={ponto.x} cy={ponto.y} r={3.5} fill="var(--sucesso)">
+                    <title>{ponto.descricao}</title>
+                  </circle>
+                ))}
+              </g>
+            )}
           </svg>
         </>
       )}

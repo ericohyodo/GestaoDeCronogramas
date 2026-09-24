@@ -32,6 +32,11 @@ export interface DependenciasModuloUsuarios {
 export interface ModuloUsuarios {
   /** Consultado pelo registrador de IPC para liberar ou barrar cada canal. */
   controleDeAcesso: ControleDeAcesso;
+  /** Consultas que o módulo oferece aos demais módulos. */
+  consultas: {
+    /** Nome de quem está logado agora; `null` sem sessão. */
+    nomeDoUsuarioAtual(): string | null;
+  };
 }
 
 export function montarModuloUsuarios(deps: DependenciasModuloUsuarios): ModuloUsuarios {
@@ -62,5 +67,6 @@ export function montarModuloUsuarios(deps: DependenciasModuloUsuarios): ModuloUs
       autenticado: () => sessao.autenticado(),
       possuiPermissao: (permissao) => sessao.possuiPermissao(permissao),
     },
+    consultas: { nomeDoUsuarioAtual: () => sessao.usuarioAtual?.nome ?? null },
   };
 }
