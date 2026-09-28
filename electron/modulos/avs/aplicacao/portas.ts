@@ -12,3 +12,33 @@ export interface ConsultaDeUsuarios {
   listarAtivos(): Promise<{ id: string; nome: string }[]>;
   obterPerfilGlobal(id: string): Promise<PerfilDTO | null>;
 }
+
+/** Abre uma pasta (rede/local) no explorador de arquivos, ou uma URL no navegador padrão. */
+export interface AbridorDeCaminho {
+  /** `null` quando abriu com sucesso; mensagem de erro caso contrário. */
+  abrir(caminho: string): Promise<string | null>;
+}
+
+export interface ArquivoSelecionado {
+  caminhoOriginal: string;
+  nomeArquivo: string;
+}
+
+/** Abre o diálogo nativo de seleção de arquivos do SO. */
+export interface SeletorDeArquivos {
+  /** `null` quando o usuário cancelou. */
+  escolher(): Promise<ArquivoSelecionado[] | null>;
+}
+
+export interface ArquivoArmazenado {
+  nomeArmazenado: string;
+  tipoMime: string | null;
+  tamanhoBytes: number;
+}
+
+/** Copia/lê/apaga os arquivos de anexo em disco, ao lado do banco de dados. */
+export interface ArmazenamentoDeArquivos {
+  copiarParaAnexos(avId: string, arquivo: ArquivoSelecionado): Promise<ArquivoArmazenado>;
+  lerConteudoBase64(avId: string, nomeArmazenado: string): Promise<string>;
+  excluirArquivo(avId: string, nomeArmazenado: string): Promise<void>;
+}

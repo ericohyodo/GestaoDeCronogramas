@@ -11,6 +11,11 @@ import { migracao0009 } from './0009-arquivo-de-analises';
 import { migracao0010 } from './0010-data-efetiva-das-tarefas';
 import { migracao0011 } from './0011-avs-perfil-usuario';
 import { migracao0012 } from './0012-avs-nucleo';
+import { migracao0013 } from './0013-avs-mapa-de-custo';
+import { migracao0014 } from './0014-avs-eng-produto-processo';
+import { migracao0015 } from './0015-avs-catalogo-materiais';
+import { migracao0016 } from './0016-avs-links-de-evidencia';
+import { migracao0017 } from './0017-avs-anexos';
 
 export const MIGRACOES: readonly Migracao[] = [
   migracao0001,
@@ -25,4 +30,9 @@ export const MIGRACOES: readonly Migracao[] = [
   migracao0010,
   migracao0011,
   migracao0012,
+  migracao0013,
+  migracao0014,
+  migracao0015,
+  migracao0016,
+  migracao0017,
 ];

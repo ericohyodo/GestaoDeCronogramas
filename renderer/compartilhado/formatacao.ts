@@ -35,3 +35,9 @@ export function somarDias(iso: string, dias: number): string {
   const instante = Date.parse(`${iso}T00:00:00Z`) + dias * 86_400_000;
   return new Date(instante).toISOString().slice(0, 10);
 }
+
+const FORMATADOR_MOEDA = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+export function formatarMoeda(valor: number | null): string {
+  return valor == null ? '—' : FORMATADOR_MOEDA.format(valor);
+}

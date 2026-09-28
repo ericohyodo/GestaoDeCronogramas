@@ -10,7 +10,8 @@ import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { ROTULO_AREA } from '../rotulos';
 import { useAvsStore } from '../store/use-avs-store';
 
-/** O pai (`AvDetalhe`) precisa montar isto com `key={av.id}`, pra reiniciar a seleção ao trocar de AV. */
+/** O estado inicial só é recalculado ao montar: depende de `AvDetalhe` estar montado com
+ * `key={av.id}` lá em cima (ver `pagina-detalhe-av.tsx`) pra reiniciar a seleção ao trocar de AV. */
 export function EquipePanel({ av }: { av: AvDetalheDTO }) {
   const membros = useAvsStore((estado) => estado.membros);
   const carregarMembros = useAvsStore((estado) => estado.carregarMembros);

@@ -1,15 +1,25 @@
 import type { AparenciaDTO } from './aparencia.contrato';
 import type {
+  AnexoAvDTO,
   AtualizarComercialEntrada,
   AtualizarEquipeEntrada,
+  AtualizarSecaoCustoEntrada,
+  AtualizarSecaoProcessoEntrada,
+  AtualizarSecaoProdutoEntrada,
   AvancarEtapaEntrada,
   AvDetalheDTO,
   AvResumoDTO,
+  CatalogoCustoDTO,
+  ConteudoAnexoDTO,
   CriarAvEntrada,
   DashboardAvDTO,
   DeclinarAvEntrada,
   HistoricoAvItemDTO,
   MembroAreaDTO,
+  SecaoCustoDTO,
+  SecaoProcessoDTO,
+  SecaoProdutoDTO,
+  SelecionarEAnexarEntrada,
 } from './avs.contrato';
 import type {
   AtualizarCronogramaEntrada,
@@ -91,6 +101,21 @@ export interface ApiDesktop {
     avancarEtapa(entrada: AvancarEtapaEntrada): Promise<Resultado<AvDetalheDTO>>;
     declinar(entrada: DeclinarAvEntrada): Promise<Resultado<AvDetalheDTO>>;
     listarHistorico(avId: string): Promise<Resultado<HistoricoAvItemDTO[]>>;
+    obterCatalogoCusto(): Promise<Resultado<CatalogoCustoDTO>>;
+    obterSecaoCusto(avId: string): Promise<Resultado<SecaoCustoDTO>>;
+    salvarSecaoCusto(entrada: AtualizarSecaoCustoEntrada): Promise<Resultado<SecaoCustoDTO>>;
+    obterSecaoProduto(avId: string): Promise<Resultado<SecaoProdutoDTO>>;
+    salvarSecaoProduto(entrada: AtualizarSecaoProdutoEntrada): Promise<Resultado<SecaoProdutoDTO>>;
+    obterSecaoProcesso(avId: string): Promise<Resultado<SecaoProcessoDTO>>;
+    salvarSecaoProcesso(entrada: AtualizarSecaoProcessoEntrada): Promise<Resultado<SecaoProcessoDTO>>;
+    /** Abre uma pasta (rede/local) no explorador de arquivos, ou uma URL no navegador padrão. */
+    abrirCaminho(caminho: string): Promise<Resultado<null>>;
+    listarAnexos(avId: string): Promise<Resultado<AnexoAvDTO[]>>;
+    /** Abre o seletor de arquivos do SO; devolve null se o usuário cancelar. */
+    selecionarEAnexar(entrada: SelecionarEAnexarEntrada): Promise<Resultado<AnexoAvDTO[] | null>>;
+    /** Lê o arquivo do disco e devolve o conteúdo em base64, para pré-visualização. */
+    obterConteudoAnexo(anexoId: string): Promise<Resultado<ConteudoAnexoDTO>>;
+    excluirAnexo(anexoId: string): Promise<Resultado<null>>;
   };
   cronogramas: {
     listar(): Promise<Resultado<CronogramaDTO[]>>;

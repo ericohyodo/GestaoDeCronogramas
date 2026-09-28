@@ -61,12 +61,23 @@ export const NAV_PROJETOS: NavegacaoLateral = {
   ],
 };
 
+// Espelha NAV_PROJETOS, menos "Recursos": lá são as pessoas alocadas nas tarefas de um cronograma,
+// aqui todo mundo que participa de uma AV já é um usuário do sistema (ver equipe por área na AV).
 export const NAV_AVS: NavegacaoLateral = {
   titulo: 'Análises de Viabilidade',
   itens: [
     { rotulo: 'AVs', icone: ClipboardCheck, href: '/avs/', rotas: ['/avs'] },
     { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
+    { rotulo: 'Relatórios', icone: BarChart3, href: '/relatorios/', rotas: ['/relatorios'] },
     { rotulo: 'Análises', icone: FileClock, href: '/analises/', rotas: ['/analises'] },
+    { rotulo: 'Chat com IA', icone: MessageSquareText, href: '/chat/', rotas: ['/chat'] },
+    {
+      rotulo: 'Instruções da IA',
+      icone: ScrollText,
+      href: '/instrucoes-ia/',
+      rotas: ['/instrucoes-ia'],
+      permissao: 'planejamento',
+    },
     {
       rotulo: 'Configurações',
       icone: Settings,

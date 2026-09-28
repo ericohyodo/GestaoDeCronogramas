@@ -2,12 +2,17 @@
 
 import { ArrowRight, Ban } from 'lucide-react';
 import { useState } from 'react';
-import type { AvDetalheDTO } from '@contratos/avs.contrato';
+import type { AreaAvDTO, AvDetalheDTO } from '@contratos/avs.contrato';
 import { mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { Botao } from '@/compartilhado/ui/Botao';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { AbaComercial } from './AbaComercial';
+import { AbaEngProcesso } from './AbaEngProcesso';
+import { AbaEngProduto } from './AbaEngProduto';
+import { AbaMapaCusto } from './AbaMapaCusto';
+import { AbaPcp } from './AbaPcp';
+import { AbasDaAv } from './AbasDaAv';
 import { DeclinarModal } from './DeclinarModal';
 import { EquipePanel } from './EquipePanel';
 import { EtapaBadge } from './EtapaBadge';
@@ -23,11 +28,14 @@ const NOME_DA_PROXIMA_AREA: Record<string, string> = {
   proposta_enviada: 'abertura da SD',
 };
 
+/** Quem chama isto precisa montar com `key={av.id}`, pra reiniciar a aba selecionada e os
+ * formulários ao trocar de AV (ver `pagina-detalhe-av.tsx`). */
 export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
   const avancarEtapa = useAvsStore((estado) => estado.avancarEtapa);
   const [avancando, setAvancando] = useState(false);
   const [erroAvanco, setErroAvanco] = useState<string | null>(null);
   const [declinando, setDeclinando] = useState(false);
+  const [abaAtiva, setAbaAtiva] = useState<AreaAvDTO>(() => av.etapaAtual.area ?? 'comercial');
 
   const etapa = av.etapaAtual;
   const podeAvancarAgora = !etapa.terminal && etapa.chave !== 'sd_aberta';
@@ -94,12 +102,20 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
         {erroAvanco && <MensagemErro mensagem={erroAvanco} aoFechar={() => setErroAvanco(null)} />}
       </PainelVidro>
 
-      {/* `key`: reinicia os formulários com os dados certos ao navegar para outra AV. */}
-      <div key={av.id} className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
-        <AbaComercial av={av} />
-        <div className="flex flex-col gap-5">
-          <EquipePanel av={av} />
-          <HistoricoPanel avId={av.id} />
+      <div className="flex flex-col gap-5">
+        <AbasDaAv abaAtiva={abaAtiva} aoSelecionar={setAbaAtiva} etapaAtual={etapa} />
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
+          <div>
+            {abaAtiva === 'comercial' && <AbaComercial av={av} />}
+            {abaAtiva === 'produto' && <AbaEngProduto av={av} />}
+            {abaAtiva === 'processo' && <AbaEngProcesso av={av} />}
+            {abaAtiva === 'pcp' && <AbaPcp />}
+            {abaAtiva === 'custo' && <AbaMapaCusto av={av} />}
+          </div>
+          <div className="flex flex-col gap-5">
+            <EquipePanel av={av} />
+            <HistoricoPanel avId={av.id} />
+          </div>
         </div>
       </div>
 

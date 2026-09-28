@@ -38,7 +38,8 @@ function paraFormulario(av: AvDetalheDTO): CamposTexto & { volumeAnual: string }
   };
 }
 
-/** O pai (`AvDetalhe`) precisa montar isto com `key={av.id}`, pra reiniciar o formulário ao trocar de AV. */
+/** O estado inicial só é recalculado ao montar: depende de `AvDetalhe` estar montado com
+ * `key={av.id}` lá em cima (ver `pagina-detalhe-av.tsx`) pra reiniciar o formulário ao trocar de AV. */
 export function AbaComercial({ av }: { av: AvDetalheDTO }) {
   const atualizarComercial = useAvsStore((estado) => estado.atualizarComercial);
   const [campos, setCampos] = useState(() => paraFormulario(av));
