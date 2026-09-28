@@ -29,6 +29,7 @@ const NOME_DO_MODELO: Record<string, string> = {
   'nvidia/nemotron-3-super-120b-a12b:free': 'Nemotron 3 Super 120B (OpenRouter)',
   'qwen/qwen3.8-27b:free': 'Qwen 3.8 27B (OpenRouter)',
   'nex-agi/nex-n2.5-pro:free': 'Nex N2.5 Pro (OpenRouter)',
+  'dots-studio/dots-3-note-preview:free': 'Dots3-Note Preview (OpenRouter)',
 };
 
 export const DESTINO_DOS_DADOS: Record<ProvedorIaDTO, string> = {

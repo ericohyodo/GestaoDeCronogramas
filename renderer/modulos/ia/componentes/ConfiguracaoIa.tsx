@@ -20,6 +20,7 @@ const OPCOES_DE_MODELO: { valor: ModeloIaDTO; rotulo: string }[] = [
   { valor: 'nvidia/nemotron-3-super-120b-a12b:free', rotulo: 'OpenRouter · Nemotron 3 Super 120B — gratuito' },
   { valor: 'qwen/qwen3.8-27b:free', rotulo: 'OpenRouter · Qwen 3.8 27B — gratuito' },
   { valor: 'nex-agi/nex-n2.5-pro:free', rotulo: 'OpenRouter · Nex N2.5 Pro — gratuito' },
+  { valor: 'dots-studio/dots-3-note-preview:free', rotulo: 'OpenRouter · Dots3-Note Preview — gratuito' },
 ];
 
 const PROVEDOR: Record<

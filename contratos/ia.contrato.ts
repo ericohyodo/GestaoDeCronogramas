@@ -8,6 +8,7 @@ export const MODELOS_IA = [
   'nvidia/nemotron-3-super-120b-a12b:free',
   'qwen/qwen3.8-27b:free',
   'nex-agi/nex-n2.5-pro:free',
+  'dots-studio/dots-3-note-preview:free',
 ] as const;
 export type ModeloIaDTO = (typeof MODELOS_IA)[number];
 
