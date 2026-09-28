@@ -65,7 +65,7 @@ export function DetalheCronograma() {
             titulo="Cronograma não encontrado"
             descricao={erro ?? 'Nenhum cronograma foi informado.'}
             acao={
-              <Link href="/" className={classeBotao()}>
+              <Link href="/projetos/" className={classeBotao()}>
                 Voltar para cronogramas
               </Link>
             }

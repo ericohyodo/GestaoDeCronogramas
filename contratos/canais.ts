@@ -60,6 +60,18 @@ export const CANAIS = {
     salvarInstrucoes: 'ia:salvar-instrucoes',
     restaurarChecklist: 'ia:restaurar-checklist',
   },
+  avs: {
+    listar: 'avs:listar',
+    obter: 'avs:obter',
+    criar: 'avs:criar',
+    atualizarComercial: 'avs:atualizar-comercial',
+    atualizarEquipe: 'avs:atualizar-equipe',
+    listarMembros: 'avs:listar-membros',
+    obterDashboard: 'avs:obter-dashboard',
+    avancarEtapa: 'avs:avancar-etapa',
+    declinar: 'avs:declinar',
+    listarHistorico: 'avs:listar-historico',
+  },
   preferencias: {
     obter: 'preferencias:obter',
     definirTema: 'preferencias:definir-tema',

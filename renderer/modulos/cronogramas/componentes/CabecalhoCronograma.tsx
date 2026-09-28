@@ -87,7 +87,7 @@ export function CabecalhoCronograma({ cronograma, podeEditar, acoesExtras }: Pro
         mensagem={`"${cronograma.nome}" e todas as suas tarefas serão excluídos definitivamente.`}
         aoConfirmar={async () => {
           await excluir(cronograma.id);
-          router.push('/');
+          router.push('/projetos/');
         }}
         aoFechar={() => setExcluindo(false)}
       />

@@ -3,6 +3,7 @@ import { ipcMain } from 'electron';
 import type { AparenciaDTO } from '@contratos/aparencia.contrato';
 import { CANAIS } from '@contratos/canais';
 import { suportaVidroNativo } from './janela/aparencia';
+import { montarModuloAvs } from './modulos/avs';
 import { montarModuloCronogramas } from './modulos/cronogramas';
 import { montarModuloIa } from './modulos/ia';
 import { montarModuloImpressao } from './modulos/impressao';
@@ -83,6 +84,18 @@ export async function montarAplicacao(opcoes: {
     consultaDeResponsaveis: {
       obterNomes: (ids) => responsaveis.consultas.obterNomes(ids),
       existe: (id) => responsaveis.consultas.existe(id),
+    },
+  });
+
+  montarModuloAvs({
+    db,
+    ipc,
+    relogio,
+    geradorDeId,
+    consultaDeUsuarios: {
+      usuarioAtual: () => usuarios.consultas.usuarioAtual(),
+      listarAtivos: () => usuarios.consultas.listarAtivos(),
+      obterPerfilGlobal: (id) => usuarios.consultas.obterPerfilGlobal(id),
     },
   });
 

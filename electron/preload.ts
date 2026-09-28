@@ -33,6 +33,18 @@ const api: ApiDesktop = {
     atualizar: (entrada) => invocar(CANAIS.responsaveis.atualizar, entrada),
     excluir: (id) => invocar(CANAIS.responsaveis.excluir, id),
   },
+  avs: {
+    listar: () => invocar(CANAIS.avs.listar),
+    obter: (id) => invocar(CANAIS.avs.obter, id),
+    criar: (entrada) => invocar(CANAIS.avs.criar, entrada),
+    atualizarComercial: (entrada) => invocar(CANAIS.avs.atualizarComercial, entrada),
+    atualizarEquipe: (entrada) => invocar(CANAIS.avs.atualizarEquipe, entrada),
+    listarMembros: () => invocar(CANAIS.avs.listarMembros),
+    obterDashboard: () => invocar(CANAIS.avs.obterDashboard),
+    avancarEtapa: (entrada) => invocar(CANAIS.avs.avancarEtapa, entrada),
+    declinar: (entrada) => invocar(CANAIS.avs.declinar, entrada),
+    listarHistorico: (avId) => invocar(CANAIS.avs.listarHistorico, avId),
+  },
   cronogramas: {
     listar: () => invocar(CANAIS.cronogramas.listar),
     obter: (id) => invocar(CANAIS.cronogramas.obter, id),

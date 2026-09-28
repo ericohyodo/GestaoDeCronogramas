@@ -1,5 +1,17 @@
 import type { AparenciaDTO } from './aparencia.contrato';
 import type {
+  AtualizarComercialEntrada,
+  AtualizarEquipeEntrada,
+  AvancarEtapaEntrada,
+  AvDetalheDTO,
+  AvResumoDTO,
+  CriarAvEntrada,
+  DashboardAvDTO,
+  DeclinarAvEntrada,
+  HistoricoAvItemDTO,
+  MembroAreaDTO,
+} from './avs.contrato';
+import type {
   AtualizarCronogramaEntrada,
   CriarCronogramaEntrada,
   CronogramaDTO,
@@ -66,6 +78,19 @@ export interface ApiDesktop {
     criar(entrada: CriarResponsavelEntrada): Promise<Resultado<ResponsavelDTO>>;
     atualizar(entrada: AtualizarResponsavelEntrada): Promise<Resultado<ResponsavelDTO>>;
     excluir(id: string): Promise<Resultado<null>>;
+  };
+  avs: {
+    listar(): Promise<Resultado<AvResumoDTO[]>>;
+    obter(id: string): Promise<Resultado<AvDetalheDTO>>;
+    criar(entrada: CriarAvEntrada): Promise<Resultado<AvDetalheDTO>>;
+    atualizarComercial(entrada: AtualizarComercialEntrada): Promise<Resultado<AvDetalheDTO>>;
+    atualizarEquipe(entrada: AtualizarEquipeEntrada): Promise<Resultado<AvDetalheDTO>>;
+    /** Lista simples (id + nome) para preencher os seletores de responsável por área. */
+    listarMembros(): Promise<Resultado<MembroAreaDTO[]>>;
+    obterDashboard(): Promise<Resultado<DashboardAvDTO>>;
+    avancarEtapa(entrada: AvancarEtapaEntrada): Promise<Resultado<AvDetalheDTO>>;
+    declinar(entrada: DeclinarAvEntrada): Promise<Resultado<AvDetalheDTO>>;
+    listarHistorico(avId: string): Promise<Resultado<HistoricoAvItemDTO[]>>;
   };
   cronogramas: {
     listar(): Promise<Resultado<CronogramaDTO[]>>;

@@ -9,6 +9,8 @@ import { migracao0007 } from './0007-evidencia-das-tarefas';
 import { migracao0008 } from './0008-configuracao-ia';
 import { migracao0009 } from './0009-arquivo-de-analises';
 import { migracao0010 } from './0010-data-efetiva-das-tarefas';
+import { migracao0011 } from './0011-avs-perfil-usuario';
+import { migracao0012 } from './0012-avs-nucleo';
 
 export const MIGRACOES: readonly Migracao[] = [
   migracao0001,
@@ -21,4 +23,6 @@ export const MIGRACOES: readonly Migracao[] = [
   migracao0008,
   migracao0009,
   migracao0010,
+  migracao0011,
+  migracao0012,
 ];
