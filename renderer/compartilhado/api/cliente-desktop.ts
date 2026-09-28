@@ -58,8 +58,11 @@ export const clienteDesktop = {
   sessao: grupo('sessao'),
   usuarios: grupo('usuarios'),
   responsaveis: grupo('responsaveis'),
+  avs: grupo('avs'),
   cronogramas: grupo('cronogramas'),
   tarefas: grupo('tarefas'),
+  impressao: grupo('impressao'),
+  ia: grupo('ia'),
   preferencias: grupo('preferencias'),
 };
 

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type {
+  AjustarDatasDaFaseEntrada,
   AtualizarTarefaEntrada,
   CriarFaseEntrada,
   CriarTarefaEntrada,
@@ -21,6 +22,8 @@ interface EstadoEstrutura {
   excluirTarefa(id: string): Promise<void>;
   deslocarSucessoras(tarefaId: string, dias: number): Promise<void>;
   criarFase(entrada: CriarFaseEntrada): Promise<void>;
+  /** Dá o mesmo início e término a todas as tarefas da fase. */
+  ajustarDatasDaFase(entrada: AjustarDatasDaFaseEntrada): Promise<void>;
   renomearFase(id: string, nome: string): Promise<void>;
   excluirFase(id: string): Promise<void>;
   reordenarTarefas(entrada: ReordenarTarefasEntrada): Promise<void>;
@@ -77,6 +80,12 @@ export const useEstruturaStore = create<EstadoEstrutura>()((set, get) => ({
   async criarFase(entrada) {
     await clienteDesktop.tarefas.criarFase(entrada);
     await get().carregar(entrada.cronogramaId);
+  },
+
+  async ajustarDatasDaFase(entrada) {
+    const cronogramaId = get().cronogramaId;
+    await clienteDesktop.tarefas.ajustarDatasDaFase(entrada);
+    if (cronogramaId) await get().carregar(cronogramaId);
   },
 
   async renomearFase(id, nome) {

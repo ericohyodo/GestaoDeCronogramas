@@ -15,6 +15,8 @@ interface LinhaTarefa {
   percentual_concluido: number;
   situacao: string;
   responsavel_id: string | null;
+  evidencia: string | null;
+  data_efetiva: string | null;
   ordem: number;
   criado_em: string;
   atualizado_em: string;
@@ -68,10 +70,12 @@ export class RepositorioTarefasSqlite implements RepositorioTarefas {
       salvar: db.prepare<[LinhaTarefa]>(`
         INSERT INTO tarefas
           (id, cronograma_id, fase_id, titulo, descricao, data_inicio, data_fim,
-           percentual_concluido, situacao, responsavel_id, ordem, criado_em, atualizado_em)
+           percentual_concluido, situacao, responsavel_id, evidencia, data_efetiva, ordem,
+           criado_em, atualizado_em)
         VALUES
           (@id, @cronograma_id, @fase_id, @titulo, @descricao, @data_inicio, @data_fim,
-           @percentual_concluido, @situacao, @responsavel_id, @ordem, @criado_em, @atualizado_em)
+           @percentual_concluido, @situacao, @responsavel_id, @evidencia, @data_efetiva, @ordem,
+           @criado_em, @atualizado_em)
         ON CONFLICT (id) DO UPDATE SET
           fase_id              = excluded.fase_id,
           titulo               = excluded.titulo,
@@ -81,7 +85,9 @@ export class RepositorioTarefasSqlite implements RepositorioTarefas {
           percentual_concluido = excluded.percentual_concluido,
           situacao             = excluded.situacao,
           responsavel_id       = excluded.responsavel_id,
-          ordem                = excluded.ordem,
+          evidencia            = excluded.evidencia,
+          data_efetiva         = excluded.data_efetiva,
+          ordem               = excluded.ordem,
           atualizado_em        = excluded.atualizado_em
       `),
       limparDependencias: db.prepare<[string]>('DELETE FROM dependencias_tarefas WHERE tarefa_id = ?'),
@@ -165,6 +171,8 @@ function paraEntidade(linha: LinhaTarefa, dependencias: string[]): Tarefa {
     percentualConcluido: linha.percentual_concluido,
     situacao: linha.situacao as SituacaoTarefa,
     responsavelId: linha.responsavel_id,
+    evidencia: linha.evidencia,
+    dataEfetiva: linha.data_efetiva,
     dependencias,
     ordem: linha.ordem,
     criadoEm: new Date(linha.criado_em),
@@ -184,6 +192,8 @@ function paraLinha(tarefa: Tarefa): LinhaTarefa {
     percentual_concluido: tarefa.percentualConcluido,
     situacao: tarefa.situacao,
     responsavel_id: tarefa.responsavelId,
+    evidencia: tarefa.evidencia,
+    data_efetiva: tarefa.dataEfetiva,
     ordem: tarefa.ordem,
     criado_em: tarefa.criadoEm.toISOString(),
     atualizado_em: tarefa.atualizadoEm.toISOString(),

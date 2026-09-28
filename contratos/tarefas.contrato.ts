@@ -15,6 +15,9 @@ export interface TarefaDTO {
   percentualConcluido: number;
   situacao: SituacaoTarefaDTO;
   responsavelId: string | null;
+  evidencia: string | null;
+  /** Data (AAAA-MM-DD) em que a tarefa foi de fato concluída; `null` enquanto não registrada. */
+  dataEfetiva: string | null;
   /** Ids das tarefas predecessoras (término → início). */
   dependencias: string[];
   ordem: number;
@@ -41,6 +44,10 @@ export interface AtualizarTarefaEntrada {
   percentualConcluido?: number;
   situacao?: SituacaoTarefaDTO;
   responsavelId?: string | null;
+  /** Texto vazio ou `null` apaga a evidência. */
+  evidencia?: string | null;
+  /** `null` apaga a data efetiva. */
+  dataEfetiva?: string | null;
   dependencias?: string[];
 }
 
@@ -58,6 +65,13 @@ export interface AtualizarTarefaSaida {
 export interface DeslocarSucessorasEntrada {
   tarefaId: string;
   dias: number;
+}
+
+/** Dá a todas as tarefas da fase o mesmo início e término (o ajuste fino é feito depois, à mão). */
+export interface AjustarDatasDaFaseEntrada {
+  faseId: string;
+  dataInicio: string;
+  dataFim: string;
 }
 
 export interface CriarFaseEntrada {
@@ -118,6 +132,10 @@ export interface LinhaEstruturaDTO {
   situacao: SituacaoTarefaDTO | null;
   responsavelId: string | null;
   responsavelNome: string | null;
+  /** Sempre `null` nas fases. */
+  evidencia: string | null;
+  /** Data em que a tarefa foi de fato concluída; sempre `null` nas fases. */
+  dataEfetiva: string | null;
   dependencias: string[];
   /** Números das predecessoras, para exibir na coluna Dependência. */
   dependenciasNumeros: string[];

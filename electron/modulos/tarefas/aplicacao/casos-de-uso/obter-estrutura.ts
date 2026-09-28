@@ -75,17 +75,17 @@ export class ObterEstrutura implements CasoDeUso<string, EstruturaCronogramaDTO>
       });
     });
 
-    // Janela do Gantt: do início ao fim do projeto, esticada se alguma tarefa passar dessas bordas.
+    // Janela do Gantt: do início ao fim do projeto, esticada se alguma tarefa (ou a data em que
+    // foi de fato concluída) passar dessas bordas.
+    const datasDasTarefas = tarefas.flatMap((tarefa) =>
+      tarefa.dataEfetiva
+        ? [tarefa.periodo.inicio, tarefa.periodo.fim, tarefa.dataEfetiva]
+        : [tarefa.periodo.inicio, tarefa.periodo.fim],
+    );
     return {
       cronogramaId,
-      inicio: tarefas.reduce(
-        (menor, tarefa) => (tarefa.periodo.inicio < menor ? tarefa.periodo.inicio : menor),
-        periodoDoCronograma.inicio,
-      ),
-      fim: tarefas.reduce(
-        (maior, tarefa) => (tarefa.periodo.fim > maior ? tarefa.periodo.fim : maior),
-        periodoDoCronograma.fim,
-      ),
+      inicio: datasDasTarefas.reduce((menor, data) => (data < menor ? data : menor), periodoDoCronograma.inicio),
+      fim: datasDasTarefas.reduce((maior, data) => (data > maior ? data : maior), periodoDoCronograma.fim),
       linhas,
     };
   }
@@ -116,6 +116,8 @@ export class ObterEstrutura implements CasoDeUso<string, EstruturaCronogramaDTO>
       responsavelNome: tarefa.responsavelId
         ? (nomesDeResponsaveis.get(tarefa.responsavelId) ?? null)
         : null,
+      evidencia: tarefa.evidencia,
+      dataEfetiva: tarefa.dataEfetiva,
       dependencias,
       dependenciasNumeros: dependencias.map((id) => numeroPorTarefa.get(id) ?? '?'),
       critico: calculo.criticas.has(tarefa.id),
@@ -178,6 +180,8 @@ function paraLinhaDeFase(fase: Fase, numero: string, subtarefas: Tarefa[]): Linh
     situacao: null,
     responsavelId: null,
     responsavelNome: null,
+    evidencia: null,
+    dataEfetiva: null,
     dependencias: [],
     dependenciasNumeros: [],
     critico: false,

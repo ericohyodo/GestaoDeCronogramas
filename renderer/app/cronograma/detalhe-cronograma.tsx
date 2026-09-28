@@ -1,15 +1,17 @@
 'use client';
 
-import { Copy, SearchX } from 'lucide-react';
+import { Copy, Printer, SearchX } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
+import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { Botao, classeBotao } from '@/compartilhado/ui/Botao';
 import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
+import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { CabecalhoCronograma } from '@/modulos/cronogramas/componentes/CabecalhoCronograma';
 import { useCronogramasStore } from '@/modulos/cronogramas/store/use-cronogramas-store';
+import { AnaliseComIa } from '@/modulos/ia/componentes/AnaliseComIa';
 import { useResponsaveisStore } from '@/modulos/responsaveis/store/use-responsaveis-store';
 import { PainelEstrutura } from '@/modulos/tarefas/componentes/PainelEstrutura';
 import { usePermissao } from '@/modulos/usuarios/store/use-sessao-store';
@@ -28,7 +30,22 @@ export function DetalheCronograma() {
   // A falha fica associada ao id: ao navegar para outro cronograma, o erro anterior some sozinho.
   const [falha, setFalha] = useState<{ id: string; mensagem: string } | null>(null);
   const [usandoComoModelo, setUsandoComoModelo] = useState(false);
+  const [gerandoPdf, setGerandoPdf] = useState(false);
+  const [erroDoPdf, setErroDoPdf] = useState<string | null>(null);
   const erro = falha?.id === id ? falha.mensagem : null;
+
+  // O main pergunta onde salvar, gera o PDF numa janela invisível e o abre no leitor padrão.
+  const imprimir = async (cronogramaId: string) => {
+    setGerandoPdf(true);
+    setErroDoPdf(null);
+    try {
+      await clienteDesktop.impressao.exportarPdf(cronogramaId);
+    } catch (motivo) {
+      setErroDoPdf(mensagemDeErro(motivo));
+    } finally {
+      setGerandoPdf(false);
+    }
+  };
 
   useEffect(() => {
     if (!id) return;
@@ -48,7 +65,7 @@ export function DetalheCronograma() {
             titulo="Cronograma não encontrado"
             descricao={erro ?? 'Nenhum cronograma foi informado.'}
             acao={
-              <Link href="/" className={classeBotao()}>
+              <Link href="/projetos/" className={classeBotao()}>
                 Voltar para cronogramas
               </Link>
             }
@@ -66,13 +83,20 @@ export function DetalheCronograma() {
         cronograma={cronograma}
         podeEditar={podeEditarFases}
         acoesExtras={
-          podeEditarFases && (
-            <Botao icone={Copy} onClick={() => setUsandoComoModelo(true)}>
-              Usar como modelo
+          <>
+            <AnaliseComIa cronogramaId={cronograma.id} />
+            <Botao icone={Printer} onClick={() => void imprimir(cronograma.id)} disabled={gerandoPdf}>
+              {gerandoPdf ? 'Gerando PDF…' : 'Imprimir'}
             </Botao>
-          )
+            {podeEditarFases && (
+              <Botao icone={Copy} onClick={() => setUsandoComoModelo(true)}>
+                Usar como modelo
+              </Botao>
+            )}
+          </>
         }
       />
+      {erroDoPdf && <MensagemErro mensagem={erroDoPdf} aoFechar={() => setErroDoPdf(null)} />}
       <DialogoUsarComoModelo
         aberto={usandoComoModelo}
         modelo={cronograma}

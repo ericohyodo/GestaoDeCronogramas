@@ -19,6 +19,7 @@ import {
 import { ObterSessao, Sair } from './aplicacao/casos-de-uso/obter-sessao';
 import { Sessao } from './aplicacao/sessao';
 import { registrarIpcUsuarios } from './apresentacao/controlador-ipc-usuarios';
+import type { Perfil } from './dominio/perfil';
 import { HashDeSenhaScrypt } from './infraestrutura/hash-de-senha-scrypt';
 import { RepositorioUsuariosSqlite } from './infraestrutura/repositorio-usuarios-sqlite';
 
@@ -32,6 +33,15 @@ export interface DependenciasModuloUsuarios {
 export interface ModuloUsuarios {
   /** Consultado pelo registrador de IPC para liberar ou barrar cada canal. */
   controleDeAcesso: ControleDeAcesso;
+  /** Consultas que o módulo oferece aos demais módulos. */
+  consultas: {
+    /** Nome de quem está logado agora; `null` sem sessão. */
+    nomeDoUsuarioAtual(): string | null;
+    /** Quem está logado agora, com o perfil global; `null` sem sessão. */
+    usuarioAtual(): { id: string; nome: string; perfil: Perfil } | null;
+    listarAtivos(): Promise<{ id: string; nome: string }[]>;
+    obterPerfilGlobal(id: string): Promise<Perfil | null>;
+  };
 }
 
 export function montarModuloUsuarios(deps: DependenciasModuloUsuarios): ModuloUsuarios {
@@ -61,6 +71,18 @@ export function montarModuloUsuarios(deps: DependenciasModuloUsuarios): ModuloUs
     controleDeAcesso: {
       autenticado: () => sessao.autenticado(),
       possuiPermissao: (permissao) => sessao.possuiPermissao(permissao),
+    },
+    consultas: {
+      nomeDoUsuarioAtual: () => sessao.usuarioAtual?.nome ?? null,
+      usuarioAtual: () => {
+        const usuario = sessao.usuarioAtual;
+        return usuario ? { id: usuario.id, nome: usuario.nome, perfil: usuario.perfil } : null;
+      },
+      listarAtivos: async () =>
+        (await repositorio.listar())
+          .filter((usuario) => usuario.ativo)
+          .map((usuario) => ({ id: usuario.id, nome: usuario.nome })),
+      obterPerfilGlobal: async (id) => (await repositorio.obterPorId(id))?.perfil ?? null,
     },
   };
 }

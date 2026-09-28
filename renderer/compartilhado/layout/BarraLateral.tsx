@@ -1,7 +1,20 @@
 'use client';
 
 import clsx from 'clsx';
-import { BarChart3, CalendarRange, type LucideIcon, PanelLeftClose, UserCog, Users } from 'lucide-react';
+import {
+  BarChart3,
+  CalendarRange,
+  ClipboardCheck,
+  FileClock,
+  Home,
+  type LucideIcon,
+  MessageSquareText,
+  PanelLeftClose,
+  ScrollText,
+  Settings,
+  UserCog,
+  Users,
+} from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { PermissaoDTO } from '@contratos/sessao.contrato';
@@ -17,17 +30,59 @@ interface ItemNavegacao {
   permissao?: PermissaoDTO;
 }
 
-const ITENS: ItemNavegacao[] = [
-  { rotulo: 'Cronogramas', icone: CalendarRange, href: '/', rotas: ['/', '/cronograma'] },
-  { rotulo: 'Recursos', icone: Users, href: '/recursos/', rotas: ['/recursos'] },
-  { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
-  { rotulo: 'Relatórios', icone: BarChart3, href: '/relatorios/', rotas: ['/relatorios'] },
-];
+export interface NavegacaoLateral {
+  titulo: string;
+  itens: ItemNavegacao[];
+}
+
+export const NAV_PROJETOS: NavegacaoLateral = {
+  titulo: 'Planejamento',
+  itens: [
+    { rotulo: 'Cronogramas', icone: CalendarRange, href: '/projetos/', rotas: ['/projetos', '/cronograma'] },
+    { rotulo: 'Recursos', icone: Users, href: '/recursos/', rotas: ['/recursos'] },
+    { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
+    { rotulo: 'Relatórios', icone: BarChart3, href: '/relatorios/', rotas: ['/relatorios'] },
+    { rotulo: 'Análises', icone: FileClock, href: '/analises/', rotas: ['/analises'] },
+    { rotulo: 'Chat com IA', icone: MessageSquareText, href: '/chat/', rotas: ['/chat'] },
+    {
+      rotulo: 'Instruções da IA',
+      icone: ScrollText,
+      href: '/instrucoes-ia/',
+      rotas: ['/instrucoes-ia'],
+      permissao: 'planejamento',
+    },
+    {
+      rotulo: 'Configurações',
+      icone: Settings,
+      href: '/configuracoes/',
+      rotas: ['/configuracoes'],
+      permissao: 'administracao',
+    },
+  ],
+};
+
+export const NAV_AVS: NavegacaoLateral = {
+  titulo: 'Análises de Viabilidade',
+  itens: [
+    { rotulo: 'AVs', icone: ClipboardCheck, href: '/avs/', rotas: ['/avs'] },
+    { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
+    { rotulo: 'Análises', icone: FileClock, href: '/analises/', rotas: ['/analises'] },
+    {
+      rotulo: 'Configurações',
+      icone: Settings,
+      href: '/configuracoes/',
+      rotas: ['/configuracoes'],
+      permissao: 'administracao',
+    },
+  ],
+};
 
 export function BarraLateral({
+  navegacao,
   permissoes,
   aoRetrair,
 }: {
+  navegacao: NavegacaoLateral;
   permissoes: PermissaoDTO[];
   aoRetrair: () => void;
 }) {
@@ -35,16 +90,28 @@ export function BarraLateral({
   const ehAtivo = (item: ItemNavegacao) =>
     item.rotas?.some((rota) => (rota === '/' ? rotaAtual === '/' : rotaAtual.startsWith(rota)));
 
-  const itensVisiveis = ITENS.filter(
+  const itensVisiveis = navegacao.itens.filter(
     (item) => !item.permissao || permissoes.includes(item.permissao),
   );
 
   return (
     <nav aria-label="Navegação principal" className="vidro flex w-56 shrink-0 flex-col rounded-2xl p-3">
       <div className="flex items-center px-3 pb-2 pt-1">
-        <p className="flex-1 text-[11px] font-semibold uppercase tracking-wider text-texto-sutil">
-          Planejamento
-        </p>
+        <Link
+          href="/"
+          className="flex-1 truncate text-[11px] font-semibold uppercase tracking-wider text-texto-sutil hover:text-texto"
+          title="Voltar para o início"
+        >
+          {navegacao.titulo}
+        </Link>
+        <Link
+          href="/"
+          aria-label="Voltar para o início"
+          title="Voltar para o início"
+          className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg text-texto-secundario transition-colors hover:bg-texto/6 hover:text-texto"
+        >
+          <Home aria-hidden className="size-4" />
+        </Link>
         <BotaoIcone
           icone={PanelLeftClose}
           rotulo="Recolher menu lateral"
