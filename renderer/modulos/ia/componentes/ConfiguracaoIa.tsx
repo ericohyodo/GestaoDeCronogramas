@@ -9,7 +9,7 @@ import { CampoTexto, Selecao } from '@/compartilhado/ui/Campos';
 import { DialogoConfirmacao } from '@/compartilhado/ui/DialogoConfirmacao';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
-import { useIaStore } from '../store/use-ia-store';
+import { usarStoreIa } from '../store/use-ia-store';
 
 const OPCOES_DE_MODELO: { valor: ModeloIaDTO; rotulo: string }[] = [
   { valor: 'claude-opus-5', rotulo: 'Anthropic · Claude Opus 5 — análise mais completa' },
@@ -58,11 +58,12 @@ const PROVEDOR: Record<
 };
 
 /** Seção "Inteligência artificial" da tela de Configurações (só administrador). */
-export function ConfiguracaoIa() {
-  const estado = useIaStore((store) => store.estado);
-  const carregar = useIaStore((store) => store.carregar);
-  const configurar = useIaStore((store) => store.configurar);
-  const removerChave = useIaStore((store) => store.removerChave);
+export function ConfiguracaoIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' }) {
+  const usarStore = usarStoreIa(escopo);
+  const estado = usarStore((store) => store.estado);
+  const carregar = usarStore((store) => store.carregar);
+  const configurar = usarStore((store) => store.configurar);
+  const removerChave = usarStore((store) => store.removerChave);
 
   const [chave, setChave] = useState('');
   const [modeloEscolhido, setModeloEscolhido] = useState<ModeloIaDTO | null>(null);
@@ -107,8 +108,18 @@ export function ConfiguracaoIa() {
         <div>
           <h2 className="text-base font-semibold">Inteligência artificial</h2>
           <p className="mt-0.5 text-sm text-texto-secundario">
-            Libera o botão <strong>Analisar com IA</strong> nos cronogramas, para todos os usuários, com o
-            provedor e a chave escolhidos aqui.
+            {escopo === 'avs' ? (
+              <>
+                Libera a <strong>Análise com IA</strong> e o <strong>Chat</strong> do módulo de AVs, para todos os
+                usuários. O modelo escolhido vale só para as AVs; as chaves de API de cada provedor são as mesmas do
+                módulo de Projetos.
+              </>
+            ) : (
+              <>
+                Libera o botão <strong>Analisar com IA</strong> nos cronogramas, para todos os usuários, com o
+                provedor e a chave escolhidos aqui.
+              </>
+            )}
           </p>
         </div>
       </header>
@@ -175,9 +186,9 @@ export function ConfiguracaoIa() {
         <p className="font-medium text-texto">Antes de ativar</p>
         <ul className="mt-1 list-disc space-y-1 pl-4">
           <li>
-            Cada análise envia ao provedor ({dados.nome}) as atividades, datas, percentuais e nomes dos
-            responsáveis do cronograma. A evidência das tarefas não é enviada. Confira se a política da
-            empresa permite.
+            {escopo === 'avs'
+              ? `Cada análise ou pergunta envia ao provedor (${dados.nome}) o resumo das AVs: cliente, descrição, etapa, prazo, responsável, classificação do produto e valores consolidados. Confira se a política da empresa permite.`
+              : `Cada análise envia ao provedor (${dados.nome}) as atividades, datas, percentuais e nomes dos responsáveis do cronograma. A evidência das tarefas não é enviada. Confira se a política da empresa permite.`}
           </li>
           {dados.avisos.map((aviso) => (
             <li key={aviso}>{aviso}</li>

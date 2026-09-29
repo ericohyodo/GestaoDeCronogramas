@@ -205,6 +205,7 @@ describe('Portfólio', () => {
       cofre: armazenamento,
       configuracao: armazenamento,
       modelo,
+      consultaDeAvs: { relatorio: async () => [] },
       consultaDeCronograma: {
         obterResumo: async (id) => resumo(id),
         listarIdsAtivos: async () => ['c1', 'c2'],
@@ -245,6 +246,7 @@ describe('Portfólio', () => {
         cofre: armazenamento,
         configuracao: armazenamento,
         modelo,
+        consultaDeAvs: { relatorio: async () => [] },
         consultaDeCronograma: {
           obterResumo: async (id) => resumo(id),
           listarIdsAtivos: async () => ['c1'],

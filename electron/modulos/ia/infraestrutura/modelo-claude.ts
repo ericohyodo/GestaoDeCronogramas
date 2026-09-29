@@ -89,7 +89,7 @@ export class ModeloClaude implements ModeloDeAnalise {
         max_tokens: LIMITE_DE_TOKENS_DA_RESPOSTA_DO_CHAT,
         // Os dados dos projetos são iguais a cada pergunta da conversa: o cache barateia as seguintes.
         system: [
-          { type: 'text', text: sistemaDoChat(pedido.instrucoes, pedido.contexto), cache_control: { type: 'ephemeral' } },
+          { type: 'text', text: sistemaDoChat(pedido.instrucoes, pedido.contexto, pedido.rotuloDosDados), cache_control: { type: 'ephemeral' } },
         ],
         messages: pedido.mensagens.map((mensagem) => ({
           role: mensagem.papel === 'usuario' ? ('user' as const) : ('assistant' as const),

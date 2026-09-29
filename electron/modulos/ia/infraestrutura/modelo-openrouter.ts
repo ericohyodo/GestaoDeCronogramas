@@ -163,7 +163,7 @@ export class ModeloOpenRouter implements ModeloDeAnalise {
       model: pedido.modelo,
       max_tokens: LIMITE_DE_TOKENS_DA_RESPOSTA_DO_CHAT,
       messages: [
-        { role: 'system', content: sistemaDoChat(pedido.instrucoes, pedido.contexto) },
+        { role: 'system', content: sistemaDoChat(pedido.instrucoes, pedido.contexto, pedido.rotuloDosDados) },
         ...pedido.mensagens.map((mensagem) => ({
           role: mensagem.papel === 'usuario' ? 'user' : 'assistant',
           content: mensagem.texto,

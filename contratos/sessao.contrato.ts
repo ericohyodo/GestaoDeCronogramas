@@ -35,3 +35,13 @@ export interface PrimeiroAcessoEntrada {
   login: string;
   senha: string;
 }
+
+export interface UsuarioOnlineDTO {
+  id: string;
+  nome: string;
+  perfil: PerfilDTO;
+  /** Desde quando está com o aplicativo aberto (a instância mais antiga da pessoa). */
+  desde: string;
+  /** Quantas instâncias do aplicativo a pessoa tem abertas agora. */
+  instancias: number;
+}

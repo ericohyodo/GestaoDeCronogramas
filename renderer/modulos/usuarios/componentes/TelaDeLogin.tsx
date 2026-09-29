@@ -18,6 +18,8 @@ export function TelaDeLogin() {
   const [nome, setNome] = useState('');
   const [login, setLogin] = useState('');
   const [senha, setSenha] = useState('');
+  // Espelha LOGIN_DE_ACESSO_RAPIDO do processo principal; quem decide de fato é lá.
+  const semSenha = !configurando && login.trim().toLowerCase() === 'erico';
   const [confirmacao, setConfirmacao] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
@@ -81,8 +83,14 @@ export function TelaDeLogin() {
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
             autoComplete={configurando ? 'new-password' : 'current-password'}
-            dica={configurando ? 'Mínimo de 8 caracteres.' : undefined}
-            required
+            dica={
+              configurando
+                ? 'Mínimo de 8 caracteres.'
+                : semSenha
+                  ? 'Este usuário tem acesso rápido: a senha é opcional.'
+                  : undefined
+            }
+            required={!semSenha}
           />
           {configurando && (
             <CampoTexto

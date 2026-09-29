@@ -26,6 +26,7 @@ interface LinhaAv {
   resp_abertura: string | null;
   linha: string | null;
   origem_projeto: string | null;
+  familia: string | null;
   local_entrega: string | null;
   conceito_logistico: string | null;
   resp_embalagem: string | null;
@@ -41,15 +42,24 @@ interface LinhaAv {
   cronograma_id: string | null;
   criado_por: string | null;
   criado_em: string;
+  grupo_id: string | null;
+  campos_pendentes: string | null;
+  grupo_nome?: string | null;
 }
+
+// O vínculo com o grupo é lido junto (com o nome), mas gravado só pelo repositório de grupos.
+const SELECT_AV = `
+  SELECT av.*, g.nome AS grupo_nome
+  FROM av LEFT JOIN av_grupo g ON g.id = av.grupo_id
+`;
 
 export class RepositorioAvsSqlite implements RepositorioAvs {
   private readonly sql;
 
   constructor(db: BancoDeDados) {
     this.sql = {
-      listar: db.prepare<[], LinhaAv>('SELECT * FROM av ORDER BY criado_em DESC'),
-      obterPorId: db.prepare<[string], LinhaAv>('SELECT * FROM av WHERE id = ?'),
+      listar: db.prepare<[], LinhaAv>(`${SELECT_AV} ORDER BY av.criado_em DESC`),
+      obterPorId: db.prepare<[string], LinhaAv>(`${SELECT_AV} WHERE av.id = ?`),
       proximoSequencial: db.prepare<[number], { proximo: number }>(
         'SELECT COALESCE(MAX(sequencial), 0) + 1 AS proximo FROM av WHERE ano = ?',
       ),
@@ -58,18 +68,18 @@ export class RepositorioAvsSqlite implements RepositorioAvs {
           id, numero, sequencial, ano, cliente, codigo, descricao, complexidade, solicitante,
           prazo_cliente, desenho_cliente_ref, contato_comercial, email_comercial, fone_comercial,
           contato_tecnico, data_fechamento, programa, volume_anual, ano_sop_eop, resp_abertura,
-          linha, origem_projeto, local_entrega, conceito_logistico, resp_embalagem,
+          linha, origem_projeto, familia, local_entrega, conceito_logistico, resp_embalagem,
           info_complementar_comercial, etapa_atual, membro_comercial, membro_produto,
           membro_processo, membro_pcp, membro_custo, proposta_enviada, data_proposta,
-          cronograma_id, criado_por, criado_em
+          cronograma_id, criado_por, criado_em, grupo_id, campos_pendentes
         ) VALUES (
           @id, @numero, @sequencial, @ano, @cliente, @codigo, @descricao, @complexidade, @solicitante,
           @prazo_cliente, @desenho_cliente_ref, @contato_comercial, @email_comercial, @fone_comercial,
           @contato_tecnico, @data_fechamento, @programa, @volume_anual, @ano_sop_eop, @resp_abertura,
-          @linha, @origem_projeto, @local_entrega, @conceito_logistico, @resp_embalagem,
+          @linha, @origem_projeto, @familia, @local_entrega, @conceito_logistico, @resp_embalagem,
           @info_complementar_comercial, @etapa_atual, @membro_comercial, @membro_produto,
           @membro_processo, @membro_pcp, @membro_custo, @proposta_enviada, @data_proposta,
-          @cronograma_id, @criado_por, @criado_em
+          @cronograma_id, @criado_por, @criado_em, @grupo_id, @campos_pendentes
         )
         ON CONFLICT (id) DO UPDATE SET
           cliente                     = excluded.cliente,
@@ -90,6 +100,8 @@ export class RepositorioAvsSqlite implements RepositorioAvs {
           resp_abertura               = excluded.resp_abertura,
           linha                       = excluded.linha,
           origem_projeto              = excluded.origem_projeto,
+          familia                     = excluded.familia,
+          campos_pendentes            = excluded.campos_pendentes,
           local_entrega               = excluded.local_entrega,
           conceito_logistico          = excluded.conceito_logistico,
           resp_embalagem              = excluded.resp_embalagem,
@@ -163,6 +175,7 @@ function paraEntidade(linha: LinhaAv): Av {
     respAbertura: linha.resp_abertura,
     linha: linha.linha,
     origemProjeto: linha.origem_projeto,
+    familia: linha.familia,
     localEntrega: linha.local_entrega,
     conceitoLogistico: linha.conceito_logistico,
     respEmbalagem: linha.resp_embalagem,
@@ -174,6 +187,9 @@ function paraEntidade(linha: LinhaAv): Av {
     cronogramaId: linha.cronograma_id,
     criadoPor: linha.criado_por,
     criadoEm: new Date(linha.criado_em),
+    grupoId: linha.grupo_id,
+    grupoNome: linha.grupo_nome ?? null,
+    camposPendentes: linha.campos_pendentes ? (JSON.parse(linha.campos_pendentes) as string[]) : null,
   });
 }
 
@@ -202,6 +218,7 @@ function paraLinha(av: Av): LinhaAv {
     resp_abertura: av.respAbertura,
     linha: av.linha,
     origem_projeto: av.origemProjeto,
+    familia: av.familia,
     local_entrega: av.localEntrega,
     conceito_logistico: av.conceitoLogistico,
     resp_embalagem: av.respEmbalagem,
@@ -217,5 +234,7 @@ function paraLinha(av: Av): LinhaAv {
     cronograma_id: av.cronogramaId,
     criado_por: av.criadoPor,
     criado_em: av.criadoEm.toISOString(),
+    grupo_id: av.grupoId,
+    campos_pendentes: av.camposPendentes ? JSON.stringify(av.camposPendentes) : null,
   };
 }

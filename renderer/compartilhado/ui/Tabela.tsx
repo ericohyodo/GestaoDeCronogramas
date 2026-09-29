@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import type { ComponentProps } from 'react';
+import { Ajuda } from './Ajuda';
 
 /** Primitivas de tabela. Linhas sem blur (desempenho): o vidro fica no painel que envolve a tabela. */
 export function Tabela({ className, ...props }: ComponentProps<'table'>) {
@@ -10,7 +11,13 @@ export function Tabela({ className, ...props }: ComponentProps<'table'>) {
   );
 }
 
-export function CelulaCabecalho({ className, ...props }: ComponentProps<'th'>) {
+/** `ajuda` acrescenta o ícone de explicação ao lado do título da coluna. */
+export function CelulaCabecalho({
+  className,
+  ajuda,
+  children,
+  ...props
+}: ComponentProps<'th'> & { ajuda?: string }) {
   return (
     <th
       scope="col"
@@ -19,7 +26,16 @@ export function CelulaCabecalho({ className, ...props }: ComponentProps<'th'>) {
         className,
       )}
       {...props}
-    />
+    >
+      {ajuda ? (
+        <span className="inline-flex items-center gap-1">
+          {children}
+          <Ajuda texto={ajuda} />
+        </span>
+      ) : (
+        children
+      )}
+    </th>
   );
 }
 

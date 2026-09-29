@@ -1,20 +1,26 @@
 'use client';
 
 import clsx from 'clsx';
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { type ReactNode, useEffect, useId, useRef } from 'react';
-import { BotaoIcone } from './Botao';
+import { Botao, BotaoIcone } from './Botao';
 
 interface PropsModal {
   aberto: boolean;
   titulo: string;
   descricao?: string;
   aoFechar: () => void;
-  largura?: 'sm' | 'md' | 'lg';
+  largura?: 'sm' | 'md' | 'lg' | 'cheia';
   children: ReactNode;
 }
 
-const LARGURAS = { sm: 'max-w-sm', md: 'max-w-lg', lg: 'max-w-2xl' } as const;
+const LARGURAS = {
+  sm: 'max-w-sm',
+  md: 'max-w-lg',
+  lg: 'max-w-2xl',
+  // Ocupa a janela inteira (o `open:` evita que o display:flex apareça com o <dialog> fechado).
+  cheia: 'h-dvh max-h-none w-dvw max-w-none rounded-none open:flex open:flex-col',
+} as const;
 
 /**
  * Modal sobre <dialog> nativo: foco preso, Esc para fechar e ::backdrop com desfoque.
@@ -40,23 +46,40 @@ export function Modal({ aberto, titulo, descricao, aoFechar, largura = 'md', chi
       aria-labelledby={idTitulo}
       onClose={aoFechar}
       className={clsx(
-        'vidro-forte m-auto w-[calc(100%-2rem)] rounded-2xl p-0 text-texto',
-        'backdrop:bg-[#0b1220]/35 backdrop:backdrop-blur-[3px]',
+        'm-auto p-0 text-texto',
+        // Em tela cheia o vidro (backdrop-filter sobre a janela toda) pesa na GPU e trava com PDFs: fundo sólido.
+        largura === 'cheia'
+          ? 'rounded-none border-0 bg-superficie-solida'
+          : 'vidro-forte w-[calc(100%-2rem)] rounded-2xl backdrop:backdrop-blur-[3px]',
+        'backdrop:bg-[#0b1220]/35',
         LARGURAS[largura],
       )}
     >
       {aberto && (
         <>
-          <header className="flex items-start justify-between gap-4 px-6 pt-5">
-            <div>
-              <h2 id={idTitulo} className="text-base font-semibold">
+          <header
+            className={clsx(
+              'flex gap-4 px-6 pt-5',
+              // Em tela cheia o canto superior direito é dos controles da janela: o retorno fica à esquerda.
+              largura === 'cheia' ? 'items-center' : 'items-start justify-between',
+            )}
+          >
+            {largura === 'cheia' && (
+              <Botao icone={ArrowLeft} onClick={aoFechar}>
+                Voltar
+              </Botao>
+            )}
+            <div className="min-w-0">
+              <h2 id={idTitulo} className="truncate text-base font-semibold">
                 {titulo}
               </h2>
               {descricao && <p className="mt-1 text-sm text-texto-secundario">{descricao}</p>}
             </div>
-            <BotaoIcone icone={X} rotulo="Fechar" onClick={aoFechar} className="-mr-2 -mt-1" />
+            {largura !== 'cheia' && (
+              <BotaoIcone icone={X} rotulo="Fechar" onClick={aoFechar} className="-mr-2 -mt-1" />
+            )}
           </header>
-          <div className="px-6 pb-5 pt-4">{children}</div>
+          <div className={clsx('px-6 pb-5 pt-4', largura === 'cheia' && 'min-h-0 flex-1')}>{children}</div>
         </>
       )}
     </dialog>

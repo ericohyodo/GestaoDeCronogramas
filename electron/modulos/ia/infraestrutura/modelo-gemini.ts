@@ -105,7 +105,7 @@ export class ModeloGemini implements ModeloDeAnalise {
           role: mensagem.papel === 'usuario' ? 'user' : 'model',
           parts: [{ text: mensagem.texto }],
         })),
-        config: { systemInstruction: sistemaDoChat(pedido.instrucoes, pedido.contexto) },
+        config: { systemInstruction: sistemaDoChat(pedido.instrucoes, pedido.contexto, pedido.rotuloDosDados) },
       }),
     );
     console.info(

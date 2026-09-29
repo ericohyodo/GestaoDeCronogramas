@@ -17,10 +17,12 @@ import {
   ListarUsuarios,
 } from './aplicacao/casos-de-uso/gerenciar-usuarios';
 import { ObterSessao, Sair } from './aplicacao/casos-de-uso/obter-sessao';
+import { BaterPresenca, ListarUsuariosOnline } from './aplicacao/casos-de-uso/presenca';
 import { Sessao } from './aplicacao/sessao';
 import { registrarIpcUsuarios } from './apresentacao/controlador-ipc-usuarios';
 import type { Perfil } from './dominio/perfil';
 import { HashDeSenhaScrypt } from './infraestrutura/hash-de-senha-scrypt';
+import { RepositorioPresencaSqlite } from './infraestrutura/repositorio-presenca-sqlite';
 import { RepositorioUsuariosSqlite } from './infraestrutura/repositorio-usuarios-sqlite';
 
 export interface DependenciasModuloUsuarios {
@@ -34,6 +36,8 @@ export interface ModuloUsuarios {
   /** Consultado pelo registrador de IPC para liberar ou barrar cada canal. */
   controleDeAcesso: ControleDeAcesso;
   /** Consultas que o módulo oferece aos demais módulos. */
+  /** Avisa que este aplicativo está fechando: some da lista de usuários online. */
+  encerrar(): Promise<void>;
   consultas: {
     /** Nome de quem está logado agora; `null` sem sessão. */
     nomeDoUsuarioAtual(): string | null;
@@ -48,11 +52,16 @@ export function montarModuloUsuarios(deps: DependenciasModuloUsuarios): ModuloUs
   const repositorio = new RepositorioUsuariosSqlite(deps.db);
   const hashDeSenha = new HashDeSenhaScrypt();
   const sessao = new Sessao();
+  const presenca = new RepositorioPresencaSqlite(deps.db);
+  // Uma identificação por execução do aplicativo (o mesmo usuário pode ter várias instâncias abertas).
+  const idDestaInstancia = deps.geradorDeId.gerar();
+
+  const sair = new Sair(repositorio, sessao);
 
   registrarIpcUsuarios(deps.ipc, {
     obterSessao: new ObterSessao(repositorio, sessao),
     entrar: new Entrar(repositorio, hashDeSenha, sessao, deps.relogio),
-    sair: new Sair(repositorio, sessao),
+    sair,
     primeiroAcesso: new CriarPrimeiroUsuario(
       repositorio,
       hashDeSenha,
@@ -65,9 +74,12 @@ export function montarModuloUsuarios(deps: DependenciasModuloUsuarios): ModuloUs
     atualizar: new AtualizarUsuario(repositorio, deps.relogio),
     alterarSenha: new AlterarSenha(repositorio, hashDeSenha, sessao, deps.relogio),
     excluir: new ExcluirUsuario(repositorio, sessao),
+    baterPresenca: new BaterPresenca(presenca, sessao, deps.relogio, idDestaInstancia),
+    listarOnline: new ListarUsuariosOnline(presenca, deps.relogio),
   });
 
   return {
+    encerrar: () => presenca.remover(idDestaInstancia),
     controleDeAcesso: {
       autenticado: () => sessao.autenticado(),
       possuiPermissao: (permissao) => sessao.possuiPermissao(permissao),

@@ -1,0 +1,34 @@
+export interface SecaoProduto {
+  avId: string;
+  descritivoTecnicoExistente: boolean | null;
+  descritivoTecnicoDisponivel: boolean | null;
+  desenho2dExistente: boolean | null;
+  desenho2dDisponivel: boolean | null;
+  desenho3dExistente: boolean | null;
+  desenho3dDisponivel: boolean | null;
+  desenhoInterfacesExistente: boolean | null;
+  desenhoInterfacesDisponivel: boolean | null;
+  normasTecnicasExistente: boolean | null;
+  normasTecnicasDisponivel: boolean | null;
+  requisitosClienteExistente: boolean | null;
+  requisitosClienteDisponivel: boolean | null;
+  requisitosGarantiaExistente: boolean | null;
+  requisitosGarantiaDisponivel: boolean | null;
+  descritivoTecnicoLink: string | null;
+  desenho2dLink: string | null;
+  desenho3dLink: string | null;
+  desenhoInterfacesLink: string | null;
+  normasTecnicasLink: string | null;
+  requisitosClienteLink: string | null;
+  requisitosGarantiaLink: string | null;
+  escopoTecnico: string | null;
+  riscosProjeto: string | null;
+  premissasProjeto: string | null;
+  recursosProjeto: string | null;
+  restricoesProjeto: string | null;
+  infoComplementar: string | null;
+  prazoPrototipoDias: number | null;
+  complexidade: string | null;
+  atualizadoEm: Date | null;
+  atualizadoPor: string | null;
+}

@@ -16,6 +16,7 @@ import {
   ObterEstadoIa,
   RemoverChaveIa,
 } from './aplicacao/casos-de-uso';
+import { AnalisarAvs, ConversarSobreAvs, UltimaAnaliseAvs } from './aplicacao/casos-de-uso-avs';
 import {
   ExcluirAnalise,
   ListarAnalises,
@@ -27,7 +28,12 @@ import {
   RestaurarChecklistIa,
   SalvarInstrucoesIa,
 } from './aplicacao/casos-de-uso-instrucoes';
-import type { ConsultaDeCronograma, ConsultaDeEstrutura, QuemEstaUsando } from './aplicacao/portas';
+import type {
+  ConsultaDeAvs,
+  ConsultaDeCronograma,
+  ConsultaDeEstrutura,
+  QuemEstaUsando,
+} from './aplicacao/portas';
 import { registrarIpcIa } from './apresentacao/controlador-ipc-ia';
 import { ConfiguracaoIaSqlite } from './infraestrutura/configuracao-ia-sqlite';
 import { ModeloClaude } from './infraestrutura/modelo-claude';
@@ -36,7 +42,7 @@ import { ModeloOpenRouter } from './infraestrutura/modelo-openrouter';
 import { ModeloPorProvedor } from './infraestrutura/modelo-por-provedor';
 import { RepositorioDeAnalisesSqlite } from './infraestrutura/repositorio-de-analises-sqlite';
 
-export type { ConsultaDeCronograma, ConsultaDeEstrutura, QuemEstaUsando };
+export type { ConsultaDeAvs, ConsultaDeCronograma, ConsultaDeEstrutura, QuemEstaUsando };
 
 export interface DependenciasModuloIa {
   db: BancoDeDados;
@@ -45,6 +51,7 @@ export interface DependenciasModuloIa {
   geradorDeId: GeradorDeId;
   consultaDeCronograma: ConsultaDeCronograma;
   consultaDeEstrutura: ConsultaDeEstrutura;
+  consultaDeAvs: ConsultaDeAvs;
   quemEstaUsando: QuemEstaUsando;
 }
 
@@ -71,6 +78,7 @@ export function montarModuloIa(deps: DependenciasModuloIa): ModuloIa {
     modelo,
     consultaDeCronograma: deps.consultaDeCronograma,
     consultaDeEstrutura: deps.consultaDeEstrutura,
+    consultaDeAvs: deps.consultaDeAvs,
     instrucoes: configuracao,
     arquivo,
     quemEstaUsando: deps.quemEstaUsando,
@@ -88,6 +96,15 @@ export function montarModuloIa(deps: DependenciasModuloIa): ModuloIa {
     obterInstrucoes: new ObterInstrucoesIa(configuracao),
     salvarInstrucoes: new SalvarInstrucoesIa(configuracao, deps.relogio),
     restaurarChecklist: new RestaurarChecklistIa(configuracao, deps.relogio),
+    estadoAvs: new ObterEstadoIa(configuracao, configuracao, 'avs'),
+    configurarAvs: new ConfigurarIa(configuracao, configuracao, modelo, 'avs'),
+    removerChaveAvs: new RemoverChaveIa(configuracao, configuracao, 'avs'),
+    analisarAvs: new AnalisarAvs(dependenciasDaAnalise),
+    ultimaAnaliseAvs: new UltimaAnaliseAvs(dependenciasDaAnalise),
+    conversarAvs: new ConversarSobreAvs(dependenciasDaAnalise),
+    obterInstrucoesAvs: new ObterInstrucoesIa(configuracao, 'avs'),
+    salvarInstrucoesAvs: new SalvarInstrucoesIa(configuracao, deps.relogio, 'avs'),
+    restaurarChecklistAvs: new RestaurarChecklistIa(configuracao, deps.relogio, 'avs'),
     listarAnalises: new ListarAnalises(arquivo),
     obterAnalise: new ObterAnalise(arquivo),
     ultimaAnalise: new UltimaAnalise(arquivo),

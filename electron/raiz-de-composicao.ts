@@ -9,6 +9,7 @@ import { montarModuloIa } from './modulos/ia';
 import { montarModuloImpressao } from './modulos/impressao';
 import { montarModuloPreferencias } from './modulos/preferencias';
 import { montarModuloResponsaveis } from './modulos/responsaveis';
+import { montarModuloSds } from './modulos/sds';
 import { montarModuloTarefas } from './modulos/tarefas';
 import { montarModuloUsuarios } from './modulos/usuarios';
 import type { ControleDeAcesso } from './nucleo/aplicacao/portas/controle-de-acesso';
@@ -87,7 +88,9 @@ export async function montarAplicacao(opcoes: {
     },
   });
 
-  montarModuloAvs({
+  const sds = montarModuloSds({ db, ipc, relogio, geradorDeId });
+
+  const avs = montarModuloAvs({
     db,
     ipc,
     relogio,
@@ -97,6 +100,7 @@ export async function montarAplicacao(opcoes: {
       listarAtivos: () => usuarios.consultas.listarAtivos(),
       obterPerfilGlobal: (id) => usuarios.consultas.obterPerfilGlobal(id),
     },
+    criadorDePreSd: { criar: (entrada) => sds.comandos.criarPreSd(entrada) },
   });
 
   const ia = montarModuloIa({
@@ -110,6 +114,7 @@ export async function montarAplicacao(opcoes: {
         (await cronogramas.consultas.listar()).filter((c) => !c.arquivado).map((c) => c.id),
     },
     consultaDeEstrutura: { obterEstrutura: (id) => tarefas.consultas.obterEstrutura(id) },
+    consultaDeAvs: { relatorio: () => avs.consultas.relatorio() },
     quemEstaUsando: { nomeDoUsuarioAtual: () => usuarios.consultas.nomeDoUsuarioAtual() },
   });
 
@@ -130,5 +135,13 @@ export async function montarAplicacao(opcoes: {
     evento.returnValue = aparencia;
   });
 
-  return { caminhoDoBanco, aparencia, encerrar: () => db.close() };
+  return {
+    caminhoDoBanco,
+    aparencia,
+    encerrar: () => {
+      // Sai da lista de usuários online antes de fechar o banco (falha aqui não deve impedir o fechamento).
+      void usuarios.encerrar().catch(() => undefined);
+      db.close();
+    },
+  };
 }
