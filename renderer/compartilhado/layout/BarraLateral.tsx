@@ -6,6 +6,7 @@ import {
   CalendarRange,
   ClipboardCheck,
   FileClock,
+  FileText,
   Home,
   type LucideIcon,
   MessageSquareText,
@@ -68,23 +69,33 @@ export const NAV_AVS: NavegacaoLateral = {
   itens: [
     { rotulo: 'AVs', icone: ClipboardCheck, href: '/avs/', rotas: ['/avs'] },
     { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
-    { rotulo: 'Relatórios', icone: BarChart3, href: '/relatorios/', rotas: ['/relatorios'] },
-    { rotulo: 'Análises', icone: FileClock, href: '/analises/', rotas: ['/analises'] },
-    { rotulo: 'Chat com IA', icone: MessageSquareText, href: '/chat/', rotas: ['/chat'] },
+    // Relatórios, análises, chat, instruções e configurações da IA são próprios do módulo de AVs.
+    { rotulo: 'Relatórios', icone: BarChart3, href: '/avs/relatorios/', rotas: ['/avs/relatorios'] },
+    { rotulo: 'Análises', icone: FileClock, href: '/avs/analises/', rotas: ['/avs/analises'] },
+    { rotulo: 'Chat com IA', icone: MessageSquareText, href: '/avs/chat/', rotas: ['/avs/chat'] },
     {
       rotulo: 'Instruções da IA',
       icone: ScrollText,
-      href: '/instrucoes-ia/',
-      rotas: ['/instrucoes-ia'],
+      href: '/avs/instrucoes-ia/',
+      rotas: ['/avs/instrucoes-ia'],
       permissao: 'planejamento',
     },
     {
       rotulo: 'Configurações',
       icone: Settings,
-      href: '/configuracoes/',
-      rotas: ['/configuracoes'],
+      href: '/avs/configuracoes/',
+      rotas: ['/avs/configuracoes'],
       permissao: 'administracao',
     },
+  ],
+};
+
+// Só o que é realmente compartilhado (usuários); relatórios, análises e IA de cada módulo são separados.
+export const NAV_SDS: NavegacaoLateral = {
+  titulo: 'Solicitações de Desenvolvimento',
+  itens: [
+    { rotulo: 'SDs', icone: FileText, href: '/sds/', rotas: ['/sds'] },
+    { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
   ],
 };
 
@@ -98,12 +109,20 @@ export function BarraLateral({
   aoRetrair: () => void;
 }) {
   const rotaAtual = usePathname();
-  const ehAtivo = (item: ItemNavegacao) =>
-    item.rotas?.some((rota) => (rota === '/' ? rotaAtual === '/' : rotaAtual.startsWith(rota)));
-
   const itensVisiveis = navegacao.itens.filter(
     (item) => !item.permissao || permissoes.includes(item.permissao),
   );
+
+  // Vale o item de prefixo mais longo: em /avs/relatorios/ só "Relatórios" fica ativo, não "AVs" (/avs).
+  const tamanhoDoMelhorPrefixo = (item: ItemNavegacao) =>
+    Math.max(
+      -1,
+      ...(item.rotas ?? []).map((rota) =>
+        (rota === '/' ? rotaAtual === '/' : rotaAtual.startsWith(rota)) ? rota.length : -1,
+      ),
+    );
+  const maiorPrefixo = Math.max(-1, ...itensVisiveis.map(tamanhoDoMelhorPrefixo));
+  const ehAtivo = (item: ItemNavegacao) => maiorPrefixo >= 0 && tamanhoDoMelhorPrefixo(item) === maiorPrefixo;
 
   return (
     <nav aria-label="Navegação principal" className="vidro flex w-56 shrink-0 flex-col rounded-2xl p-3">

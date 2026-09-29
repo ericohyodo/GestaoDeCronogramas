@@ -37,7 +37,7 @@ export function ListaAvs({ itens }: { itens: AvResumoDTO[] }) {
       .filter((av) => situacaoDaAv(av) === aba)
       .filter((av) => {
         if (!termo) return true;
-        return [av.numero, av.cliente, av.descricao]
+        return [av.numero, av.cliente, av.descricao, av.grupo?.nome]
           .filter(Boolean)
           .some((campo) => campo!.toLowerCase().includes(termo));
       });
@@ -98,6 +98,7 @@ export function ListaAvs({ itens }: { itens: AvResumoDTO[] }) {
                 <CelulaTabela className="max-w-sm">
                   <p className="truncate font-medium">{av.cliente ?? '—'}</p>
                   <p className="truncate text-xs text-texto-secundario">{av.descricao}</p>
+                  {av.grupo && <p className="truncate text-xs text-titulo-secao">Grupo: {av.grupo.nome}</p>}
                 </CelulaTabela>
                 <CelulaTabela>
                   <EtapaBadge etapa={av.etapaAtual} />

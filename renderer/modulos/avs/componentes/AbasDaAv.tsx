@@ -4,18 +4,22 @@ import clsx from 'clsx';
 import { AREAS_AV, type AreaAvDTO, type EtapaAvDTO } from '@contratos/avs.contrato';
 import { ROTULO_AREA } from '../rotulos';
 
+export type AbaAv = AreaAvDTO | 'resumo';
+
+const ABAS: readonly AbaAv[] = [...AREAS_AV, 'resumo'];
+
 export function AbasDaAv({
   abaAtiva,
   aoSelecionar,
   etapaAtual,
 }: {
-  abaAtiva: AreaAvDTO;
-  aoSelecionar: (area: AreaAvDTO) => void;
+  abaAtiva: AbaAv;
+  aoSelecionar: (aba: AbaAv) => void;
   etapaAtual: EtapaAvDTO;
 }) {
   return (
     <div role="tablist" aria-label="Seções da AV" className="flex flex-wrap gap-1 rounded-lg bg-texto/5 p-1">
-      {AREAS_AV.map((area) => (
+      {ABAS.map((area) => (
         <button
           key={area}
           type="button"
@@ -29,7 +33,7 @@ export function AbasDaAv({
               : 'text-texto-secundario hover:text-texto',
           )}
         >
-          {ROTULO_AREA[area]}
+          {area === 'resumo' ? 'Resumo' : ROTULO_AREA[area]}
           {etapaAtual.area === area && (
             <span
               aria-label="Etapa atual"

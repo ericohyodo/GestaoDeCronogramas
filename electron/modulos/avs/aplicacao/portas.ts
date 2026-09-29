@@ -1,4 +1,5 @@
 import type { PerfilDTO } from '@contratos/sessao.contrato';
+import type { SdDTO } from '@contratos/sds.contrato';
 
 export interface UsuarioAtualAv {
   id: string;
@@ -13,6 +14,11 @@ export interface ConsultaDeUsuarios {
   obterPerfilGlobal(id: string): Promise<PerfilDTO | null>;
 }
 
+/** Fornecida pelo módulo `sds`: cria a SD de uma AV sem expor o domínio de SDs. */
+export interface CriadorDePreSd {
+  criar(entrada: { avId: string; avNumero: string; usuarioId: string | null }): Promise<SdDTO>;
+}
+
 /** Abre uma pasta (rede/local) no explorador de arquivos, ou uma URL no navegador padrão. */
 export interface AbridorDeCaminho {
   /** `null` quando abriu com sucesso; mensagem de erro caso contrário. */
@@ -24,10 +30,15 @@ export interface ArquivoSelecionado {
   nomeArquivo: string;
 }
 
+export interface OpcoesSeletorDeArquivos {
+  /** Padrão: seleção múltipla dos tipos de desenho/imagem aceitos como anexo. */
+  modo?: 'anexos' | 'qualquer-arquivo';
+}
+
 /** Abre o diálogo nativo de seleção de arquivos do SO. */
 export interface SeletorDeArquivos {
   /** `null` quando o usuário cancelou. */
-  escolher(): Promise<ArquivoSelecionado[] | null>;
+  escolher(opcoes?: OpcoesSeletorDeArquivos): Promise<ArquivoSelecionado[] | null>;
 }
 
 export interface ArquivoArmazenado {

@@ -28,6 +28,8 @@ export interface AvResumoDTO {
   membros: Partial<Record<AreaAvDTO, MembroAreaDTO>>;
   propostaEnviada: boolean;
   criadoEm: string;
+  /** Grupo de AVs a que esta AV pertence, se houver. */
+  grupo: { id: string; nome: string } | null;
 }
 
 export interface AvDetalheDTO extends AvResumoDTO {
@@ -45,12 +47,17 @@ export interface AvDetalheDTO extends AvResumoDTO {
   respAbertura: string | null;
   linha: string | null;
   origemProjeto: string | null;
+  familia: string | null;
   localEntrega: string | null;
   conceitoLogistico: string | null;
   respEmbalagem: string | null;
   infoComplementarComercial: string | null;
   dataProposta: string | null;
   cronogramaId: string | null;
+  /** Quem abriu a AV (nome do usuário; `null` se a conta foi desativada ou removida). */
+  criadoPorNome: string | null;
+  /** Campos (descricao, codigo, volumeAnual, linha, programa) a preencher à mão após herdar dados do grupo. */
+  camposPendentes: string[];
 }
 
 export interface CriarAvEntrada {
@@ -83,6 +90,7 @@ export interface AtualizarComercialEntrada {
   respAbertura?: string | null;
   linha?: string | null;
   origemProjeto?: string | null;
+  familia?: string | null;
   localEntrega?: string | null;
   conceitoLogistico?: string | null;
   respEmbalagem?: string | null;
@@ -251,6 +259,45 @@ export interface InvestimentoEntrada {
   valor?: number | null;
 }
 
+// --- Estrutura do produto (árvore) ---
+
+export const TIPOS_NO_ESTRUTURA = ['conjunto', 'componente', 'materia_prima', 'embalagem', 'insumo'] as const;
+export type TipoNoEstruturaDTO = (typeof TIPOS_NO_ESTRUTURA)[number];
+
+/**
+ * O que pode ficar dentro de cada tipo. O conjunto principal (nome vindo do desenho do cliente) é implícito e
+ * aceita qualquer tipo; conjuntos e componentes também; matérias-primas, embalagens e insumos são folhas. O "nível" é a
+ * profundidade na árvore.
+ */
+export const FILHOS_PERMITIDOS_NA_ESTRUTURA: Record<TipoNoEstruturaDTO, readonly TipoNoEstruturaDTO[]> = {
+  conjunto: ['conjunto', 'componente', 'materia_prima', 'embalagem', 'insumo'],
+  componente: ['conjunto', 'componente', 'materia_prima', 'embalagem', 'insumo'],
+  materia_prima: [],
+  embalagem: [],
+  insumo: [],
+};
+
+export interface NoEstruturaDTO {
+  id: string;
+  paiId: string | null;
+  tipo: TipoNoEstruturaDTO;
+  codigo: string | null;
+  descricao: string;
+  quantidade: number | null;
+  unidade: string | null;
+}
+
+/** `chave` identifica o item só dentro do envio; `paiChave` aponta para o pai (`null` na raiz). */
+export interface NoEstruturaEntrada {
+  chave: string;
+  paiChave: string | null;
+  tipo: TipoNoEstruturaDTO;
+  codigo?: string | null;
+  descricao: string;
+  quantidade?: number | null;
+  unidade?: string | null;
+}
+
 // --- Eng. Produto ---
 
 export interface SecaoProdutoDTO {
@@ -283,6 +330,10 @@ export interface SecaoProdutoDTO {
   restricoesProjeto: string | null;
   infoComplementar: string | null;
   prazoPrototipoDias: number | null;
+  /** Alta, Média ou Baixa (avaliada pela Engenharia de Produto). */
+  complexidade: string | null;
+  /** Estrutura do produto em árvore, em lista plana com o pai antes dos filhos. */
+  estrutura: NoEstruturaDTO[];
   investimentos: InvestimentoDTO[];
   atualizadoEm: string | null;
 }
@@ -317,13 +368,30 @@ export interface AtualizarSecaoProdutoEntrada {
   restricoesProjeto?: string | null;
   infoComplementar?: string | null;
   prazoPrototipoDias?: number | null;
+  complexidade?: string | null;
+  estrutura: NoEstruturaEntrada[];
   investimentos: InvestimentoEntrada[];
 }
 
 // --- Eng. Processo (só o que já dá pra adiantar; sequência de operações/máquinas fica pra depois) ---
 
+export interface OperacaoDTO {
+  id: string;
+  descricao: string;
+  maquina: string | null;
+  pecasHora: number | null;
+}
+
+export interface OperacaoEntrada {
+  descricao: string;
+  maquina?: string | null;
+  pecasHora?: number | null;
+}
+
 export interface SecaoProcessoDTO {
   prazoProducaoDias: number | null;
+  /** Sequência de operações, na ordem em que acontecem. */
+  operacoes: OperacaoDTO[];
   investimentos: InvestimentoDTO[];
   atualizadoEm: string | null;
 }
@@ -331,6 +399,7 @@ export interface SecaoProcessoDTO {
 export interface AtualizarSecaoProcessoEntrada {
   avId: string;
   prazoProducaoDias?: number | null;
+  operacoes: OperacaoEntrada[];
   investimentos: InvestimentoEntrada[];
 }
 
@@ -355,4 +424,169 @@ export interface ConteudoAnexoDTO {
 export interface SelecionarEAnexarEntrada {
   avId: string;
   secao: AreaAvDTO;
+}
+
+// --- Dados de exemplo ---
+
+export interface GerarAvsExemploSaida {
+  criadas: number;
+  /** `true` quando já havia AVs de exemplo e nada foi criado. */
+  jaExistiam: boolean;
+}
+
+// --- Templates (sequências reutilizáveis) ---
+
+export const TIPOS_TEMPLATE_AV = ['operacoes', 'custo_processo'] as const;
+export type TipoTemplateAvDTO = (typeof TIPOS_TEMPLATE_AV)[number];
+
+export type TemplateAvEntrada =
+  | { tipo: 'operacoes'; nome: string; itens: OperacaoEntrada[] }
+  | { tipo: 'custo_processo'; nome: string; itens: ItemCustoProcessoEntrada[] };
+
+export type TemplateAvDTO = { id: string; nome: string; criadoEm: string } & (
+  | { tipo: 'operacoes'; itens: OperacaoEntrada[] }
+  | { tipo: 'custo_processo'; itens: ItemCustoProcessoEntrada[] }
+);
+
+// --- Grupos de AVs ---
+
+export interface AvDoGrupoDTO {
+  id: string;
+  numero: string;
+  cliente: string | null;
+  descricao: string;
+  etapaAtual: EtapaAvDTO;
+}
+
+export interface GrupoAvDTO {
+  id: string;
+  nome: string;
+  criadoEm: string;
+  avs: AvDoGrupoDTO[];
+}
+
+/** Cria o grupo e, de uma vez, `quantidade` AVs novas e vazias já vinculadas a ele. */
+export interface CriarGrupoAvEntrada {
+  /** Descrição do grupo, ex.: "AVs Projeto Chaplin - Whirlpool". */
+  nome: string;
+  quantidade: number;
+}
+
+export const QUANTIDADE_MINIMA_DO_GRUPO = 2;
+export const QUANTIDADE_MAXIMA_DO_GRUPO = 50;
+
+/** O que dá para replicar da AV aberta para as demais do grupo. */
+export const SECOES_APLICAVEIS_AO_GRUPO = ['comercial', 'equipe'] as const;
+export type SecaoAplicavelAoGrupoDTO = (typeof SECOES_APLICAVEIS_AO_GRUPO)[number];
+
+export interface AplicarAoGrupoEntrada {
+  avId: string;
+  secao: SecaoAplicavelAoGrupoDTO;
+}
+
+export interface AplicarAoGrupoSaida {
+  aplicadas: number;
+  ignoradas: { numero: string; motivo: string }[];
+}
+
+// --- Contatos da AV ---
+
+export interface ContatoAvDTO {
+  id: string;
+  nome: string;
+  area: string | null;
+  telefone: string | null;
+  email: string | null;
+}
+
+export interface ContatoAvEntrada {
+  nome: string;
+  area?: string | null;
+  telefone?: string | null;
+  email?: string | null;
+}
+
+export interface SalvarContatosAvEntrada {
+  avId: string;
+  /** Substitui a lista inteira, na ordem enviada. */
+  contatos: ContatoAvEntrada[];
+}
+
+// --- PCP: carga de máquina, custos logísticos e observações ---
+
+export interface CargaMaquinaDTO {
+  id: string;
+  operacao: string;
+  maquina: string | null;
+  pecasHora: number | null;
+  /** Ocupação da máquina hoje, em %. */
+  cargaAtual: number | null;
+  /** Ocupação prevista depois de implantar o item, em %. */
+  cargaFutura: number | null;
+}
+
+export interface CargaMaquinaEntrada {
+  operacao: string;
+  maquina?: string | null;
+  pecasHora?: number | null;
+  cargaAtual?: number | null;
+  cargaFutura?: number | null;
+}
+
+export interface CustoLogisticoDTO {
+  id: string;
+  descricao: string;
+  valor: number | null;
+}
+
+export interface CustoLogisticoEntrada {
+  descricao: string;
+  valor?: number | null;
+}
+
+export interface SecaoPcpDTO {
+  observacoes: string | null;
+  cargas: CargaMaquinaDTO[];
+  custos: CustoLogisticoDTO[];
+  atualizadoEm: string | null;
+}
+
+export interface AtualizarSecaoPcpEntrada {
+  avId: string;
+  observacoes?: string | null;
+  cargas: CargaMaquinaEntrada[];
+  custos: CustoLogisticoEntrada[];
+}
+
+// --- Relatório das AVs (também é a base do que a IA enxerga sobre as AVs) ---
+
+export type SituacaoAvDTO = 'em_andamento' | 'concluida' | 'declinada';
+
+export interface LinhaRelatorioAvDTO {
+  id: string;
+  numero: string;
+  cliente: string | null;
+  descricao: string;
+  grupo: string | null;
+  etapa: string;
+  etapaChave: string;
+  situacao: SituacaoAvDTO;
+  /** ISO da criação da AV. */
+  abertaEm: string;
+  /** Prazo para a AV (data do cliente); `null` se não informado. */
+  prazo: string | null;
+  /** Em andamento e com o prazo já vencido. */
+  atrasada: boolean;
+  /** Dias parada na etapa atual (desde a última mudança de etapa ou, sem histórico, desde a abertura). */
+  diasNaEtapa: number;
+  /** Quem responde pela área da etapa atual; `null` em etapas finais ou sem responsável. */
+  responsavelDaEtapa: string | null;
+  familia: string | null;
+  linha: string | null;
+  complexidade: string | null;
+  volumeAnual: number | null;
+  /** Soma dos investimentos de Eng. Produto e Eng. Processo (R$). */
+  investimentoTotal: number;
+  /** Soma dos custos do Mapa de Custo (materiais + mão de obra), por peça (R$). */
+  custoPorPeca: number;
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { TituloSecao } from './SecaoAv';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { useAvsStore } from '../store/use-avs-store';
 
@@ -30,7 +31,7 @@ export function DashboardAvPanel({
         <Indicador rotulo="Declinadas" valor={dashboard.declinadas} />
       </div>
       <PainelVidro className="flex flex-col gap-2 p-5">
-        <p className="text-xs font-medium text-texto-sutil">AVs por etapa</p>
+        <TituloSecao>AVs por etapa</TituloSecao>
         <ul className="flex flex-col gap-2">
           {dashboard.porEtapa.map(({ etapa, quantidade }) => (
             <li key={etapa.numero}>

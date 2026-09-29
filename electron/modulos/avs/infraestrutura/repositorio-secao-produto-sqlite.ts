@@ -1,3 +1,4 @@
+import type { NoEstrutura } from '../dominio/estrutura-produto';
 import type { BancoDeDados } from '../../../nucleo/infraestrutura/banco/conexao-sqlite';
 import type { AreaInvestimento, ClassificacaoInvestimento, Investimento } from '../dominio/investimento';
 import type { DadosSecaoProduto, RepositorioSecaoProduto } from '../dominio/repositorio-secao-produto';
@@ -33,6 +34,7 @@ interface LinhaSecaoProduto {
   restricoes_projeto: string | null;
   info_complementar: string | null;
   prazo_prototipo_dias: number | null;
+  complexidade: string | null;
   atualizado_em: string | null;
   atualizado_por: string | null;
 }
@@ -45,6 +47,18 @@ interface LinhaInvestimento {
   classificacao: ClassificacaoInvestimento | null;
   valor: number | null;
   ordem: number;
+}
+
+interface LinhaNoEstrutura {
+  id: string;
+  av_id: string;
+  pai_id: string | null;
+  ordem: number;
+  tipo: NoEstrutura['tipo'];
+  codigo: string | null;
+  descricao: string;
+  quantidade: number | null;
+  unidade: string | null;
 }
 
 const AREA = 'produto' as const;
@@ -60,6 +74,14 @@ export class RepositorioSecaoProdutoSqlite implements RepositorioSecaoProduto {
       listarInvestimentos: db.prepare<[string, AreaInvestimento], LinhaInvestimento>(
         'SELECT * FROM av_investimentos WHERE av_id = ? AND area = ? ORDER BY ordem',
       ),
+      listarEstrutura: db.prepare<[string], LinhaNoEstrutura>(
+        'SELECT * FROM av_estrutura_produto WHERE av_id = ? ORDER BY ordem',
+      ),
+      excluirEstrutura: db.prepare<[string]>('DELETE FROM av_estrutura_produto WHERE av_id = ?'),
+      inserirNoEstrutura: db.prepare<[LinhaNoEstrutura]>(`
+        INSERT INTO av_estrutura_produto (id, av_id, pai_id, ordem, tipo, codigo, descricao, quantidade, unidade)
+        VALUES (@id, @av_id, @pai_id, @ordem, @tipo, @codigo, @descricao, @quantidade, @unidade)
+      `),
       salvarSecao: db.prepare<[LinhaSecaoProduto]>(`
         INSERT INTO av_secao_produto (
           av_id, descritivo_tecnico_existente, descritivo_tecnico_disponivel, desenho_2d_existente,
@@ -70,7 +92,7 @@ export class RepositorioSecaoProdutoSqlite implements RepositorioSecaoProduto {
           descritivo_tecnico_link, desenho_2d_link, desenho_3d_link, desenho_interfaces_link,
           normas_tecnicas_link, requisitos_cliente_link, requisitos_garantia_link, escopo_tecnico,
           riscos_projeto, premissas_projeto, recursos_projeto, restricoes_projeto,
-          info_complementar, prazo_prototipo_dias, atualizado_em, atualizado_por
+          info_complementar, prazo_prototipo_dias, complexidade, atualizado_em, atualizado_por
         ) VALUES (
           @av_id, @descritivo_tecnico_existente, @descritivo_tecnico_disponivel, @desenho_2d_existente,
           @desenho_2d_disponivel, @desenho_3d_existente, @desenho_3d_disponivel,
@@ -80,7 +102,7 @@ export class RepositorioSecaoProdutoSqlite implements RepositorioSecaoProduto {
           @descritivo_tecnico_link, @desenho_2d_link, @desenho_3d_link, @desenho_interfaces_link,
           @normas_tecnicas_link, @requisitos_cliente_link, @requisitos_garantia_link, @escopo_tecnico,
           @riscos_projeto, @premissas_projeto, @recursos_projeto, @restricoes_projeto,
-          @info_complementar, @prazo_prototipo_dias, @atualizado_em, @atualizado_por
+          @info_complementar, @prazo_prototipo_dias, @complexidade, @atualizado_em, @atualizado_por
         )
         ON CONFLICT (av_id) DO UPDATE SET
           descritivo_tecnico_existente  = excluded.descritivo_tecnico_existente,
@@ -111,7 +133,8 @@ export class RepositorioSecaoProdutoSqlite implements RepositorioSecaoProduto {
           restricoes_projeto   = excluded.restricoes_projeto,
           info_complementar    = excluded.info_complementar,
           prazo_prototipo_dias = excluded.prazo_prototipo_dias,
-          atualizado_em        = excluded.atualizado_em,
+          complexidade         = excluded.complexidade,
+          atualizado_em       = excluded.atualizado_em,
           atualizado_por       = excluded.atualizado_por
       `),
       excluirInvestimentos: db.prepare<[string, AreaInvestimento]>(
@@ -130,6 +153,7 @@ export class RepositorioSecaoProdutoSqlite implements RepositorioSecaoProduto {
 
     return {
       secao: paraSecaoEntidade(linhaSecao),
+      estrutura: this.sql.listarEstrutura.all(avId).map(paraNoEntidade),
       investimentos: this.sql.listarInvestimentos.all(avId, AREA).map(paraInvestimentoEntidade),
     };
   }
@@ -138,12 +162,41 @@ export class RepositorioSecaoProdutoSqlite implements RepositorioSecaoProduto {
     const avId = dados.secao.avId;
     this.db.transaction(() => {
       this.sql.salvarSecao.run(paraSecaoLinha(dados.secao));
+      this.sql.excluirEstrutura.run(avId);
+      // A lista vem com o pai antes dos filhos, então a chave estrangeira do pai já existe ao inserir.
+      for (const no of dados.estrutura) {
+        this.sql.inserirNoEstrutura.run({
+          id: no.id,
+          av_id: avId,
+          pai_id: no.paiId,
+          ordem: no.ordem,
+          tipo: no.tipo,
+          codigo: no.codigo,
+          descricao: no.descricao,
+          quantidade: no.quantidade,
+          unidade: no.unidade,
+        });
+      }
       this.sql.excluirInvestimentos.run(avId, AREA);
       for (const item of dados.investimentos) {
         this.sql.inserirInvestimento.run(paraInvestimentoLinha(avId, item));
       }
     })();
   }
+}
+
+function paraNoEntidade(linha: LinhaNoEstrutura): NoEstrutura {
+  return {
+    id: linha.id,
+    avId: linha.av_id,
+    paiId: linha.pai_id,
+    ordem: linha.ordem,
+    tipo: linha.tipo,
+    codigo: linha.codigo,
+    descricao: linha.descricao,
+    quantidade: linha.quantidade,
+    unidade: linha.unidade,
+  };
 }
 
 function paraBool(valor: number | null): boolean | null {
@@ -185,6 +238,7 @@ function paraSecaoEntidade(linha: LinhaSecaoProduto): SecaoProduto {
     restricoesProjeto: linha.restricoes_projeto,
     infoComplementar: linha.info_complementar,
     prazoPrototipoDias: linha.prazo_prototipo_dias,
+    complexidade: linha.complexidade,
     atualizadoEm: linha.atualizado_em ? new Date(linha.atualizado_em) : null,
     atualizadoPor: linha.atualizado_por,
   };
@@ -221,6 +275,7 @@ function paraSecaoLinha(secao: SecaoProduto): LinhaSecaoProduto {
     restricoes_projeto: secao.restricoesProjeto,
     info_complementar: secao.infoComplementar,
     prazo_prototipo_dias: secao.prazoPrototipoDias,
+    complexidade: secao.complexidade,
     atualizado_em: secao.atualizadoEm ? secao.atualizadoEm.toISOString() : null,
     atualizado_por: secao.atualizadoPor,
   };

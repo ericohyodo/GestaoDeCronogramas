@@ -4,6 +4,11 @@ import { ErroNaoEncontrado } from '../../../../nucleo/aplicacao/erros';
 import type { GeradorDeId } from '../../../../nucleo/aplicacao/portas/gerador-de-id';
 import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
 import { validarDescricaoDoInvestimento, type Investimento } from '../../dominio/investimento';
+import {
+  normalizarMaquinaDaOperacao,
+  validarDescricaoDaOperacao,
+  type Operacao,
+} from '../../dominio/operacao';
 import type { RepositorioAvs } from '../../dominio/repositorio-avs';
 import type {
   DadosSecaoProcesso,
@@ -38,6 +43,15 @@ export class SalvarSecaoProcesso implements CasoDeUso<AtualizarSecaoProcessoEntr
       ordem: indice,
     }));
 
+    const operacoes: Operacao[] = entrada.operacoes.map((item, indice) => ({
+      id: this.geradorDeId.gerar(),
+      avId: av.id,
+      ordem: indice,
+      descricao: validarDescricaoDaOperacao(item.descricao),
+      maquina: normalizarMaquinaDaOperacao(item.maquina),
+      pecasHora: item.pecasHora ?? null,
+    }));
+
     const dados: DadosSecaoProcesso = {
       secao: {
         avId: av.id,
@@ -45,6 +59,7 @@ export class SalvarSecaoProcesso implements CasoDeUso<AtualizarSecaoProcessoEntr
         atualizadoEm: agora,
         atualizadoPor: usuario.id,
       },
+      operacoes,
       investimentos,
     };
 

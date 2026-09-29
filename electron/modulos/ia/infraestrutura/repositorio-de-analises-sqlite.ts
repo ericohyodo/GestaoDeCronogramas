@@ -49,6 +49,9 @@ export class RepositorioDeAnalisesSqlite implements RepositorioDeAnalises {
       ultimaDoPortfolio: db.prepare<[], LinhaAnaliseCompleta>(`
         SELECT * FROM ia_analises WHERE tipo = 'portfolio' ORDER BY gerada_em DESC LIMIT 1
       `),
+      ultimaDeAvs: db.prepare<[], LinhaAnaliseCompleta>(`
+        SELECT * FROM ia_analises WHERE tipo = 'avs' ORDER BY gerada_em DESC LIMIT 1
+      `),
       excluir: db.prepare<[string]>('DELETE FROM ia_analises WHERE id = ?'),
     };
   }
@@ -78,11 +81,13 @@ export class RepositorioDeAnalisesSqlite implements RepositorioDeAnalises {
 
   async ultima(tipo: TipoDeAnaliseDTO, cronogramaId: string | null): Promise<AnaliseArquivadaDTO | null> {
     const linha =
-      tipo === 'portfolio'
-        ? this.sql.ultimaDoPortfolio.get()
-        : cronogramaId === null
-          ? undefined
-          : this.sql.ultimaDoCronograma.get(cronogramaId);
+      tipo === 'avs'
+        ? this.sql.ultimaDeAvs.get()
+        : tipo === 'portfolio'
+          ? this.sql.ultimaDoPortfolio.get()
+          : cronogramaId === null
+            ? undefined
+            : this.sql.ultimaDoCronograma.get(cronogramaId);
     return linha ? paraAnalise(linha) : null;
   }
 

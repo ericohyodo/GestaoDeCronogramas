@@ -12,6 +12,7 @@ import type {
   ExcluirUsuario,
   ListarUsuarios,
 } from '../aplicacao/casos-de-uso/gerenciar-usuarios';
+import type { BaterPresenca, ListarUsuariosOnline } from '../aplicacao/casos-de-uso/presenca';
 import type { ObterSessao, Sair } from '../aplicacao/casos-de-uso/obter-sessao';
 
 export interface CasosDeUsoUsuarios {
@@ -24,6 +25,8 @@ export interface CasosDeUsoUsuarios {
   atualizar: AtualizarUsuario;
   alterarSenha: AlterarSenha;
   excluir: ExcluirUsuario;
+  baterPresenca: BaterPresenca;
+  listarOnline: ListarUsuariosOnline;
 }
 
 const esquemaEntrar = z.object({ login: z.string(), senha: z.string() });
@@ -59,6 +62,12 @@ export function registrarIpcUsuarios(ipc: RegistradorIpc, casos: CasosDeUsoUsuar
   ipc.registrar(CANAIS.sessao.sair, 'publico', esquemaSemEntrada, () => casos.sair.executar());
   ipc.registrar(CANAIS.sessao.primeiroAcesso, 'publico', esquemaPrimeiroAcesso, (entrada) =>
     casos.primeiroAcesso.executar(entrada),
+  );
+
+  // Presença: qualquer pessoa autenticada avisa que está online e vê quem mais está.
+  ipc.registrar(CANAIS.sessao.presenca, 'leitura', esquemaSemEntrada, () => casos.baterPresenca.executar());
+  ipc.registrar(CANAIS.usuarios.listarOnline, 'leitura', esquemaSemEntrada, () =>
+    casos.listarOnline.executar(),
   );
 
   ipc.registrar(CANAIS.usuarios.listar, 'administracao', esquemaSemEntrada, () =>

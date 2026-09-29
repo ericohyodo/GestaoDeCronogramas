@@ -3,6 +3,7 @@ import { CANAIS } from '@contratos/canais';
 import { LIMITE_DE_MENSAGENS_DO_CHAT, MODELOS_IA } from '@contratos/ia.contrato';
 import { esquemaId, esquemaSemEntrada } from '../../../nucleo/infraestrutura/ipc/esquemas';
 import type { RegistradorIpc } from '../../../nucleo/infraestrutura/ipc/registrador-ipc';
+import type { AnalisarAvs, ConversarSobreAvs, UltimaAnaliseAvs } from '../aplicacao/casos-de-uso-avs';
 import type {
   AnalisarCronograma,
   AnalisarPortfolio,
@@ -33,6 +34,16 @@ export interface CasosDeUsoIa {
   obterInstrucoes: ObterInstrucoesIa;
   salvarInstrucoes: SalvarInstrucoesIa;
   restaurarChecklist: RestaurarChecklistIa;
+  // IA do módulo de AVs
+  estadoAvs: ObterEstadoIa;
+  configurarAvs: ConfigurarIa;
+  removerChaveAvs: RemoverChaveIa;
+  analisarAvs: AnalisarAvs;
+  ultimaAnaliseAvs: UltimaAnaliseAvs;
+  conversarAvs: ConversarSobreAvs;
+  obterInstrucoesAvs: ObterInstrucoesIa;
+  salvarInstrucoesAvs: SalvarInstrucoesIa;
+  restaurarChecklistAvs: RestaurarChecklistIa;
   listarAnalises: ListarAnalises;
   obterAnalise: ObterAnalise;
   ultimaAnalise: UltimaAnalise;
@@ -100,5 +111,29 @@ export function registrarIpcIa(ipc: RegistradorIpc, casos: CasosDeUsoIa): void {
   );
   ipc.registrar(CANAIS.ia.restaurarChecklist, 'planejamento', esquemaSemEntrada, () =>
     casos.restaurarChecklist.executar(),
+  );
+  // IA do módulo de AVs: mesmas permissões dos equivalentes de projetos.
+  ipc.registrar(CANAIS.ia.estadoAvs, 'leitura', esquemaSemEntrada, () => casos.estadoAvs.executar());
+  ipc.registrar(CANAIS.ia.configurarAvs, 'administracao', esquemaConfigurar, (entrada) =>
+    casos.configurarAvs.executar(entrada),
+  );
+  ipc.registrar(CANAIS.ia.removerChaveAvs, 'administracao', esquemaSemEntrada, () =>
+    casos.removerChaveAvs.executar(),
+  );
+  ipc.registrar(CANAIS.ia.analisarAvs, 'leitura', esquemaSemEntrada, () => casos.analisarAvs.executar());
+  ipc.registrar(CANAIS.ia.ultimaAnaliseAvs, 'leitura', esquemaSemEntrada, () =>
+    casos.ultimaAnaliseAvs.executar(),
+  );
+  ipc.registrar(CANAIS.ia.conversarAvs, 'leitura', esquemaConversar, (entrada) =>
+    casos.conversarAvs.executar(entrada),
+  );
+  ipc.registrar(CANAIS.ia.obterInstrucoesAvs, 'planejamento', esquemaSemEntrada, () =>
+    casos.obterInstrucoesAvs.executar(),
+  );
+  ipc.registrar(CANAIS.ia.salvarInstrucoesAvs, 'planejamento', esquemaSalvarInstrucoes, (entrada) =>
+    casos.salvarInstrucoesAvs.executar(entrada),
+  );
+  ipc.registrar(CANAIS.ia.restaurarChecklistAvs, 'planejamento', esquemaSemEntrada, () =>
+    casos.restaurarChecklistAvs.executar(),
   );
 }

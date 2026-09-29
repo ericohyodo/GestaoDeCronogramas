@@ -4,9 +4,11 @@ import { Eye, FileText, Image as ImageIcon, Paperclip, Trash2 } from 'lucide-rea
 import { useEffect, useState } from 'react';
 import type { AnexoAvDTO, AreaAvDTO, ConteudoAnexoDTO } from '@contratos/avs.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
+import { Ajuda } from '@/compartilhado/ui/Ajuda';
 import { Botao, BotaoIcone } from '@/compartilhado/ui/Botao';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { Modal } from '@/compartilhado/ui/Modal';
+import { TituloSecao } from './SecaoAv';
 
 function formatarDataHora(iso: string): string {
   return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -27,7 +29,18 @@ function ehPdf(tipoMime: string | null): boolean {
 }
 
 /** Galeria de desenhos/evidências anexados a uma AV, com pré-visualização de PDF e imagens. */
-export function AnexosGaleria({ avId, secao }: { avId: string; secao: AreaAvDTO }) {
+export function AnexosGaleria({
+  avId,
+  secao,
+  titulo = 'Desenhos e evidências',
+  ajuda,
+}: {
+  avId: string;
+  secao: AreaAvDTO;
+  titulo?: string;
+  /** Explicação do que anexar aqui (aparece ao passar o mouse no ícone de ajuda). */
+  ajuda?: string;
+}) {
   const [anexos, setAnexos] = useState<AnexoAvDTO[]>([]);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -81,7 +94,10 @@ export function AnexosGaleria({ avId, secao }: { avId: string; secao: AreaAvDTO 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-texto-sutil">Desenhos e evidências</p>
+        <div className="flex items-center gap-2">
+          <TituloSecao>{titulo}</TituloSecao>
+          {ajuda && <Ajuda texto={ajuda} />}
+        </div>
         <Botao icone={Paperclip} tamanho="sm" onClick={() => void adicionar()} disabled={enviando}>
           {enviando ? 'Anexando…' : 'Anexar arquivo'}
         </Botao>
@@ -130,24 +146,26 @@ export function AnexosGaleria({ avId, secao }: { avId: string; secao: AreaAvDTO 
         </ul>
       )}
 
-      <PreviaAnexoModal
-        key={visualizando?.id ?? 'nenhum'}
-        anexo={visualizando}
+      <Modal
+        aberto={!!visualizando}
         aoFechar={() => setVisualizando(null)}
-      />
+        titulo={visualizando?.nomeArquivo ?? ''}
+        largura="cheia"
+      >
+        {visualizando && <ConteudoDaPrevia key={visualizando.id} anexo={visualizando} />}
+      </Modal>
     </div>
   );
 }
 
-/** `key={anexo.id}` no chamador reinicia este componente a cada troca de anexo (mesmo truque
- * usado em `AvDetalhe`/`pagina-detalhe-av.tsx` para o estado de `AbaEngProduto`). */
-function PreviaAnexoModal({ anexo, aoFechar }: { anexo: AnexoAvDTO | null; aoFechar: () => void }) {
+/** Só existe enquanto o modal está aberto (e é remontado a cada anexo, via `key`): ao fechar, o
+ * iframe do PDF é esvaziado antes de sair do DOM para não deixar o visualizador nativo pendurado. */
+function ConteudoDaPrevia({ anexo }: { anexo: AnexoAvDTO }) {
   const [conteudo, setConteudo] = useState<ConteudoAnexoDTO | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!anexo) return;
     let cancelado = false;
     clienteDesktop.avs
       .obterConteudoAnexo(anexo.id)
@@ -157,27 +175,31 @@ function PreviaAnexoModal({ anexo, aoFechar }: { anexo: AnexoAvDTO | null; aoFec
     return () => {
       cancelado = true;
     };
-  }, [anexo]);
+  }, [anexo.id]);
 
   return (
-    <Modal aberto={!!anexo} aoFechar={aoFechar} titulo={anexo?.nomeArquivo ?? ''} largura="lg">
+    <div className="h-full">
       {carregando && <p className="text-sm text-texto-secundario">Carregando pré-visualização…</p>}
       {erro && <MensagemErro mensagem={erro} />}
-      {!carregando && conteudo && anexo && (
+      {!carregando && conteudo && (
         <>
           {ehImagem(conteudo.tipoMime) && (
             // eslint-disable-next-line @next/next/no-img-element -- data: URI local, sem loader de otimização
             <img
               src={`data:${conteudo.tipoMime};base64,${conteudo.base64}`}
               alt={conteudo.nomeArquivo}
-              className="mx-auto max-h-[70vh] rounded-lg object-contain"
+              className="mx-auto max-h-full max-w-full rounded-lg object-contain"
             />
           )}
           {ehPdf(conteudo.tipoMime) && (
             <iframe
+              // Ao sair do DOM, esvazia o quadro: o visualizador nativo de PDF não fica pendurado.
+              ref={(quadro) => () => {
+                if (quadro) quadro.src = 'about:blank';
+              }}
               src={`data:application/pdf;base64,${conteudo.base64}`}
               title={conteudo.nomeArquivo}
-              className="h-[70vh] w-full rounded-lg border border-borda/60"
+              className="h-full w-full rounded-lg border border-borda/60"
             />
           )}
           {!ehImagem(conteudo.tipoMime) && !ehPdf(conteudo.tipoMime) && (
@@ -185,6 +207,6 @@ function PreviaAnexoModal({ anexo, aoFechar }: { anexo: AnexoAvDTO | null; aoFec
           )}
         </>
       )}
-    </Modal>
+    </div>
   );
 }

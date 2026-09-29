@@ -40,7 +40,11 @@ export function ImpressaoDaAnalise() {
     <article data-analise-impressa className="bg-white text-texto" style={{ width: LARGURA_UTIL_PX }}>
       <header className="mb-4 border-b-2 border-primaria pb-3">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-texto-sutil">
-          {arquivada.tipo === 'portfolio' ? 'Análise do portfólio com IA' : 'Análise do cronograma com IA'}
+          {arquivada.tipo === 'avs'
+            ? 'Análise das AVs com IA'
+            : arquivada.tipo === 'portfolio'
+              ? 'Análise do portfólio com IA'
+              : 'Análise do cronograma com IA'}
         </p>
         <h1 className="text-xl font-semibold">{arquivada.titulo}</h1>
       </header>

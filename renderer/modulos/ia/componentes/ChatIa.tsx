@@ -14,7 +14,7 @@ import { CabecalhoPagina } from '@/compartilhado/ui/CabecalhoPagina';
 import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
-import { useIaStore } from '../store/use-ia-store';
+import { usarStoreIa } from '../store/use-ia-store';
 import { DESTINO_DOS_DADOS, IaNaoConfigurada, nomeDoModelo } from './comum';
 
 const SUGESTOES = [
@@ -24,6 +24,32 @@ const SUGESTOES = [
   'Quais tarefas foram concluídas com atraso?',
 ];
 
+const SUGESTOES_DAS_AVS = [
+  'Quais AVs estão atrasadas e com quem estão?',
+  'Quais AVs estão paradas há mais tempo na mesma etapa?',
+  'Qual o investimento total e o custo por peça das AVs em Mapa de Custo?',
+  'Quantas AVs há em cada etapa?',
+];
+
+const TEXTOS = {
+  projetos: {
+    descricao:
+      'Pergunte sobre os cronogramas em andamento: prazos, atrasos, responsáveis, datas efetivas. A IA só consulta; nada é alterado.',
+    vazio: 'A IA responde com base nas atividades, datas, percentuais e responsáveis de todos os cronogramas em andamento.',
+    consultando: 'Consultando os cronogramas… pode levar até 1 minuto.',
+    envio: (destino: string) =>
+      `A cada pergunta, as atividades, datas, percentuais e responsáveis dos cronogramas em andamento são enviados ${destino}; a evidência das tarefas não é enviada. Confira as respostas antes de decidir.`,
+  },
+  avs: {
+    descricao:
+      'Pergunte sobre as AVs: etapas, prazos, atrasos, responsáveis, investimentos e custos. A IA só consulta; nada é alterado.',
+    vazio: 'A IA responde com base na etapa, prazo, responsável, classificação e valores consolidados de todas as AVs.',
+    consultando: 'Consultando as AVs… pode levar até 1 minuto.',
+    envio: (destino: string) =>
+      `A cada pergunta, o resumo das AVs (etapa, prazo, responsável, classificação e valores consolidados) é enviado ${destino}. Confira as respostas antes de decidir.`,
+  },
+} as const;
+
 /** Uma fala na tela; a da IA guarda também o modelo que respondeu. */
 type Fala = MensagemDoChatDTO & { modelo?: string };
 
@@ -31,9 +57,12 @@ type Fala = MensagemDoChatDTO & { modelo?: string };
  * Chat de perguntas e respostas sobre todos os cronogramas em andamento. Só consulta: não altera
  * nada. A conversa fica só na tela (não é gravada) e some ao sair ou ao iniciar uma nova.
  */
-export function ChatIa() {
-  const estado = useIaStore((store) => store.estado);
-  const carregar = useIaStore((store) => store.carregar);
+export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' }) {
+  const usarStore = usarStoreIa(escopo);
+  const estado = usarStore((store) => store.estado);
+  const carregar = usarStore((store) => store.carregar);
+  const textos = TEXTOS[escopo];
+  const sugestoes = escopo === 'avs' ? SUGESTOES_DAS_AVS : SUGESTOES;
 
   const [falas, setFalas] = useState<Fala[]>([]);
   const [texto, setTexto] = useState('');
@@ -60,11 +89,13 @@ export function ChatIa() {
     setErro(null);
     setEnviando(true);
     try {
-      const resposta = await clienteDesktop.ia.conversar({
+      const entrada = {
         mensagens: historico
           .slice(-LIMITE_DE_MENSAGENS_DO_CHAT)
           .map(({ papel, texto: conteudo }) => ({ papel, texto: conteudo })),
-      });
+      };
+      const resposta =
+        escopo === 'avs' ? await clienteDesktop.ia.conversarAvs(entrada) : await clienteDesktop.ia.conversar(entrada);
       setFalas([...historico, { papel: 'ia', texto: resposta.texto, modelo: resposta.modelo }]);
     } catch (falha) {
       setErro(mensagemDeErro(falha));
@@ -94,7 +125,7 @@ export function ChatIa() {
     <div className="flex h-full min-h-0 flex-col gap-5 p-6">
       <CabecalhoPagina
         titulo="Chat com IA"
-        descricao="Pergunte sobre os cronogramas em andamento: prazos, atrasos, responsáveis, datas efetivas. A IA só consulta; nada é alterado."
+        descricao={textos.descricao}
         acoes={
           <Botao
             icone={Eraser}
@@ -123,10 +154,10 @@ export function ChatIa() {
                 <EstadoVazio
                   icone={MessageSquareText}
                   titulo="Faça uma pergunta"
-                  descricao="A IA responde com base nas atividades, datas, percentuais e responsáveis de todos os cronogramas em andamento."
+                  descricao={textos.vazio}
                 />
                 <ul className="flex flex-wrap justify-center gap-2">
-                  {SUGESTOES.map((sugestao) => (
+                  {sugestoes.map((sugestao) => (
                     <li key={sugestao}>
                       <button
                         type="button"
@@ -141,7 +172,7 @@ export function ChatIa() {
                 </ul>
               </div>
             ) : (
-              <ol className="mx-auto flex max-w-3xl flex-col gap-4">
+              <ol className="selecionavel mx-auto flex max-w-3xl flex-col gap-4">
                 {falas.map((fala, indice) => (
                   <li key={indice} className={clsx('flex', fala.papel === 'usuario' && 'justify-end')}>
                     <div
@@ -160,7 +191,7 @@ export function ChatIa() {
                 {enviando && (
                   <li className="flex items-center gap-2 text-xs text-texto-sutil">
                     <Loader2 aria-hidden className="size-4 animate-spin text-primaria" />
-                    Consultando os cronogramas… pode levar até 1 minuto.
+                    {textos.consultando}
                   </li>
                 )}
               </ol>
@@ -192,8 +223,7 @@ export function ChatIa() {
             </div>
             {destino && (
               <p className="mx-auto mt-2 max-w-3xl text-[11px] text-texto-sutil">
-                A cada pergunta, as atividades, datas, percentuais e responsáveis dos cronogramas em andamento são
-                enviados {destino}; a evidência das tarefas não é enviada. Confira as respostas antes de decidir.
+                {textos.envio(destino)}
               </p>
             )}
           </form>

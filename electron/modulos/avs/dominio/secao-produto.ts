@@ -28,6 +28,7 @@ export interface SecaoProduto {
   restricoesProjeto: string | null;
   infoComplementar: string | null;
   prazoPrototipoDias: number | null;
+  complexidade: string | null;
   atualizadoEm: Date | null;
   atualizadoPor: string | null;
 }

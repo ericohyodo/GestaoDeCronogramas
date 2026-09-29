@@ -1,10 +1,13 @@
 'use client';
 
 import { Plus, Trash2 } from 'lucide-react';
+import type { ReactNode } from 'react';
 import type { ItemCatalogoMaterialDTO } from '@contratos/avs.contrato';
 import { formatarMoeda } from '@/compartilhado/formatacao';
 import { BotaoIcone } from '@/compartilhado/ui/Botao';
 import { CelulaCabecalho, CelulaTabela, LinhaTabela, Tabela } from '@/compartilhado/ui/Tabela';
+import { Ajuda } from '@/compartilhado/ui/Ajuda';
+import { BotaoLimparCampos, TituloSecao } from './SecaoAv';
 
 export interface LinhaMaterialEditavel {
   chave: string;
@@ -42,7 +45,12 @@ export function TabelaDeMateriais({
   aoMudar,
   aoAdicionar,
   aoRemover,
+  aoLimpar,
+  acoes,
 }: {
+  aoLimpar: () => void;
+  /** Botões extras (ex.: trazer componentes da estrutura do produto) acima da tabela. */
+  acoes?: ReactNode;
   titulo: string;
   /** Id único do <datalist> (evita colidir quando a mesma tabela aparece mais de uma vez na página). */
   idCatalogo: string;
@@ -58,21 +66,42 @@ export function TabelaDeMateriais({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-texto-sutil">{titulo}</p>
-        <BotaoIcone icone={Plus} rotulo={`Adicionar item em ${titulo}`} onClick={aoAdicionar} />
+        <div className="flex items-center gap-2">
+          <TituloSecao>{titulo}</TituloSecao>
+          <Ajuda texto={`Itens de ${titulo.toLowerCase()} consumidos por peça. Informe código, descrição, quantidades, unidade e custo; o custo total de cada item soma no Custo/Pç.`} />
+        </div>
+        <div className="flex items-center gap-2">
+          <BotaoLimparCampos aoLimpar={aoLimpar} disabled={linhas.length === 0} />
+          <BotaoIcone icone={Plus} rotulo={`Adicionar item em ${titulo}`} onClick={aoAdicionar} />
+        </div>
       </div>
+      {acoes}
       {linhas.length > 0 && (
         <>
           <Tabela>
             <thead>
               <tr>
-                <CelulaCabecalho className="w-28 pl-3">Código</CelulaCabecalho>
-                <CelulaCabecalho>Descrição</CelulaCabecalho>
-                <CelulaCabecalho className="w-24">Qtde bruta</CelulaCabecalho>
-                <CelulaCabecalho className="w-24">Qtde net</CelulaCabecalho>
-                <CelulaCabecalho className="w-20">U.M.</CelulaCabecalho>
-                <CelulaCabecalho className="w-28">Custo unit.</CelulaCabecalho>
-                <CelulaCabecalho className="w-28">Custo total</CelulaCabecalho>
+                <CelulaCabecalho className="w-28 pl-3" ajuda="Código do item no ERP. Preenchido sozinho ao escolher uma descrição do catálogo.">
+                  Código
+                </CelulaCabecalho>
+                <CelulaCabecalho ajuda="Nome do material, insumo ou embalagem. Comece a digitar para ver as sugestões do catálogo; texto livre também é aceito.">
+                  Descrição
+                </CelulaCabecalho>
+                <CelulaCabecalho className="w-24" ajuda="Quantidade bruta por peça: o que é consumido, incluindo sobras e perdas.">
+                  Qtde bruta
+                </CelulaCabecalho>
+                <CelulaCabecalho className="w-24" ajuda="Quantidade líquida por peça: o que realmente fica no produto acabado.">
+                  Qtde net
+                </CelulaCabecalho>
+                <CelulaCabecalho className="w-20" ajuda="Unidade de medida da quantidade (kg, m, un, L…).">
+                  U.M.
+                </CelulaCabecalho>
+                <CelulaCabecalho className="w-28" ajuda="Custo de uma unidade de medida do item, em reais.">
+                  Custo unit.
+                </CelulaCabecalho>
+                <CelulaCabecalho className="w-28" ajuda="Custo do item por peça (quantidade bruta × custo unitário). Entra na soma do Custo/Pç.">
+                  Custo total
+                </CelulaCabecalho>
                 <CelulaCabecalho className="w-10 pr-3">
                   <span className="sr-only">Remover</span>
                 </CelulaCabecalho>

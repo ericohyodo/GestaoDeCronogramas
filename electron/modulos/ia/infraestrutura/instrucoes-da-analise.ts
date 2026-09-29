@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { type ContextoDoChat, serializarContextoDoChat } from '../aplicacao/contexto-do-chat';
+import { serializarContextoDoChat } from '../aplicacao/contexto-do-chat';
 
 /** Formato do relatório pedido à IA, igual para qualquer provedor. */
 export const EsquemaDaAnalise = z.object({
@@ -47,7 +47,7 @@ export const EsquemaDoPortfolio = z.object({
 export const mensagemDoPortfolio = (contexto: unknown) => `Portfólio de projetos:\n${JSON.stringify(contexto)}`;
 
 /** Texto de sistema do chat: as instruções e, em seguida, os dados que ele pode consultar. */
-export const sistemaDoChat = (instrucoes: string, contexto: ContextoDoChat) =>
-  `${instrucoes}\n\nDados dos projetos (JSON):\n${serializarContextoDoChat(contexto)}`;
+export const sistemaDoChat = (instrucoes: string, contexto: object, rotulo = 'Dados dos projetos (JSON)') =>
+  `${instrucoes}\n\n${rotulo}:\n${serializarContextoDoChat(contexto)}`;
 
 export const LIMITE_DE_TOKENS_DA_RESPOSTA_DO_CHAT = 4096;

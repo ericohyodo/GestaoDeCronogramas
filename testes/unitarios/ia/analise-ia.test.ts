@@ -1,3 +1,4 @@
+import type { ContextoDoChat } from '../../../electron/modulos/ia/aplicacao/contexto-do-chat';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { ModeloIaDTO, ProvedorIaDTO } from '@contratos/ia.contrato';
 import type { EstruturaCronogramaDTO, LinhaEstruturaDTO } from '@contratos/tarefas.contrato';
@@ -142,6 +143,7 @@ describe('Análise com IA', () => {
       cofre: armazenamento,
       configuracao: armazenamento,
       modelo,
+      consultaDeAvs: { relatorio: async () => [] },
       consultaDeCronograma: {
         obterResumo: async (id) =>
           id === 'c1'
@@ -333,10 +335,11 @@ describe('Análise com IA', () => {
 
       expect(saida).toEqual({ texto: 'resposta da IA', modelo: 'claude-opus-5' });
       const pedido = modelo.pedidosDeConversa[0]!;
-      expect(pedido.contexto.hoje).toBe('2026-09-24');
-      expect(pedido.contexto.projetos).toHaveLength(1);
-      expect(pedido.contexto.projetos[0]!.cronograma.nome).toBe('S Riko');
-      expect(pedido.contexto.projetos[0]!.linhas[1]).toMatchObject({ n: '1.1', responsavel: 'Allan' });
+      const contexto = pedido.contexto as ContextoDoChat;
+      expect(contexto.hoje).toBe('2026-09-24');
+      expect(contexto.projetos).toHaveLength(1);
+      expect(contexto.projetos[0]!.cronograma.nome).toBe('S Riko');
+      expect(contexto.projetos[0]!.linhas[1]).toMatchObject({ n: '1.1', responsavel: 'Allan' });
       const enviado = JSON.stringify(pedido);
       expect(enviado).not.toContain('Informação interna');
       expect(enviado).not.toContain('"t1"');

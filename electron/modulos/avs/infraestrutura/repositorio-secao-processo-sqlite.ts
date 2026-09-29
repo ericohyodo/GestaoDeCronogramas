@@ -1,5 +1,6 @@
 import type { BancoDeDados } from '../../../nucleo/infraestrutura/banco/conexao-sqlite';
 import type { AreaInvestimento, ClassificacaoInvestimento, Investimento } from '../dominio/investimento';
+import type { Operacao } from '../dominio/operacao';
 import type { DadosSecaoProcesso, RepositorioSecaoProcesso } from '../dominio/repositorio-secao-processo';
 import type { SecaoProcesso } from '../dominio/secao-processo';
 
@@ -20,6 +21,15 @@ interface LinhaInvestimento {
   ordem: number;
 }
 
+interface LinhaOperacao {
+  id: string;
+  av_id: string;
+  ordem: number;
+  descricao: string;
+  maquina: string | null;
+  pecas_hora: number | null;
+}
+
 const AREA = 'processo' as const;
 
 export class RepositorioSecaoProcessoSqlite implements RepositorioSecaoProcesso {
@@ -33,6 +43,14 @@ export class RepositorioSecaoProcessoSqlite implements RepositorioSecaoProcesso 
       listarInvestimentos: db.prepare<[string, AreaInvestimento], LinhaInvestimento>(
         'SELECT * FROM av_investimentos WHERE av_id = ? AND area = ? ORDER BY ordem',
       ),
+      listarOperacoes: db.prepare<[string], LinhaOperacao>(
+        'SELECT * FROM av_operacoes WHERE av_id = ? ORDER BY ordem',
+      ),
+      excluirOperacoes: db.prepare<[string]>('DELETE FROM av_operacoes WHERE av_id = ?'),
+      inserirOperacao: db.prepare<[LinhaOperacao]>(`
+        INSERT INTO av_operacoes (id, av_id, ordem, descricao, maquina, pecas_hora)
+        VALUES (@id, @av_id, @ordem, @descricao, @maquina, @pecas_hora)
+      `),
       salvarSecao: db.prepare<[LinhaSecaoProcesso]>(`
         INSERT INTO av_secao_processo (av_id, prazo_producao_dias, atualizado_em, atualizado_por)
         VALUES (@av_id, @prazo_producao_dias, @atualizado_em, @atualizado_por)
@@ -57,6 +75,7 @@ export class RepositorioSecaoProcessoSqlite implements RepositorioSecaoProcesso 
 
     return {
       secao: paraSecaoEntidade(linhaSecao),
+      operacoes: this.sql.listarOperacoes.all(avId).map(paraOperacaoEntidade),
       investimentos: this.sql.listarInvestimentos.all(avId, AREA).map(paraInvestimentoEntidade),
     };
   }
@@ -65,6 +84,17 @@ export class RepositorioSecaoProcessoSqlite implements RepositorioSecaoProcesso 
     const avId = dados.secao.avId;
     this.db.transaction(() => {
       this.sql.salvarSecao.run(paraSecaoLinha(dados.secao));
+      this.sql.excluirOperacoes.run(avId);
+      for (const item of dados.operacoes) {
+        this.sql.inserirOperacao.run({
+          id: item.id,
+          av_id: avId,
+          ordem: item.ordem,
+          descricao: item.descricao,
+          maquina: item.maquina,
+          pecas_hora: item.pecasHora,
+        });
+      }
       this.sql.excluirInvestimentos.run(avId, AREA);
       for (const item of dados.investimentos) {
         this.sql.inserirInvestimento.run(paraInvestimentoLinha(avId, item));
@@ -88,6 +118,17 @@ function paraSecaoLinha(secao: SecaoProcesso): LinhaSecaoProcesso {
     prazo_producao_dias: secao.prazoProducaoDias,
     atualizado_em: secao.atualizadoEm ? secao.atualizadoEm.toISOString() : null,
     atualizado_por: secao.atualizadoPor,
+  };
+}
+
+function paraOperacaoEntidade(linha: LinhaOperacao): Operacao {
+  return {
+    id: linha.id,
+    avId: linha.av_id,
+    ordem: linha.ordem,
+    descricao: linha.descricao,
+    maquina: linha.maquina,
+    pecasHora: linha.pecas_hora,
   };
 }
 

@@ -19,9 +19,12 @@ export class Sair implements CasoDeUso<void, SessaoDTO> {
   constructor(
     private readonly repositorio: RepositorioUsuarios,
     private readonly sessao: Sessao,
+    /** Ex.: sair da lista de usuários online. */
+    private readonly aoSair: () => Promise<void> = async () => undefined,
   ) {}
 
   async executar(): Promise<SessaoDTO> {
+    await this.aoSair();
     this.sessao.encerrar();
     return paraSessaoDTO(this.sessao, (await this.repositorio.contar()) === 0);
   }

@@ -31,7 +31,7 @@ export function montarContextoDoChat(
 }
 
 /** JSON compacto: campos nulos, falsos ou vazios são omitidos (as instruções dizem que ausente = vazio). */
-export function serializarContextoDoChat(contexto: ContextoDoChat): string {
+export function serializarContextoDoChat(contexto: object): string {
   return JSON.stringify(contexto, (_chave, valor: unknown) =>
     valor === null || valor === false || (Array.isArray(valor) && valor.length === 0) ? undefined : valor,
   );

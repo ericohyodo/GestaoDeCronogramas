@@ -2,6 +2,7 @@ import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'node:
 import type { BancoDeDados } from '../../../nucleo/infraestrutura/banco/conexao-sqlite';
 import {
   type CofreDeChave,
+  type EscopoIaDTO,
   type InstrucoesSalvas,
   MODELOS_IA,
   type ModeloIaDTO,
@@ -12,6 +13,8 @@ import {
 
 const chaveDoProvedor = (provedor: ProvedorIaDTO) => `chave_api_${provedor}`;
 const SALT = 'salt';
+// O módulo de AVs tem modelo e instruções próprios: as mesmas chaves com sufixo (as chaves de API são comuns).
+const sufixo = (escopo: EscopoIaDTO) => (escopo === 'avs' ? '_avs' : '');
 const MODELO = 'modelo';
 const CHECKLIST = 'checklist';
 const ORIENTACOES = 'orientacoes';
@@ -81,31 +84,33 @@ export class ConfiguracaoIaSqlite
     this.sql.remover.run(chaveDoProvedor(provedor));
   }
 
-  async obterModelo(): Promise<ModeloIaDTO | null> {
-    const valor = this.sql.obter.get(MODELO);
+  async obterModelo(escopo: EscopoIaDTO = 'projetos'): Promise<ModeloIaDTO | null> {
+    const valor = this.sql.obter.get(MODELO + sufixo(escopo));
     return valor && (MODELOS_IA as readonly string[]).includes(valor) ? (valor as ModeloIaDTO) : null;
   }
 
-  async salvarModelo(modelo: ModeloIaDTO): Promise<void> {
-    this.sql.salvar.run(MODELO, modelo);
+  async salvarModelo(modelo: ModeloIaDTO, escopo: EscopoIaDTO = 'projetos'): Promise<void> {
+    this.sql.salvar.run(MODELO + sufixo(escopo), modelo);
   }
 
-  async obterInstrucoes(): Promise<InstrucoesSalvas | null> {
-    const checklist = this.sql.obter.get(CHECKLIST);
-    const atualizadoEm = this.sql.obter.get(INSTRUCOES_ATUALIZADAS_EM);
+  async obterInstrucoes(escopo: EscopoIaDTO = 'projetos'): Promise<InstrucoesSalvas | null> {
+    const s = sufixo(escopo);
+    const checklist = this.sql.obter.get(CHECKLIST + s);
+    const atualizadoEm = this.sql.obter.get(INSTRUCOES_ATUALIZADAS_EM + s);
     if (!checklist || !atualizadoEm) return null;
     return {
       checklist: JSON.parse(checklist) as InstrucoesSalvas['checklist'],
-      orientacoes: this.sql.obter.get(ORIENTACOES) ?? '',
+      orientacoes: this.sql.obter.get(ORIENTACOES + s) ?? '',
       atualizadoEm: new Date(atualizadoEm),
     };
   }
 
-  async salvarInstrucoes(instrucoes: InstrucoesSalvas): Promise<void> {
+  async salvarInstrucoes(instrucoes: InstrucoesSalvas, escopo: EscopoIaDTO = 'projetos'): Promise<void> {
+    const s = sufixo(escopo);
     this.salvarVarios([
-      [CHECKLIST, JSON.stringify(instrucoes.checklist)],
-      [ORIENTACOES, instrucoes.orientacoes],
-      [INSTRUCOES_ATUALIZADAS_EM, instrucoes.atualizadoEm.toISOString()],
+      [CHECKLIST + s, JSON.stringify(instrucoes.checklist)],
+      [ORIENTACOES + s, instrucoes.orientacoes],
+      [INSTRUCOES_ATUALIZADAS_EM + s, instrucoes.atualizadoEm.toISOString()],
     ]);
   }
 

@@ -47,7 +47,11 @@ export function criarJanelaPrincipal(opcoes: OpcoesJanelaPrincipal): BrowserWind
     },
   });
 
-  janela.once('ready-to-show', () => janela.show());
+  // Sempre abre maximizada (ocupa a tela toda, mantendo a barra de título e os botões da janela).
+  janela.once('ready-to-show', () => {
+    janela.maximize();
+    janela.show();
+  });
 
   // Links externos abrem no navegador padrão; o app nunca abre novas janelas.
   janela.webContents.setWindowOpenHandler(({ url }) => {

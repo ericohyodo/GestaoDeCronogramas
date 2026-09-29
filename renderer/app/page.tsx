@@ -1,21 +1,28 @@
 'use client';
 
-import { CalendarRange, ClipboardCheck } from 'lucide-react';
+import { CalendarRange, ClipboardCheck, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
+import { UsuariosOnline } from '@/modulos/usuarios/componentes/UsuariosOnline';
 
 const MODULOS = [
-  {
-    href: '/projetos/',
-    icone: CalendarRange,
-    titulo: 'Gestão de Projetos',
-    descricao: 'Cronogramas, fases, tarefas e relatórios de andamento.',
-  },
   {
     href: '/avs/',
     icone: ClipboardCheck,
     titulo: 'Gestão de AVs',
     descricao: 'Análises de viabilidade, do intake comercial até a proposta.',
+  },
+  {
+    href: '/sds/',
+    icone: FileText,
+    titulo: 'Gestão de SDs',
+    descricao: 'Solicitações de desenvolvimento geradas a partir das AVs finalizadas.',
+  },
+  {
+    href: '/projetos/',
+    icone: CalendarRange,
+    titulo: 'Gestão de Projetos',
+    descricao: 'Cronogramas, fases, tarefas e relatórios de andamento.',
   },
 ] as const;
 
@@ -26,7 +33,7 @@ export default function Inicio() {
         <h1 className="text-2xl font-semibold tracking-tight">Gestão de Cronogramas</h1>
         <p className="mt-1 text-sm text-texto-secundario">Escolha uma área para continuar.</p>
       </div>
-      <div className="grid w-full max-w-3xl grid-cols-1 gap-5 sm:grid-cols-2">
+      <div className="grid w-full max-w-5xl grid-cols-1 gap-5 md:grid-cols-3">
         {MODULOS.map((modulo) => (
           <Link key={modulo.href} href={modulo.href} className="group block">
             <PainelVidro className="flex h-full flex-col items-start gap-4 p-7 transition-shadow group-hover:shadow-[0_12px_40px_rgb(15_27_45/0.14)]">
@@ -40,6 +47,9 @@ export default function Inicio() {
             </PainelVidro>
           </Link>
         ))}
+      </div>
+      <div className="w-full max-w-5xl">
+        <UsuariosOnline />
       </div>
     </div>
   );

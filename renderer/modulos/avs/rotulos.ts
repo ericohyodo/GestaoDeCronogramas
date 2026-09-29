@@ -29,13 +29,41 @@ export const ROTULO_CLASSIFICACAO_INVESTIMENTO: Record<ClassificacaoInvestimento
 
 /** Itens do checklist "Dados de Entrada Técnica" — cada um vira um par de campos `<chave>Existente`/`<chave>Disponivel`. */
 export const ITENS_CHECKLIST_PRODUTO = [
-  { chave: 'descritivoTecnico', rotulo: 'Descritivo Técnico' },
-  { chave: 'desenho2d', rotulo: 'Desenho de Produto 2D' },
-  { chave: 'desenho3d', rotulo: 'Desenho de Produto 3D' },
-  { chave: 'desenhoInterfaces', rotulo: 'Desenho de Interfaces' },
-  { chave: 'normasTecnicas', rotulo: 'Normas Técnicas' },
-  { chave: 'requisitosCliente', rotulo: 'Requisitos Específicos do Cliente' },
-  { chave: 'requisitosGarantia', rotulo: 'Há requisitos de Garantia?' },
+  {
+    chave: 'descritivoTecnico',
+    rotulo: 'Descritivo Técnico',
+    ajuda: 'Documento que descreve o produto: função, material, dimensões críticas e especificações gerais.',
+  },
+  {
+    chave: 'desenho2d',
+    rotulo: 'Desenho de Produto 2D',
+    ajuda: 'Desenho técnico em duas dimensões (vistas, cotas e tolerâncias) fornecido pelo cliente ou criado internamente.',
+  },
+  {
+    chave: 'desenho3d',
+    rotulo: 'Desenho de Produto 3D',
+    ajuda: 'Modelo tridimensional (CAD) do produto, usado para projetar ferramental e simular a fabricação.',
+  },
+  {
+    chave: 'desenhoInterfaces',
+    rotulo: 'Desenho de Interfaces',
+    ajuda: 'Desenho que mostra como o produto se conecta a outras peças ou ao conjunto do cliente (encaixes, fixações, folgas).',
+  },
+  {
+    chave: 'normasTecnicas',
+    rotulo: 'Normas Técnicas',
+    ajuda: 'Normas e especificações que o produto precisa atender (ABNT, ISO, normas do cliente).',
+  },
+  {
+    chave: 'requisitosCliente',
+    rotulo: 'Requisitos Específicos do Cliente',
+    ajuda: 'Exigências particulares do cliente: testes, certificações, acabamento, rastreabilidade, embalagem especial.',
+  },
+  {
+    chave: 'requisitosGarantia',
+    rotulo: 'Há requisitos de Garantia?',
+    ajuda: 'Indica se o cliente exige garantia específica (prazo, condições, ensaios) para o produto.',
+  },
 ] as const;
 
 /** Tom da etiqueta por chave de etapa — declínios em perigo, conclusão em sucesso, resto neutro/info. */

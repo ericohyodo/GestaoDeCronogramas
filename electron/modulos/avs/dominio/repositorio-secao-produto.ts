@@ -1,8 +1,10 @@
+import type { NoEstrutura } from './estrutura-produto';
 import type { Investimento } from './investimento';
 import type { SecaoProduto } from './secao-produto';
 
 export interface DadosSecaoProduto {
   secao: SecaoProduto;
+  estrutura: NoEstrutura[];
   investimentos: Investimento[];
 }
 

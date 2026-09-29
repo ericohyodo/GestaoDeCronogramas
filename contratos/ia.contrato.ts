@@ -110,7 +110,22 @@ export interface RespostaDoChatDTO {
 export const LIMITE_DE_MENSAGENS_DO_CHAT = 20;
 export const LIMITE_DE_CARACTERES_DA_PERGUNTA = 2000;
 
-export type TipoDeAnaliseDTO = 'cronograma' | 'portfolio';
+/** Cada módulo do app tem a sua IA: instruções, modelo, análises e chat separados. */
+export type EscopoIaDTO = 'projetos' | 'avs';
+
+/** Visão de todas as AVs. O texto segue seções fixas (RESUMO, PONTOS DE ATENÇÃO, GARGALOS, PRÓXIMAS AÇÕES). */
+export interface AnaliseAvsDTO {
+  id: string;
+  geradaEm: string;
+  geradaPor: string | null;
+  modelo: string;
+  quantidadeDeAvs: number;
+  /** Calculada pelos prazos das AVs (não pela IA). */
+  saude: SaudeDoCronogramaDTO;
+  texto: string;
+}
+
+export type TipoDeAnaliseDTO = 'cronograma' | 'portfolio' | 'avs';
 
 /** Linha do arquivo de análises (sem o conteúdo). */
 export interface ResumoDeAnaliseDTO {
@@ -128,7 +143,8 @@ export interface ResumoDeAnaliseDTO {
 
 export type AnaliseArquivadaDTO =
   | (ResumoDeAnaliseDTO & { tipo: 'cronograma'; analise: AnaliseCronogramaDTO })
-  | (ResumoDeAnaliseDTO & { tipo: 'portfolio'; analise: AnalisePortfolioDTO });
+  | (ResumoDeAnaliseDTO & { tipo: 'portfolio'; analise: AnalisePortfolioDTO })
+  | (ResumoDeAnaliseDTO & { tipo: 'avs'; analise: AnaliseAvsDTO });
 
 /** `cronogramaId` nulo: última análise de portfólio. */
 export interface UltimaAnaliseEntrada {

@@ -7,6 +7,8 @@ import { BotaoIcone } from '@/compartilhado/ui/Botao';
 import { CelulaCabecalho, CelulaTabela, LinhaTabela, Tabela } from '@/compartilhado/ui/Tabela';
 import { ROTULO_CLASSIFICACAO_INVESTIMENTO } from '../rotulos';
 import { CLASSE_CELULA_EDITAVEL } from './TabelaDeMateriais';
+import { Ajuda } from '@/compartilhado/ui/Ajuda';
+import { BotaoLimparCampos, TituloSecao } from './SecaoAv';
 
 export interface LinhaInvestimentoEditavel {
   chave: string;
@@ -24,7 +26,9 @@ export function TabelaDeInvestimentos({
   aoMudar,
   aoAdicionar,
   aoRemover,
+  aoLimpar,
 }: {
+  aoLimpar: () => void;
   linhas: LinhaInvestimentoEditavel[];
   aoMudar: (chave: string, campo: keyof LinhaInvestimentoEditavel, valor: string) => void;
   aoAdicionar: () => void;
@@ -42,17 +46,29 @@ export function TabelaDeInvestimentos({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-texto-sutil">Investimentos</p>
-        <BotaoIcone icone={Plus} rotulo="Adicionar item de investimento" onClick={aoAdicionar} />
+        <div className="flex items-center gap-2">
+          <TituloSecao>Investimentos</TituloSecao>
+          <Ajuda texto="Tudo o que precisa ser comprado ou desenvolvido para produzir o item: ferramentas, dispositivos, meios de controle, embalagens, adequações. Informe a descrição, quem paga e o valor." />
+        </div>
+        <div className="flex items-center gap-2">
+          <BotaoLimparCampos aoLimpar={aoLimpar} disabled={linhas.length === 0} />
+          <BotaoIcone icone={Plus} rotulo="Adicionar item de investimento" onClick={aoAdicionar} />
+        </div>
       </div>
       {linhas.length > 0 && (
         <>
           <Tabela>
             <thead>
               <tr>
-                <CelulaCabecalho className="pl-3">Descrição</CelulaCabecalho>
-                <CelulaCabecalho className="w-56">Classificação</CelulaCabecalho>
-                <CelulaCabecalho className="w-32">Valor</CelulaCabecalho>
+                <CelulaCabecalho className="pl-3" ajuda="O que precisa ser adquirido ou desenvolvido (ex.: ferramental progressivo, gabarito de solda, dispositivo de controle).">
+                  Descrição
+                </CelulaCabecalho>
+                <CelulaCabecalho className="w-56" ajuda="Quem arca com o investimento: Capex (Ferkoda), Suporte Desenvolvimento, Sup. Des. ou Cliente, ou Cliente.">
+                  Classificação
+                </CelulaCabecalho>
+                <CelulaCabecalho className="w-32" ajuda="Valor do investimento em reais (R$).">
+                  Valor
+                </CelulaCabecalho>
                 <CelulaCabecalho className="w-10 pr-3">
                   <span className="sr-only">Remover</span>
                 </CelulaCabecalho>

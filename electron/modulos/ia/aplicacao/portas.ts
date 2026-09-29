@@ -1,5 +1,7 @@
+import type { LinhaRelatorioAvDTO } from '@contratos/avs.contrato';
 import type {
   AnaliseArquivadaDTO,
+  EscopoIaDTO,
   AnaliseCronogramaDTO,
   AnalisePortfolioDTO,
   MensagemDoChatDTO,
@@ -10,6 +12,7 @@ import type {
 } from '@contratos/ia.contrato';
 import type { EstruturaCronogramaDTO } from '@contratos/tarefas.contrato';
 import type { ContextoDaAnalise } from './contexto-da-analise';
+import type { ContextoDasAvs } from './contexto-das-avs';
 import type { ContextoDoChat } from './contexto-do-chat';
 import type { ContextoDoPortfolio } from './contexto-do-portfolio';
 import type { ItemDaChecklist } from './instrucoes';
@@ -18,6 +21,7 @@ import type { ItemDaChecklist } from './instrucoes';
 export { MODELOS_IA, PROVEDORES_IA, provedorDoModelo } from '@contratos/ia.contrato';
 export type {
   AnaliseArquivadaDTO,
+  EscopoIaDTO,
   ModeloIaDTO,
   ProvedorIaDTO,
   ResumoDeAnaliseDTO,
@@ -56,7 +60,9 @@ export interface PedidoDeConversa {
   modelo: ModeloIaDTO;
   instrucoes: string;
   /** Dados de todos os cronogramas em andamento; vão junto das instruções, a cada pergunta. */
-  contexto: ContextoDoChat;
+  contexto: ContextoDoChat | ContextoDasAvs;
+  /** Como chamar os dados no prompt ("Dados dos projetos (JSON)" por padrão). */
+  rotuloDosDados?: string;
   /** Histórico começando e terminando numa fala do usuário, alternando com as da IA. */
   mensagens: MensagemDoChatDTO[];
 }
@@ -85,8 +91,8 @@ export interface CofreDeChave {
 }
 
 export interface RepositorioDeConfiguracaoIa {
-  obterModelo(): Promise<ModeloIaDTO | null>;
-  salvarModelo(modelo: ModeloIaDTO): Promise<void>;
+  obterModelo(escopo?: EscopoIaDTO): Promise<ModeloIaDTO | null>;
+  salvarModelo(modelo: ModeloIaDTO, escopo?: EscopoIaDTO): Promise<void>;
 }
 
 export interface InstrucoesSalvas {
@@ -97,8 +103,8 @@ export interface InstrucoesSalvas {
 
 /** Checklist e orientações que a equipe edita no app. `null` antes da primeira gravação. */
 export interface RepositorioDeInstrucoesIa {
-  obterInstrucoes(): Promise<InstrucoesSalvas | null>;
-  salvarInstrucoes(instrucoes: InstrucoesSalvas): Promise<void>;
+  obterInstrucoes(escopo?: EscopoIaDTO): Promise<InstrucoesSalvas | null>;
+  salvarInstrucoes(instrucoes: InstrucoesSalvas, escopo?: EscopoIaDTO): Promise<void>;
 }
 
 export interface ResumoDoCronograma {
@@ -135,4 +141,9 @@ export interface RepositorioDeAnalises {
 /** Porta para o módulo Usuários: registra quem gerou cada análise. */
 export interface QuemEstaUsando {
   nomeDoUsuarioAtual(): string | null;
+}
+
+/** Porta para o módulo AVs: uma linha por AV, com etapa, prazo, atraso e valores consolidados. */
+export interface ConsultaDeAvs {
+  relatorio(): Promise<LinhaRelatorioAvDTO[]>;
 }

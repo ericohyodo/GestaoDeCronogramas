@@ -3,6 +3,8 @@ import type { CasoDeUso } from '../../../../nucleo/aplicacao/caso-de-uso';
 import { ErroNaoEncontrado } from '../../../../nucleo/aplicacao/erros';
 import type { GeradorDeId } from '../../../../nucleo/aplicacao/portas/gerador-de-id';
 import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
+import { normalizarTextoOpcional } from '../../../../nucleo/dominio/texto';
+import { montarEstrutura } from '../estrutura-produto';
 import { validarDescricaoDoInvestimento, type Investimento } from '../../dominio/investimento';
 import type { RepositorioAvs } from '../../dominio/repositorio-avs';
 import type {
@@ -69,9 +71,11 @@ export class SalvarSecaoProduto implements CasoDeUso<AtualizarSecaoProdutoEntrad
         restricoesProjeto: entrada.restricoesProjeto ?? null,
         infoComplementar: entrada.infoComplementar ?? null,
         prazoPrototipoDias: entrada.prazoPrototipoDias ?? null,
+        complexidade: normalizarTextoOpcional(entrada.complexidade),
         atualizadoEm: agora,
         atualizadoPor: usuario.id,
       },
+      estrutura: montarEstrutura(entrada.estrutura, av.id, () => this.geradorDeId.gerar()),
       investimentos,
     };
 

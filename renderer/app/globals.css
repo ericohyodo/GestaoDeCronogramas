@@ -34,6 +34,15 @@
   --perigo: #c0392b;
   --info: #2f6fb5;
 
+  /* Seções das abas da AV: títulos em azul-marinho e fundos pastel bem suaves. */
+  --titulo-secao: #14305c;
+  --pastel-azul: #eaf1fb;
+  --pastel-verde: #e8f5ed;
+  --pastel-ambar: #fcf3e1;
+  --pastel-lilas: #f1ecfa;
+  --pastel-rosa: #fbeaf0;
+  --pastel-ciano: #e4f4f6;
+
   --sombra-vidro: 0 8px 32px rgb(15 27 45 / 0.08);
   /* Véu sobre o Acrylic: mantém o tom corporativo e a legibilidade com qualquer papel de parede. */
   --veu-acrylic: rgb(244 246 250 / 0.45);
@@ -68,6 +77,14 @@
     --perigo: #e5675a;
     --info: #6fa8e8;
 
+    --titulo-secao: #a9c6f0;
+    --pastel-azul: #182740;
+    --pastel-verde: #16281f;
+    --pastel-ambar: #2a2416;
+    --pastel-lilas: #231f37;
+    --pastel-rosa: #2e1f28;
+    --pastel-ciano: #142a2d;
+
     --sombra-vidro: 0 8px 32px rgb(0 0 0 / 0.35);
     --veu-acrylic: rgb(11 18 32 / 0.45);
   }
@@ -91,6 +108,7 @@
   --color-alerta: var(--alerta);
   --color-perigo: var(--perigo);
   --color-info: var(--info);
+  --color-titulo-secao: var(--titulo-secao);
 
   --shadow-vidro: var(--sombra-vidro);
   --font-sans: 'Inter Variable', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
@@ -176,6 +194,22 @@
   :focus-visible {
     outline: 2px solid var(--primaria);
     outline-offset: 2px;
+  }
+
+  /* Aplicativo, não documento: sem seleção acidental de texto (o arraste da barra de título e o duplo
+     clique deixavam a tela inteira selecionada). Campos e áreas marcadas continuam copiáveis. */
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  input,
+  textarea,
+  select,
+  [contenteditable='true'],
+  .selecionavel {
+    -webkit-user-select: text;
+    user-select: text;
   }
 
   ::selection {
