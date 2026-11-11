@@ -357,20 +357,35 @@ export function DetalheSd({
             )}
           </div>
         ) : sd.status === 'aberta' ? (
-          permissoes.engenharia ? (
+          // Os botões ficam sempre à vista; só funcionam para quem tem o papel (o servidor confere de novo).
+          <div className="flex flex-col gap-2">
+            {!permissoes.engenharia && (
+              <p className="text-sm text-texto-secundario">
+                Aguardando o aceite do Gerente de Engenharia ou de um Gestor de Programa. Os papéis são atribuídos
+                pelo administrador em Usuários › Fluxo AV / SD.
+              </p>
+            )}
             <div className="flex flex-wrap justify-end gap-2">
-              <Botao variante="perigo" icone={Undo2} onClick={() => setDevolucaoAberta(true)} disabled={ocupado}>
+              <Botao
+                variante="perigo"
+                icone={Undo2}
+                onClick={() => setDevolucaoAberta(true)}
+                disabled={ocupado || !permissoes.engenharia}
+                title={permissoes.engenharia ? undefined : 'Só o Gerente de Engenharia ou um Gestor de Programa'}
+              >
                 Devolver ao Comercial
               </Botao>
-              <Botao variante="primario" icone={CheckCircle2} onClick={() => setAceiteAberto(true)} disabled={ocupado}>
+              <Botao
+                variante="primario"
+                icone={CheckCircle2}
+                onClick={() => setAceiteAberto(true)}
+                disabled={ocupado || !permissoes.engenharia}
+                title={permissoes.engenharia ? undefined : 'Só o Gerente de Engenharia ou um Gestor de Programa'}
+              >
                 Dar aceite e criar projeto
               </Botao>
             </div>
-          ) : (
-            <p className="text-sm text-texto-secundario">
-              Aguardando o aceite do Gerente de Engenharia ou de um Gestor de Programa.
-            </p>
-          )
+          </div>
         ) : (
           <p className="text-sm text-texto-sutil">Disponível depois que o Comercial abrir a SD.</p>
         )}
