@@ -1,5 +1,42 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.3.0 — 11/11/2026
+
+### Novidades
+- **Agente no Chat com IA (Projetos):** além de responder, a IA propõe alterações nos cronogramas:
+  - dar baixa em atividades;
+  - atualizar o percentual;
+  - ajustar datas;
+  - criar atividades encaixadas na fase e na posição certas;
+  - arrumar a sequência cronológica de uma fase.
+
+  A proposta aparece como um cartão no chat, com o que muda (antes → depois). **Nada é gravado até a pessoa
+  clicar em "Aplicar"**. Tudo entra numa transação só, com as mesmas regras da tela. Se alguém alterou a
+  tarefa depois da proposta, nada é aplicado e o cartão mostra o motivo. Só quem pode editar tarefas recebe
+  o agente e o "Aplicar"; quem só consulta continua com o chat de perguntas.
+- **Ponto de corte do uso multiusuário:**
+  - o que foi criado antes de 11/11/2026 às 14h (5 projetos sem código e as AVs 26-028 a 26-033) virou
+    **histórico**, com prefixo `H-` (ex.: H-AV 26-028);
+  - o histórico fica em abas próprias ("Histórico" em AVs e em Projetos) e sai dos contadores, mas continua
+    editável e segue no chat com IA, nas análises, nos relatórios e nos avisos de prazo;
+  - a numeração do uso real recomeça em **AV 26-001 → SD 26-001 → PRO 26-001**.
+- **Menu Notificações:** no fim do menu lateral, com bolinha vermelha de não lidas e filtro "Não lidas". O
+  sino da barra superior passa a só sinalizar (ponto vermelho) e leva ao menu.
+- **Tema claro por padrão.** O tema agora é guardado em cada computador, e não mais no banco compartilhado.
+  Antes, quem escolhia o escuro mudava o tema de todos.
+
+### Técnico
+- Migrações:
+  - 0042: coluna `historico` em `av`, `sd` e `cronogramas`; índice único de (ano, sequencial) só fora do
+    histórico;
+  - 0043: tabela `ia_propostas` e coluna `proposta_id` nas falas do chat.
+- Agente:
+  - laço de ferramentas na API da Anthropic (`ver_cronograma` e `propor_alteracoes`), com no máximo 8
+    rodadas e fallback por recusa;
+  - entradas validadas com zod, na infraestrutura;
+  - lote aplicado em `tarefas.comandos.aplicarAlteracoes`.
+- Canais IPC `ia:aplicar-proposta` (permissão `tarefas`) e `ia:descartar-proposta`.
+
 ## 0.2.2 — 11/11/2026
 
 ### Novidades

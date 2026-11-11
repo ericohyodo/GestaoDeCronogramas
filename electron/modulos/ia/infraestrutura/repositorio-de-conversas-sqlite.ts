@@ -14,6 +14,7 @@ interface LinhaMensagem {
   papel: 'usuario' | 'ia';
   texto: string;
   modelo: string | null;
+  proposta_id: string | null;
 }
 
 const paraConversa = (linha: LinhaConversa): ConversaGuardada => ({
@@ -38,9 +39,9 @@ export class RepositorioDeConversasSqlite implements RepositorioDeConversas {
       proximaOrdem: db
         .prepare<[string], number>('SELECT COALESCE(MAX(ordem), 0) + 1 FROM ia_conversa_mensagens WHERE conversa_id = ?')
         .pluck(),
-      inserirMensagem: db.prepare<[string, string, number, string, string, string | null, string]>(`
-        INSERT INTO ia_conversa_mensagens (id, conversa_id, ordem, papel, texto, modelo, criada_em)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+      inserirMensagem: db.prepare<[string, string, number, string, string, string | null, string, string | null]>(`
+        INSERT INTO ia_conversa_mensagens (id, conversa_id, ordem, papel, texto, modelo, criada_em, proposta_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `),
       tocar: db.prepare<[string, string]>('UPDATE ia_conversas SET atualizada_em = ? WHERE id = ?'),
       listar: db.prepare<[string, string], LinhaConversa>(
@@ -48,7 +49,7 @@ export class RepositorioDeConversasSqlite implements RepositorioDeConversas {
       ),
       obter: db.prepare<[string, string], LinhaConversa>('SELECT * FROM ia_conversas WHERE id = ? AND usuario_id = ?'),
       mensagens: db.prepare<[string], LinhaMensagem>(
-        'SELECT papel, texto, modelo FROM ia_conversa_mensagens WHERE conversa_id = ? ORDER BY ordem',
+        'SELECT papel, texto, modelo, proposta_id FROM ia_conversa_mensagens WHERE conversa_id = ? ORDER BY ordem',
       ),
       excluir: db.prepare<[string, string]>('DELETE FROM ia_conversas WHERE id = ? AND usuario_id = ?'),
       apagarAntigas: db.prepare<[string]>('DELETE FROM ia_conversas WHERE atualizada_em < ?'),
@@ -78,6 +79,7 @@ export class RepositorioDeConversasSqlite implements RepositorioDeConversas {
           mensagem.texto,
           mensagem.modelo,
           agora.toISOString(),
+          mensagem.propostaId ?? null,
         );
         ordem += 1;
       }
@@ -92,7 +94,8 @@ export class RepositorioDeConversasSqlite implements RepositorioDeConversas {
   async obter(id: string, usuarioId: string) {
     const linha = this.sql.obter.get(id, usuarioId);
     if (!linha) return null;
-    return { ...paraConversa(linha), mensagens: this.sql.mensagens.all(id) };
+    const mensagens = this.sql.mensagens.all(id).map((m) => ({ papel: m.papel, texto: m.texto, modelo: m.modelo, propostaId: m.proposta_id }));
+    return { ...paraConversa(linha), mensagens };
   }
 
   async excluir(id: string, usuarioId: string): Promise<boolean> {

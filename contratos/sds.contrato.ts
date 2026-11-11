@@ -12,6 +12,8 @@ export interface SdDTO {
   status: StatusSdDTO;
   /** Número que o projeto terá no módulo de Projetos (PRO 26-007). */
   numeroProjeto: string;
+  /** Criada antes do uso multiusuário: marcada como histórico (prefixo H-). */
+  historico: boolean;
   criadoEm: string;
   /** Data (AAAA-MM-DD) em que a cotação foi enviada ao cliente. */
   dataEnvioCotacao: string | null;

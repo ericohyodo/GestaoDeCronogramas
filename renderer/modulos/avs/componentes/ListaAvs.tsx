@@ -11,15 +11,18 @@ import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
 import { CelulaCabecalho, CelulaTabela, LinhaTabela, Tabela } from '@/compartilhado/ui/Tabela';
 import { EtapaBadge } from './EtapaBadge';
 
-type Aba = 'andamento' | 'concluidas' | 'declinadas';
+type Aba = 'andamento' | 'concluidas' | 'declinadas' | 'historico';
 
 const ABAS: { chave: Aba; rotulo: string }[] = [
   { chave: 'andamento', rotulo: 'Em andamento' },
   { chave: 'concluidas', rotulo: 'Concluídas' },
   { chave: 'declinadas', rotulo: 'Declinadas' },
+  // AVs de antes do uso multiusuário (prefixo H-): continuam editáveis, mas ficam à parte.
+  { chave: 'historico', rotulo: 'Histórico' },
 ];
 
 function situacaoDaAv(av: AvResumoDTO): Aba {
+  if (av.historico) return 'historico';
   if (av.etapaAtual.chave === 'projeto_criado') return 'concluidas';
   if (av.etapaAtual.chave === 'declinada_cliente' || av.etapaAtual.chave === 'declinada_empresa') {
     return 'declinadas';

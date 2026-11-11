@@ -29,6 +29,7 @@ interface LinhaSdListada extends LinhaSd {
   descricao: string;
   membro_comercial: string | null;
   codigo_projeto: string | null;
+  historico: number;
 }
 
 // Junta a AV de origem e o projeto só para leitura; a SD nunca grava na AV por aqui.
@@ -144,6 +145,7 @@ function paraListada(linha: LinhaSdListada): SdListada {
     descricao: linha.descricao,
     responsavelComercialId: linha.membro_comercial,
     codigoProjeto: linha.codigo_projeto,
+    historico: linha.historico === 1,
   };
 }
 

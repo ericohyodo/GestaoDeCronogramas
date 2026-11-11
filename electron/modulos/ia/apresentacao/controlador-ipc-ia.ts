@@ -5,6 +5,7 @@ import { esquemaId, esquemaSemEntrada } from '../../../nucleo/infraestrutura/ipc
 import type { RegistradorIpc } from '../../../nucleo/infraestrutura/ipc/registrador-ipc';
 import type { AnalisarAvs, ConversarSobreAvs, UltimaAnaliseAvs } from '../aplicacao/casos-de-uso-avs';
 import type { ExcluirConversa, ListarConversas, ObterConversa } from '../aplicacao/conversas';
+import type { AplicarProposta, DescartarProposta } from '../aplicacao/agente-de-cronogramas';
 import type {
   AnalisarCronograma,
   AnalisarPortfolio,
@@ -45,6 +46,8 @@ export interface CasosDeUsoIa {
   listarConversas: ListarConversas;
   obterConversa: ObterConversa;
   excluirConversa: ExcluirConversa;
+  aplicarProposta: AplicarProposta;
+  descartarProposta: DescartarProposta;
   obterInstrucoesAvs: ObterInstrucoesIa;
   salvarInstrucoesAvs: SalvarInstrucoesIa;
   restaurarChecklistAvs: RestaurarChecklistIa;
@@ -147,4 +150,7 @@ export function registrarIpcIa(ipc: RegistradorIpc, casos: CasosDeUsoIa): void {
   );
   ipc.registrar(CANAIS.ia.obterConversa, 'leitura', esquemaId, (id) => casos.obterConversa.executar(id));
   ipc.registrar(CANAIS.ia.excluirConversa, 'leitura', esquemaId, (id) => casos.excluirConversa.executar(id));
+  // Agente: aplicar mexe no cronograma (mesma permissão de editar tarefas na tela); descartar é só da proposta.
+  ipc.registrar(CANAIS.ia.aplicarProposta, 'tarefas', esquemaId, (id) => casos.aplicarProposta.executar(id));
+  ipc.registrar(CANAIS.ia.descartarProposta, 'leitura', esquemaId, (id) => casos.descartarProposta.executar(id));
 }

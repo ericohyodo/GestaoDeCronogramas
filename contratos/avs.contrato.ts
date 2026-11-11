@@ -59,6 +59,8 @@ export interface AvResumoDTO {
   criadoEm: string;
   /** Grupo de AVs a que esta AV pertence, se houver. */
   grupo: { id: string; nome: string } | null;
+  /** Criada antes do uso multiusuário: fica na aba Histórico e fora dos contadores; segue editável. */
+  historico: boolean;
 }
 
 export interface AvDetalheDTO extends AvResumoDTO {

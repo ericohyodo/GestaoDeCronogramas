@@ -1,7 +1,14 @@
+import type {
+  AplicarAlteracoesEntrada,
+  EstadoEsperadoDaTarefaDTO,
+  OperacaoDeCronogramaDTO,
+} from '@contratos/tarefas.contrato';
 import type { LinhaRelatorioAvDTO } from '@contratos/avs.contrato';
 import type {
   AnaliseArquivadaDTO,
   EscopoIaDTO,
+  ItemDaPropostaDTO,
+  SituacaoDaPropostaDTO,
   AnaliseCronogramaDTO,
   AnalisePortfolioDTO,
   MensagemDoChatDTO,
@@ -65,6 +72,20 @@ export interface PedidoDeConversa {
   rotuloDosDados?: string;
   /** Histórico começando e terminando numa fala do usuário, alternando com as da IA. */
   mensagens: MensagemDoChatDTO[];
+  /** Ferramentas do agente (chat de Projetos, para quem pode editar tarefas). Sem elas, só conversa. */
+  ferramentas?: FerramentaDoChat[];
+}
+
+/**
+ * Ferramenta que a IA pode chamar durante a resposta. Roda no processo principal; o resultado volta para a
+ * IA como texto. `erro: true` avisa a IA de que a chamada falhou (ela pode corrigir e tentar de novo).
+ */
+export interface FerramentaDoChat {
+  nome: string;
+  descricao: string;
+  /** JSON Schema da entrada (o conteúdo é validado de novo em `executar`). */
+  esquema: Record<string, unknown>;
+  executar(entrada: unknown): Promise<{ conteudo: string; erro?: boolean }>;
 }
 
 export interface ResultadoDaConversa {
@@ -113,6 +134,8 @@ export interface ResumoDoCronograma {
   dataInicio: string;
   dataFim: string;
   descricao: string | null;
+  /** Código do projeto (PRO 26-001), quando nasceu de uma SD. */
+  codigo?: string | null;
 }
 
 /** Portas para os módulos Cronogramas e Tarefas, ligadas na raiz de composição. */
@@ -171,6 +194,67 @@ export interface MensagemGuardada {
   papel: 'usuario' | 'ia';
   texto: string;
   modelo: string | null;
+  /** Proposta do agente trazida por esta fala da IA. */
+  propostaId?: string | null;
+}
+
+/** Proposta do agente, guardada até a pessoa decidir (e depois, para o histórico). */
+export interface PropostaGuardada {
+  id: string;
+  usuarioId: string;
+  cronogramaId: string;
+  cronogramaNome: string;
+  resumo: string;
+  operacoes: OperacaoDeCronogramaDTO[];
+  esperado: EstadoEsperadoDaTarefaDTO[];
+  itens: ItemDaPropostaDTO[];
+  situacao: SituacaoDaPropostaDTO;
+  criadaEm: Date;
+  decididaEm: Date | null;
+  motivo: string | null;
+}
+
+export interface RepositorioDePropostas {
+  salvar(proposta: PropostaGuardada): Promise<void>;
+  /** `null` se não existe ou é de outro usuário. */
+  obter(id: string, usuarioId: string): Promise<PropostaGuardada | null>;
+  /** Para montar o histórico: as propostas de um usuário, por id. */
+  obterVarias(ids: string[], usuarioId: string): Promise<Map<string, PropostaGuardada>>;
+  /** Apaga as propostas que nenhuma fala guardada cita mais, criadas antes da data. */
+  apagarSoltasDesde(limite: Date): Promise<number>;
+}
+
+/** Porta para o módulo Tarefas: aplica um lote de alterações numa transação (mesmas regras da tela). */
+export interface EditorDeCronogramas {
+  aplicarAlteracoes(entrada: AplicarAlteracoesEntrada): Promise<number>;
+}
+
+/** Resultado da validação de uma entrada vinda do modelo. */
+export type LeituraDaEntrada<T> = { ok: true; dados: T } | { ok: false; erro: string };
+
+/**
+ * Esquemas das ferramentas do agente: o JSON Schema enviado à API e a validação da entrada recebida (a
+ * entrada vem do modelo e é conferida de novo antes de usar). Implementado na infraestrutura (zod).
+ */
+export interface EsquemasDoAgente {
+  verCronograma: {
+    jsonSchema: Record<string, unknown>;
+    ler(entrada: unknown): LeituraDaEntrada<{ projeto: string }>;
+  };
+  proporAlteracoes: {
+    jsonSchema: Record<string, unknown>;
+    ler(entrada: unknown): LeituraDaEntrada<{ projetoId: string; resumo: string; alteracoes: OperacaoDeCronogramaDTO[] }>;
+  };
+}
+
+/** Porta para o módulo Recursos: quem pode ser responsável por uma tarefa. */
+export interface ConsultaDeRecursos {
+  listar(): Promise<{ id: string; nome: string; funcao: string | null }[]>;
+}
+
+/** Porta para a sessão: o agente só propõe (e só aplica) para quem pode editar tarefas. */
+export interface PermissoesDeQuemUsa {
+  podeEditarTarefas(): boolean;
 }
 
 /** Histórico do chat: cada usuário só enxerga as próprias conversas. */

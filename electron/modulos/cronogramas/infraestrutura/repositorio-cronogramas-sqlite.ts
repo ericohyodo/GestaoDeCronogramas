@@ -13,6 +13,8 @@ interface LinhaCronograma {
   situacao: string;
   codigo: string | null;
   sd_id: string | null;
+  /** Só leitura: marcado pela migração 0042, nunca gravado pelo repositório. */
+  historico?: number;
   criado_em: string;
   atualizado_em: string;
 }
@@ -75,6 +77,7 @@ function paraEntidade(linha: LinhaCronograma): Cronograma {
     situacao: linha.situacao as SituacaoCronograma,
     codigo: linha.codigo,
     sdId: linha.sd_id,
+    historico: linha.historico === 1,
     criadoEm: new Date(linha.criado_em),
     atualizadoEm: new Date(linha.atualizado_em),
   });

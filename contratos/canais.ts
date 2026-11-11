@@ -88,6 +88,8 @@ export const CANAIS = {
     listarConversas: 'ia:listar-conversas',
     obterConversa: 'ia:obter-conversa',
     excluirConversa: 'ia:excluir-conversa',
+    aplicarProposta: 'ia:aplicar-proposta',
+    descartarProposta: 'ia:descartar-proposta',
     obterInstrucoesAvs: 'ia:obter-instrucoes-avs',
     salvarInstrucoesAvs: 'ia:salvar-instrucoes-avs',
     restaurarChecklistAvs: 'ia:restaurar-checklist-avs',

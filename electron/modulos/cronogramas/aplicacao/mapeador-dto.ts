@@ -11,6 +11,7 @@ export function paraCronogramaDTO(cronograma: Cronograma): CronogramaDTO {
     duracaoEmDias: cronograma.periodo.duracaoEmDias,
     situacao: cronograma.situacao,
     codigo: cronograma.codigo,
+    historico: cronograma.historico,
     criadoEm: cronograma.criadoEm.toISOString(),
     atualizadoEm: cronograma.atualizadoEm.toISOString(),
   };

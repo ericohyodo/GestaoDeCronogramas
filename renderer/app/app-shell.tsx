@@ -80,6 +80,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Ao sair da conta, a caixa do sino do usuário anterior é descartada.
   const limparNotificacoes = useNotificacoesStore((estado) => estado.limpar);
+  const naoLidas = useNotificacoesStore((estado) => estado.naoLidas);
   useEffect(() => {
     if (!autenticado) limparNotificacoes();
   }, [autenticado, limparNotificacoes]);
@@ -140,6 +141,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 <BarraLateral
                   navegacao={navegacao}
                   permissoes={permissoes}
+                  contadores={{ notificacoes: naoLidas }}
                   aoRetrair={() => setLateralRetraida(true)}
                 />
               )}

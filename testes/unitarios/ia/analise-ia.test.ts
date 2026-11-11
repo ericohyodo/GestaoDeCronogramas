@@ -272,7 +272,7 @@ describe('Análise com IA', () => {
 
       const saida = await conversar.executar({ mensagens: [pergunta('Quem está atrasado?')] });
 
-      expect(saida).toEqual({ texto: 'resposta da IA', modelo: 'claude-opus-5-5', conversaId: null });
+      expect(saida).toEqual({ texto: 'resposta da IA', modelo: 'claude-opus-5-5', conversaId: null, proposta: null });
       const pedido = modelo.pedidosDeConversa[0]!;
       const contexto = pedido.contexto as ContextoDoChat;
       expect(contexto.hoje).toBe('2026-09-24');

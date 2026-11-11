@@ -45,6 +45,8 @@ interface LinhaAv {
   grupo_id: string | null;
   campos_pendentes: string | null;
   grupo_nome?: string | null;
+  /** Só leitura: marcado pela migração 0042, nunca gravado pelo repositório. */
+  historico?: number;
 }
 
 // O vínculo com o grupo é lido junto (com o nome), mas gravado só pelo repositório de grupos.
@@ -61,7 +63,8 @@ export class RepositorioAvsSqlite implements RepositorioAvs {
       listar: db.prepare<[], LinhaAv>(`${SELECT_AV} ORDER BY av.criado_em DESC`),
       obterPorId: db.prepare<[string], LinhaAv>(`${SELECT_AV} WHERE av.id = ?`),
       proximoSequencial: db.prepare<[number], { proximo: number }>(
-        'SELECT COALESCE(MAX(sequencial), 0) + 1 AS proximo FROM av WHERE ano = ?',
+        // O histórico (antes do uso multiusuário) não conta: a numeração real recomeça em 001.
+        'SELECT COALESCE(MAX(sequencial), 0) + 1 AS proximo FROM av WHERE ano = ? AND historico = 0',
       ),
       salvar: db.prepare<[LinhaAv]>(`
         INSERT INTO av (
@@ -189,6 +192,7 @@ function paraEntidade(linha: LinhaAv): Av {
     criadoEm: new Date(linha.criado_em),
     grupoId: linha.grupo_id,
     grupoNome: linha.grupo_nome ?? null,
+    historico: linha.historico === 1,
     camposPendentes: linha.campos_pendentes ? (JSON.parse(linha.campos_pendentes) as string[]) : null,
   });
 }

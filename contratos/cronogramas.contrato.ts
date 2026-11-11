@@ -13,6 +13,8 @@ export interface CronogramaDTO {
   situacao: SituacaoCronogramaDTO;
   /** Código do projeto (`PRO 26-001`) quando nasceu do aceite de uma SD; `null` nos criados à mão. */
   codigo: string | null;
+  /** Criado antes do uso multiusuário: aba Histórico e fora dos contadores; segue editável. */
+  historico: boolean;
   criadoEm: string;
   atualizadoEm: string;
 }

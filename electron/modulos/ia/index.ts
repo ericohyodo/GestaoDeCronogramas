@@ -31,17 +31,32 @@ import type {
   ConsultaDeAvs,
   ConsultaDeCronograma,
   ConsultaDeEstrutura,
+  ConsultaDeRecursos,
+  EditorDeCronogramas,
   PerfilDeQuemConversa,
+  PermissoesDeQuemUsa,
   QuemEstaUsando,
 } from './aplicacao/portas';
+import { AplicarProposta, DescartarProposta } from './aplicacao/agente-de-cronogramas';
 import { ExcluirConversa, limparConversasAntigas, ListarConversas, ObterConversa } from './aplicacao/conversas';
 import { registrarIpcIa } from './apresentacao/controlador-ipc-ia';
 import { ConfiguracaoIaSqlite } from './infraestrutura/configuracao-ia-sqlite';
 import { ModeloClaude } from './infraestrutura/modelo-claude';
 import { RepositorioDeAnalisesSqlite } from './infraestrutura/repositorio-de-analises-sqlite';
 import { RepositorioDeConversasSqlite } from './infraestrutura/repositorio-de-conversas-sqlite';
+import { RepositorioDePropostasSqlite } from './infraestrutura/repositorio-de-propostas-sqlite';
+import { ESQUEMAS_DO_AGENTE } from './infraestrutura/esquemas-do-agente';
 
-export type { ConsultaDeAvs, ConsultaDeCronograma, ConsultaDeEstrutura, PerfilDeQuemConversa, QuemEstaUsando };
+export type {
+  ConsultaDeAvs,
+  ConsultaDeCronograma,
+  ConsultaDeEstrutura,
+  ConsultaDeRecursos,
+  EditorDeCronogramas,
+  PerfilDeQuemConversa,
+  PermissoesDeQuemUsa,
+  QuemEstaUsando,
+};
 
 export interface DependenciasModuloIa {
   db: BancoDeDados;
@@ -52,6 +67,10 @@ export interface DependenciasModuloIa {
   consultaDeEstrutura: ConsultaDeEstrutura;
   consultaDeAvs: ConsultaDeAvs;
   quemEstaUsando: QuemEstaUsando;
+  /** Agente do chat de Projetos: aplica as propostas pelo módulo de Tarefas. */
+  editorDeCronogramas: EditorDeCronogramas;
+  consultaDeRecursos: ConsultaDeRecursos;
+  permissoes: PermissoesDeQuemUsa;
 }
 
 export interface ModuloIa {
@@ -70,6 +89,14 @@ export function montarModuloIa(deps: DependenciasModuloIa): ModuloIa {
   const arquivo = new RepositorioDeAnalisesSqlite(deps.db);
   const modelo = new ModeloClaude();
   const conversas = new RepositorioDeConversasSqlite(deps.db);
+  const propostas = new RepositorioDePropostasSqlite(deps.db);
+  const agente = {
+    recursos: deps.consultaDeRecursos,
+    propostas,
+    editor: deps.editorDeCronogramas,
+    permissoes: deps.permissoes,
+    esquemas: ESQUEMAS_DO_AGENTE,
+  };
 
   const dependenciasDaAnalise: DependenciasDaAnalise = {
     cofre: configuracao,
@@ -84,13 +111,16 @@ export function montarModuloIa(deps: DependenciasModuloIa): ModuloIa {
     geradorDeId: deps.geradorDeId,
     relogio: deps.relogio,
     conversas,
+    agente,
   };
   const dependenciasDasConversas = {
     conversas,
     quemEstaUsando: deps.quemEstaUsando,
     geradorDeId: deps.geradorDeId,
     relogio: deps.relogio,
+    propostas,
   };
+  const dependenciasDaDecisao = { ...agente, quemEstaUsando: deps.quemEstaUsando, relogio: deps.relogio };
 
   registrarIpcIa(deps.ipc, {
     estado: new ObterEstadoIa(configuracao, configuracao),
@@ -118,12 +148,14 @@ export function montarModuloIa(deps: DependenciasModuloIa): ModuloIa {
     listarConversas: new ListarConversas(dependenciasDasConversas),
     obterConversa: new ObterConversa(dependenciasDasConversas),
     excluirConversa: new ExcluirConversa(dependenciasDasConversas),
+    aplicarProposta: new AplicarProposta(dependenciasDaDecisao),
+    descartarProposta: new DescartarProposta(dependenciasDaDecisao),
   });
 
   return {
     rotinas: {
       /** Apaga as conversas do chat sem uso há mais de 90 dias; devolve quantas. */
-      limparConversasAntigas: () => limparConversasAntigas(conversas, deps.relogio.agora()),
+      limparConversasAntigas: () => limparConversasAntigas(conversas, deps.relogio.agora(), propostas),
     },
     consultas: {
       obterResumoDaAnalise: async (id) => {

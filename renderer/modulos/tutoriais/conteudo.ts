@@ -35,9 +35,9 @@ export const TOPICOS: TopicoDoTutorial[] = [
           'Gestão AVs (análise de viabilidade), Gestão SDs (passagem do Comercial para a Engenharia) e Gestão de Projetos (cronogramas). O código acompanha o desenvolvimento: AV 26-001 vira SD 26-001 e depois PRO 26-001.',
       },
       {
-        titulo: 'Notificações (sino)',
+        titulo: 'Notificações',
         texto:
-          'O sino no topo mostra o que precisa de você: uma área da AV que chegou até você, uma SD aguardando aceite, uma tarefa atribuída ou atrasada. Clique no aviso para ir direto à tela. Com o app aberto, o Windows também mostra o aviso.',
+          'O menu Notificações (no fim do menu lateral) mostra o que precisa de você: uma área da AV que chegou até você, uma SD aguardando aceite, uma tarefa atribuída ou atrasada. A bolinha vermelha conta as não lidas, e o sino no topo acende um ponto vermelho quando chega algo novo. Clique no aviso para ir direto à tela. Com o app aberto, o Windows também mostra o aviso.',
       },
       {
         titulo: 'Esqueci a senha',

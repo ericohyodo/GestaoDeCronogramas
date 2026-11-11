@@ -35,7 +35,9 @@ import {
   montarInstrucoes,
   montarInstrucoesDoChat,
   montarInstrucoesDoPortfolio,
+  INSTRUCOES_DO_AGENTE,
 } from './instrucoes';
+import { AgenteDeCronogramas, type DependenciasDoAgente, paraPropostaDTO } from './agente-de-cronogramas';
 import { conferirConversa, type DependenciasDasConversas, guardarNaConversa } from './conversas';
 import type {
   CofreDeChave,
@@ -143,12 +145,20 @@ export interface DependenciasDaAnalise {
   relogio: Relogio;
   /** Histórico do chat; sem ele, as conversas não são guardadas (testes). */
   conversas?: RepositorioDeConversas;
+  /** Agente do chat de Projetos (propor e aplicar alterações); sem ele, o chat só consulta. */
+  agente?: Pick<DependenciasDoAgente, 'recursos' | 'propostas' | 'editor' | 'permissoes' | 'esquemas'>;
 }
 
 /** Dependências do histórico a partir das da análise (`null` sem repositório de conversas). */
 export function dependenciasDasConversas(deps: DependenciasDaAnalise): DependenciasDasConversas | null {
   return deps.conversas
-    ? { conversas: deps.conversas, quemEstaUsando: deps.quemEstaUsando, geradorDeId: deps.geradorDeId, relogio: deps.relogio }
+    ? {
+        conversas: deps.conversas,
+        quemEstaUsando: deps.quemEstaUsando,
+        geradorDeId: deps.geradorDeId,
+        relogio: deps.relogio,
+        propostas: deps.agente?.propostas,
+      }
     : null;
 }
 
@@ -260,8 +270,8 @@ export class AnalisarPortfolio implements CasoDeUso<void, AnalisePortfolioDTO> {
 }
 
 /**
- * Chat de perguntas e respostas sobre todos os cronogramas em andamento. Só lê: a IA nunca altera
- * dados. As conversas não são guardadas; o histórico vem da tela a cada pergunta.
+ * Chat sobre todos os cronogramas em andamento. Para quem pode editar tarefas, a IA também propõe
+ * alterações (agente); ela nunca grava nada: a pessoa decide no cartão da proposta.
  */
 export class ConversarComIa implements CasoDeUso<ConversarComIaEntrada, RespostaDoChatDTO> {
   constructor(private readonly deps: DependenciasDaAnalise) {}
@@ -292,17 +302,31 @@ export class ConversarComIa implements CasoDeUso<ConversarComIaEntrada, Resposta
       );
     }
 
+    // Agente: só para quem pode editar tarefas. A IA propõe; a pessoa aplica no cartão da proposta.
+    const agente =
+      this.deps.agente && usuarioId && this.deps.agente.permissoes.podeEditarTarefas()
+        ? new AgenteDeCronogramas({ ...this.deps, ...this.deps.agente }, usuarioId)
+        : null;
+
     const { orientacoes } = await lerInstrucoes(this.deps.instrucoes);
+    const instrucoes = comApresentacao(montarInstrucoesDoChat(orientacoes), apresentacao);
     const resultado = await this.deps.modelo.conversar({
       chave,
       modelo,
-      instrucoes: comApresentacao(montarInstrucoesDoChat(orientacoes), apresentacao),
+      instrucoes: agente ? `${instrucoes}\n\n${INSTRUCOES_DO_AGENTE}` : instrucoes,
       contexto,
       mensagens,
+      ferramentas: agente?.ferramentas(),
     });
+    const proposta = agente?.propostaDoTurno ?? null;
     const pergunta = mensagens.at(-1)!.texto;
-    const guardadaEm = await guardarNaConversa(historico, usuarioId, 'projetos', conversaId, pergunta, resultado);
-    return { texto: resultado.texto, modelo: resultado.modelo, conversaId: guardadaEm };
+    const guardadaEm = await guardarNaConversa(historico, usuarioId, 'projetos', conversaId, pergunta, resultado, proposta?.id ?? null);
+    return {
+      texto: resultado.texto,
+      modelo: resultado.modelo,
+      conversaId: guardadaEm,
+      proposta: proposta ? paraPropostaDTO(proposta) : null,
+    };
   }
 }
 

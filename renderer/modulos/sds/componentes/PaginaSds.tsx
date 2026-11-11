@@ -66,6 +66,11 @@ export function PaginaSds() {
                   >
                     {sd.numero}
                   </Link>
+                  {sd.historico && (
+                    <span className="ml-2 align-middle">
+                      <Etiqueta>histórico</Etiqueta>
+                    </span>
+                  )}
                 </CelulaTabela>
                 <CelulaTabela className="tabular-nums">
                   <Link

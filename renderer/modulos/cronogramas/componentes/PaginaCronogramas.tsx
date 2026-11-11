@@ -1,5 +1,6 @@
 'use client';
 
+import clsx from 'clsx';
 import { CalendarRange, Plus } from 'lucide-react';
 import { type ReactNode, useEffect, useState } from 'react';
 import type { CronogramaDTO, SituacaoCronogramaDTO } from '@contratos/cronogramas.contrato';
@@ -29,6 +30,11 @@ export function PaginaCronogramas({
   const { itens, carregando, erro, carregar, excluir, limparErro } = useCronogramasStore();
   const [edicao, setEdicao] = useState<Edicao>(null);
   const [paraExcluir, setParaExcluir] = useState<CronogramaDTO | null>(null);
+  // Projetos de antes do uso multiusuário ficam numa aba à parte (editáveis), fora dos contadores.
+  const [verHistorico, setVerHistorico] = useState(false);
+  const atuais = itens.filter((item) => !item.historico);
+  const historico = itens.filter((item) => item.historico);
+  const visiveis = verHistorico ? historico : atuais;
 
   useEffect(() => {
     void carregar();
@@ -58,11 +64,42 @@ export function PaginaCronogramas({
           <PainelVidro key={situacao} className="px-5 py-4">
             <p className="text-xs font-medium text-texto-sutil">{ROTULO_SITUACAO[situacao]}</p>
             <p className="mt-1 text-2xl font-semibold tabular-nums">
-              {itens.filter((item) => item.situacao === situacao).length}
+              {atuais.filter((item) => item.situacao === situacao).length}
             </p>
           </PainelVidro>
         ))}
       </div>
+
+      {historico.length > 0 && (
+        <div role="tablist" aria-label="Projetos atuais ou histórico" className="flex w-fit gap-1 rounded-lg bg-texto/5 p-1">
+          {(
+            [
+              [false, `Projetos (${atuais.length})`],
+              [true, `Histórico (${historico.length})`],
+            ] as const
+          ).map(([valor, rotulo]) => (
+            <button
+              key={rotulo}
+              type="button"
+              role="tab"
+              aria-selected={verHistorico === valor}
+              onClick={() => setVerHistorico(valor)}
+              className={clsx(
+                'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                verHistorico === valor ? 'bg-superficie-solida text-texto shadow-sm' : 'text-texto-secundario hover:text-texto',
+              )}
+            >
+              {rotulo}
+            </button>
+          ))}
+        </div>
+      )}
+      {verHistorico && (
+        <p className="-mt-3 text-sm text-texto-secundario">
+          Projetos de antes do uso multiusuário. Ficam fora dos contadores, mas continuam editáveis e seguem no chat com
+          IA, nas análises e nos avisos de prazo.
+        </p>
+      )}
 
       {erro && <MensagemErro mensagem={erro} aoFechar={limparErro} />}
 
@@ -72,7 +109,7 @@ export function PaginaCronogramas({
             <PainelVidro key={i} className="h-52 animate-pulse" />
           ))}
         </div>
-      ) : itens.length === 0 ? (
+      ) : visiveis.length === 0 ? (
         <PainelVidro>
           <EstadoVazio
             icone={CalendarRange}
@@ -89,7 +126,7 @@ export function PaginaCronogramas({
         </PainelVidro>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(18rem,1fr))] gap-4">
-          {itens.map((cronograma) => (
+          {visiveis.map((cronograma) => (
             <CardCronograma
               key={cronograma.id}
               cronograma={cronograma}

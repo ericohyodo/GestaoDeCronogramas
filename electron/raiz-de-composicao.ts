@@ -186,6 +186,9 @@ ${pasta}`,
         (await cronogramas.consultas.listar()).filter((c) => !c.arquivado).map((c) => c.id),
     },
     consultaDeEstrutura: { obterEstrutura: (id) => tarefas.consultas.obterEstrutura(id) },
+    editorDeCronogramas: { aplicarAlteracoes: (entrada) => tarefas.comandos.aplicarAlteracoes(entrada) },
+    consultaDeRecursos: { listar: () => responsaveis.consultas.listar() },
+    permissoes: { podeEditarTarefas: () => controleDeAcesso.possuiPermissao('tarefas') },
     consultaDeAvs: { relatorio: () => avs.consultas.relatorio() },
     quemEstaUsando: {
       nomeDoUsuarioAtual: () => usuarios.consultas.nomeDoUsuarioAtual(),
@@ -213,7 +216,7 @@ ${pasta}`,
     consultaDeAnalises: { obterResumo: (id) => ia.consultas.obterResumoDaAnalise(id) },
   });
 
-  const preferencias = montarModuloPreferencias({ db, ipc });
+  const preferencias = montarModuloPreferencias({ ipc, pastaLocal: app.getPath('userData') });
   // Tema aplicado antes de a janela existir: sem troca de cores visível na abertura.
   await preferencias.aplicarTemaSalvo();
 

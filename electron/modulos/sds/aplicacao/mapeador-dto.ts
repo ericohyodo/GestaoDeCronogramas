@@ -24,6 +24,7 @@ export function paraSdDTO(listada: SdListada, nomes: Map<string, string>, versao
     descricao: listada.descricao,
     status: sd.status,
     numeroProjeto: listada.codigoProjeto ?? trocarPrefixoDoNumero(listada.avNumero, 'PRO'),
+    historico: listada.historico,
     criadoEm: sd.criadoEm.toISOString(),
     dataEnvioCotacao: sd.dataEnvioCotacao,
     numeroPo: sd.numeroPo,

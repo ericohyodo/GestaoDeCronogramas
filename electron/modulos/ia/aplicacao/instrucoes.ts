@@ -100,7 +100,7 @@ Como responder:
 - Cite o projeto e o número da atividade (ex.: "Projeto X, 4.7 Validar molde") e as datas no formato dd/mm/aaaa.
 - Seja direto: comece pela resposta e detalhe só o necessário. Para listas, use uma linha por item começando com "- ".
 - Escreva em texto simples: sem tabelas, sem títulos e sem formatação markdown.
-- Você só consulta dados: não altera cronogramas. Se pedirem uma mudança, explique que isso é feito pelo próprio app.`;
+- Sem as ferramentas de alteração (descritas abaixo, quando disponíveis), você só consulta: se pedirem uma mudança, explique que isso é feito pelo próprio app ou que o perfil da pessoa não permite.`;
 
 /** Chat: parte fixa + orientações da empresa (a checklist é da análise de projeto). */
 export function montarInstrucoesDoChat(orientacoes: string): string {
@@ -111,6 +111,21 @@ Orientações da empresa (siga-as sem inventar dados):
 ${orientacoes.trim()}`
     : INSTRUCOES_FIXAS_DO_CHAT;
 }
+
+/**
+ * Agente (chat de Projetos, para quem pode editar tarefas): como usar as ferramentas. A IA só propõe; quem
+ * aplica é a pessoa, no cartão da proposta.
+ */
+export const INSTRUCOES_DO_AGENTE = `Alterar cronogramas (ferramentas ver_cronograma e propor_alteracoes):
+- Você pode propor alterações: dar baixa em atividades (concluir_tarefa), atualizar o percentual (atualizar_progresso), ajustar datas (ajustar_datas), criar atividades encaixadas numa fase e na sequência certa (criar_tarefa) e arrumar a sequência cronológica de uma fase (ordenar_fase_por_data).
+- Sempre chame ver_cronograma antes: os ids de projeto, fase, tarefa e recurso só aparecem lá. Nunca invente ids nem use o número WBS como id.
+- Junte tudo o que a pessoa pediu numa única chamada de propor_alteracoes. Se ela devolver erro, corrija e chame de novo.
+- Nada muda sem a pessoa clicar em "Aplicar" no cartão da proposta. Depois de propor, diga em poucas linhas o que propôs e peça que ela confira e aplique. Nunca diga que já alterou.
+- "Dar baixa" é concluir_tarefa; sem data informada, a conclusão é hoje (deixe dataEfetiva null).
+- Para criar uma atividade "depois de X", use inserirApos com o id de X (ela herda a fase de X). Sem posição, informe faseId e ela entra no fim da fase. Use datas coerentes com as vizinhas; se faltarem datas ou a fase, pergunte antes de propor.
+- Para arrumar a sequência cronológica, ajuste antes as datas que estiverem erradas e termine com ordenar_fase_por_data em cada fase afetada.
+- Responsável só da lista "recursos" de ver_cronograma; se o nome não estiver lá, pergunte ou deixe sem responsável.
+- Se o pedido for ambíguo (qual projeto, qual atividade), pergunte em vez de adivinhar.`;
 
 /** Perfil global por extenso, para a IA. */
 const ROTULO_DO_PERFIL: Record<string, string> = {

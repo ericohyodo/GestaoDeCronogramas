@@ -3,6 +3,7 @@
 import clsx from 'clsx';
 import {
   BarChart3,
+  Bell,
   CalendarRange,
   ClipboardCheck,
   FileClock,
@@ -30,7 +31,22 @@ interface ItemNavegacao {
   rotas?: string[];
   /** Quando definida, o item só aparece para quem tem a permissão. */
   permissao?: PermissaoDTO;
+  /** Mostra uma bolinha vermelha com este contador (ex.: notificações não lidas). */
+  contador?: keyof ContadoresDoMenu;
 }
+
+/** Contadores exibidos nos itens do menu, alimentados pela casca do app. */
+export interface ContadoresDoMenu {
+  notificacoes?: number;
+}
+
+const ITEM_NOTIFICACOES: ItemNavegacao = {
+  rotulo: 'Notificações',
+  icone: Bell,
+  href: '/notificacoes/',
+  rotas: ['/notificacoes'],
+  contador: 'notificacoes',
+};
 
 export interface NavegacaoLateral {
   titulo: string;
@@ -61,6 +77,7 @@ export const NAV_PROJETOS: NavegacaoLateral = {
       permissao: 'administracao',
     },
     { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
+    ITEM_NOTIFICACOES,
   ],
 };
 
@@ -90,6 +107,7 @@ export const NAV_AVS: NavegacaoLateral = {
       permissao: 'administracao',
     },
     { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
+    ITEM_NOTIFICACOES,
   ],
 };
 
@@ -100,16 +118,19 @@ export const NAV_SDS: NavegacaoLateral = {
     { rotulo: 'SDs', icone: FileText, href: '/sds/', rotas: ['/sds'] },
     { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
     { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
+    ITEM_NOTIFICACOES,
   ],
 };
 
 export function BarraLateral({
   navegacao,
   permissoes,
+  contadores = {},
   aoRetrair,
 }: {
   navegacao: NavegacaoLateral;
   permissoes: PermissaoDTO[];
+  contadores?: ContadoresDoMenu;
   aoRetrair: () => void;
 }) {
   const rotaAtual = usePathname();
@@ -169,6 +190,7 @@ export function BarraLateral({
               >
                 <item.icone aria-hidden className="size-4" />
                 {item.rotulo}
+                <Contador valor={item.contador ? contadores[item.contador] : undefined} />
               </Link>
             ) : (
               <span
@@ -192,5 +214,18 @@ export function BarraLateral({
         Dados salvos ao lado do executável.
       </div>
     </nav>
+  );
+}
+
+/** Bolinha vermelha com o número, no estilo dos apps de mensagem (some quando é zero). */
+function Contador({ valor }: { valor: number | undefined }) {
+  if (!valor) return null;
+  return (
+    <span
+      aria-label={`${valor} não lidas`}
+      className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-perigo px-1.5 text-[11px] font-semibold leading-none text-white tabular-nums"
+    >
+      {valor > 99 ? '99+' : valor}
+    </span>
   );
 }

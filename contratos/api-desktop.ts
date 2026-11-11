@@ -67,6 +67,7 @@ import type {
   EscopoIaDTO,
   EstadoIaDTO,
   InstrucoesIaDTO,
+  PropostaDeAlteracaoDTO,
   RespostaDoChatDTO,
   ResumoDeAnaliseDTO,
   ResumoDeConversaDTO,
@@ -292,6 +293,9 @@ export interface ApiDesktop {
     listarConversas(escopo: EscopoIaDTO): Promise<Resultado<ResumoDeConversaDTO[]>>;
     obterConversa(id: string): Promise<Resultado<ConversaDTO>>;
     excluirConversa(id: string): Promise<Resultado<null>>;
+    /** Agente do chat de Projetos: aplica (ou descarta) a proposta de alterações. */
+    aplicarProposta(id: string): Promise<Resultado<PropostaDeAlteracaoDTO>>;
+    descartarProposta(id: string): Promise<Resultado<PropostaDeAlteracaoDTO>>;
     obterInstrucoesAvs(): Promise<Resultado<InstrucoesIaDTO>>;
     salvarInstrucoesAvs(entrada: SalvarInstrucoesIaEntrada): Promise<Resultado<InstrucoesIaDTO>>;
     restaurarChecklistAvs(): Promise<Resultado<InstrucoesIaDTO>>;

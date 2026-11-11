@@ -104,6 +104,36 @@ export interface RespostaDoChatDTO {
   modelo: string;
   /** Conversa onde a pergunta e a resposta foram guardadas. */
   conversaId: string | null;
+  /** Alterações que o agente propôs nesta resposta (só no chat de Projetos); nada muda sem "Aplicar". */
+  proposta: PropostaDeAlteracaoDTO | null;
+}
+
+/**
+ * - `pendente`: aguardando a decisão de quem pediu;
+ * - `aplicada` / `descartada`: decidida;
+ * - `desatualizada`: o cronograma mudou depois da proposta e ela não pôde ser aplicada.
+ */
+export type SituacaoDaPropostaDTO = 'pendente' | 'aplicada' | 'descartada' | 'desatualizada';
+
+/** Uma linha do cartão de proposta: o que muda, como está e como vai ficar. */
+export interface ItemDaPropostaDTO {
+  descricao: string;
+  antes: string | null;
+  depois: string;
+}
+
+/** Proposta do agente: uma lista de alterações num cronograma, aplicada só quando a pessoa confirma. */
+export interface PropostaDeAlteracaoDTO {
+  id: string;
+  cronogramaId: string;
+  cronogramaNome: string;
+  resumo: string;
+  itens: ItemDaPropostaDTO[];
+  situacao: SituacaoDaPropostaDTO;
+  criadaEm: string;
+  decididaEm: string | null;
+  /** Por que não foi aplicada (situação `desatualizada`). */
+  motivo: string | null;
 }
 
 /** Item da barra de histórico do chat. */
@@ -118,7 +148,7 @@ export interface ConversaDTO {
   id: string;
   titulo: string;
   escopo: EscopoIaDTO;
-  mensagens: (MensagemDoChatDTO & { modelo: string | null })[];
+  mensagens: (MensagemDoChatDTO & { modelo: string | null; proposta: PropostaDeAlteracaoDTO | null })[];
 }
 
 /** Conversas sem uso há mais que isso são apagadas automaticamente. */

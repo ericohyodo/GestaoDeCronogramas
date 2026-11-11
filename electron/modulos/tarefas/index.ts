@@ -10,6 +10,7 @@ import type { Relogio } from '../../nucleo/aplicacao/portas/relogio';
 import type { BancoDeDados } from '../../nucleo/infraestrutura/banco/conexao-sqlite';
 import type { RegistradorIpc } from '../../nucleo/infraestrutura/ipc/registrador-ipc';
 import { AjustarDatasDaFase } from './aplicacao/casos-de-uso/ajustar-datas-da-fase';
+import { AplicarAlteracoesEmLote } from './aplicacao/casos-de-uso/aplicar-alteracoes-em-lote';
 import { AtualizarTarefa } from './aplicacao/casos-de-uso/atualizar-tarefa';
 import { CopiarEstrutura } from './aplicacao/casos-de-uso/copiar-estrutura';
 import { CriarTarefa } from './aplicacao/casos-de-uso/criar-tarefa';
@@ -43,6 +44,13 @@ export interface DependenciasModuloTarefas {
 }
 
 export interface ModuloTarefas {
+  comandos: {
+    /**
+     * Aplica um lote de alterações numa transação (agente do Chat com IA, depois do "Aplicar"). Quem chama
+     * confere a permissão; aqui valem as mesmas regras da tela. @returns quantas alterações entraram
+     */
+    aplicarAlteracoes(entrada: Parameters<AplicarAlteracoesEmLote['executar']>[0]): Promise<number>;
+  };
   /** Consultas que o módulo oferece aos demais módulos. */
   consultas: {
     obterEstrutura(cronogramaId: string): ReturnType<ObterEstrutura['executar']>;
@@ -74,6 +82,25 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): ModuloTare
   );
 
   const transacao = new UnidadeDeTrabalhoSqlite(deps.db);
+  const aplicarAlteracoes = transacional(
+    new AplicarAlteracoesEmLote(
+      repositorio,
+      repositorioFases,
+      new CriarTarefa(
+        repositorio,
+        repositorioFases,
+        deps.consultaDeCronogramas,
+        deps.consultaDeResponsaveis,
+        deps.relogio,
+        deps.geradorDeId,
+        avisos,
+      ),
+      new AtualizarTarefa(repositorio, deps.consultaDeResponsaveis, deps.relogio, avisos),
+      new ReordenarTarefas(repositorio),
+      deps.relogio,
+    ),
+    transacao,
+  );
   registrarIpcTarefas(deps.ipc, {
     obterEstrutura,
     criar: transacional(
@@ -116,6 +143,7 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): ModuloTare
   });
 
   return {
+    comandos: { aplicarAlteracoes: (entrada) => aplicarAlteracoes.executar(entrada) },
     consultas: { obterEstrutura: (cronogramaId) => obterEstrutura.executar(cronogramaId) },
     apresentacao: {
       semearProjeto: (cronogramaId, responsavelIds, inicioIso) =>

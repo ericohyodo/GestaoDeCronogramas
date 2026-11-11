@@ -40,9 +40,13 @@ export interface Sd {
   cronogramaId: string | null;
 }
 
-/** A SD e o projeto herdam o sequencial/ano da AV: só o prefixo muda (`AV 26-007` → `SD 26-007`). */
+/**
+ * A SD e o projeto herdam o sequencial/ano da AV: só o prefixo muda (`AV 26-007` → `SD 26-007`). O marcador
+ * de histórico se mantém (`H-AV 26-028` → `H-SD 26-028`), para não colidir com a numeração do uso real.
+ */
 export function trocarPrefixoDoNumero(numeroAv: string, prefixo: 'SD' | 'PRO'): string {
-  return numeroAv.replace(/^\S+/, prefixo);
+  const historico = numeroAv.startsWith('H-');
+  return `${historico ? 'H-' : ''}${(historico ? numeroAv.slice(2) : numeroAv).replace(/^\S+/, prefixo)}`;
 }
 
 /** Uma SD junto com os dados da AV de origem que as telas precisam mostrar. */
@@ -55,6 +59,8 @@ export interface SdListada {
   responsavelComercialId: string | null;
   /** Código do projeto criado no aceite (`PRO 26-007`). */
   codigoProjeto: string | null;
+  /** Criada antes do uso multiusuário (migração 0042). */
+  historico: boolean;
 }
 
 /** SD recém-criada a partir da AV finalizada. */

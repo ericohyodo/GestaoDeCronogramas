@@ -44,6 +44,7 @@ export interface ModuloCronogramas {
       dataInicio: string;
       dataFim: string;
       descricao: string | null;
+      codigo: string | null;
     } | null>;
     listar(): Promise<{ id: string; nome: string; arquivado: boolean }[]>;
   };
@@ -82,6 +83,7 @@ export function montarModuloCronogramas(deps: DependenciasModuloCronogramas): Mo
           dataInicio: cronograma.periodo.inicio,
           dataFim: cronograma.periodo.fim,
           descricao: cronograma.descricao,
+          codigo: cronograma.codigo,
         };
       },
       async listar() {

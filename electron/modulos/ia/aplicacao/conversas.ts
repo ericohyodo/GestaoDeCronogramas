@@ -8,7 +8,8 @@ import type { CasoDeUso } from '../../../nucleo/aplicacao/caso-de-uso';
 import type { GeradorDeId } from '../../../nucleo/aplicacao/portas/gerador-de-id';
 import type { Relogio } from '../../../nucleo/aplicacao/portas/relogio';
 import { ErroDeDominio } from '../../../nucleo/dominio/erro-de-dominio';
-import type { PerfilDeQuemConversa, QuemEstaUsando, RepositorioDeConversas } from './portas';
+import { paraPropostaDTO } from './agente-de-cronogramas';
+import type { PerfilDeQuemConversa, QuemEstaUsando, RepositorioDeConversas, RepositorioDePropostas } from './portas';
 
 // =====================================================================================================
 // Histórico do Chat com IA: cada usuário guarda as próprias conversas, por escopo (Projetos e AVs).
@@ -28,6 +29,8 @@ export interface DependenciasDasConversas {
   quemEstaUsando: QuemEstaUsando;
   geradorDeId: GeradorDeId;
   relogio: Relogio;
+  /** Propostas do agente, para o histórico mostrar o cartão de cada uma. */
+  propostas?: RepositorioDePropostas;
 }
 
 async function quemConversa(quem: QuemEstaUsando): Promise<PerfilDeQuemConversa> {
@@ -65,6 +68,7 @@ export async function guardarNaConversa(
   conversaId: string | null,
   pergunta: string,
   resposta: { texto: string; modelo: string },
+  propostaId: string | null = null,
 ): Promise<string | null> {
   if (!deps || !usuarioId) return null;
   const agora = deps.relogio.agora();
@@ -77,7 +81,7 @@ export async function guardarNaConversa(
     id,
     [
       { papel: 'usuario', texto: pergunta, modelo: null },
-      { papel: 'ia', texto: resposta.texto, modelo: resposta.modelo },
+      { papel: 'ia', texto: resposta.texto, modelo: resposta.modelo, propostaId },
     ],
     agora,
   );
@@ -106,7 +110,17 @@ export class ObterConversa implements CasoDeUso<string, ConversaDTO> {
     const usuario = await quemConversa(this.deps.quemEstaUsando);
     const conversa = await this.deps.conversas.obter(id, usuario.id);
     if (!conversa) throw new ErroDeDominio('CONVERSA_NAO_ENCONTRADA', 'Esta conversa não existe mais.');
-    return { id: conversa.id, titulo: conversa.titulo, escopo: conversa.escopo, mensagens: conversa.mensagens };
+    const ids = conversa.mensagens.flatMap((mensagem) => (mensagem.propostaId ? [mensagem.propostaId] : []));
+    const propostas = (await this.deps.propostas?.obterVarias(ids, usuario.id)) ?? new Map();
+    return {
+      id: conversa.id,
+      titulo: conversa.titulo,
+      escopo: conversa.escopo,
+      mensagens: conversa.mensagens.map(({ papel, texto, modelo, propostaId }) => {
+        const proposta = propostaId ? propostas.get(propostaId) : undefined;
+        return { papel, texto, modelo, proposta: proposta ? paraPropostaDTO(proposta) : null };
+      }),
+    };
   }
 }
 
@@ -122,8 +136,14 @@ export class ExcluirConversa implements CasoDeUso<string, null> {
   }
 }
 
-/** Rotina: apaga as conversas sem uso há mais de 90 dias. */
-export async function limparConversasAntigas(conversas: RepositorioDeConversas, agora: Date): Promise<number> {
+/** Rotina: apaga as conversas sem uso há mais de 90 dias (e as propostas que ficaram sem conversa). */
+export async function limparConversasAntigas(
+  conversas: RepositorioDeConversas,
+  agora: Date,
+  propostas?: RepositorioDePropostas,
+): Promise<number> {
   const limite = new Date(agora.getTime() - DIAS_DE_GUARDA_DAS_CONVERSAS * 86_400_000);
-  return conversas.apagarSemUsoDesde(limite);
+  const apagadas = await conversas.apagarSemUsoDesde(limite);
+  await propostas?.apagarSoltasDesde(limite);
+  return apagadas;
 }

@@ -156,3 +156,43 @@ export interface EstruturaCronogramaDTO {
   fim: string;
   linhas: LinhaEstruturaDTO[];
 }
+
+// -----------------------------------------------------------------------------------------------------
+// Alterações em lote (propostas pelo agente do Chat com IA e aplicadas só quando a pessoa confirma)
+// -----------------------------------------------------------------------------------------------------
+
+/** Uma alteração no cronograma. Os ids vêm da estrutura (nunca do número WBS, que muda). */
+export type OperacaoDeCronogramaDTO =
+  /** Dar baixa: 100 %, concluída, com a data em que terminou de fato (hoje, se não informada). */
+  | { tipo: 'concluir_tarefa'; tarefaId: string; dataEfetiva: string | null; evidencia: string | null }
+  | { tipo: 'atualizar_progresso'; tarefaId: string; percentual: number }
+  | { tipo: 'ajustar_datas'; tarefaId: string; dataInicio: string; dataFim: string }
+  /** Nova tarefa numa fase (no fim dela) ou logo abaixo de `inserirApos` (herdando a fase dessa tarefa). */
+  | {
+      tipo: 'criar_tarefa';
+      faseId: string | null;
+      inserirApos: string | null;
+      titulo: string;
+      dataInicio: string;
+      dataFim: string;
+      responsavelId: string | null;
+    }
+  /** Reordena as tarefas de uma fase pela data de início (e de término, no empate). */
+  | { tipo: 'ordenar_fase_por_data'; faseId: string };
+
+/** Como a tarefa estava quando a proposta foi feita: se mudou, a proposta não é aplicada. */
+export interface EstadoEsperadoDaTarefaDTO {
+  tarefaId: string;
+  titulo: string;
+  faseId: string | null;
+  dataInicio: string;
+  dataFim: string;
+  percentualConcluido: number;
+  situacao: SituacaoTarefaDTO;
+}
+
+export interface AplicarAlteracoesEntrada {
+  cronogramaId: string;
+  operacoes: OperacaoDeCronogramaDTO[];
+  esperado: EstadoEsperadoDaTarefaDTO[];
+}

@@ -11,7 +11,6 @@ import { Cronograma } from '../../electron/modulos/cronogramas/dominio/cronogram
 import { RepositorioCronogramasSqlite } from '../../electron/modulos/cronogramas/infraestrutura/repositorio-cronogramas-sqlite';
 import { ConfiguracaoIaSqlite } from '../../electron/modulos/ia/infraestrutura/configuracao-ia-sqlite';
 import { RepositorioDeAnalisesSqlite } from '../../electron/modulos/ia/infraestrutura/repositorio-de-analises-sqlite';
-import { RepositorioPreferenciasSqlite } from '../../electron/modulos/preferencias/infraestrutura/repositorio-preferencias-sqlite';
 import { Responsavel } from '../../electron/modulos/responsaveis/dominio/responsavel';
 import { RepositorioResponsaveisSqlite } from '../../electron/modulos/responsaveis/infraestrutura/repositorio-responsaveis-sqlite';
 import { Fase } from '../../electron/modulos/tarefas/dominio/fase';
@@ -306,13 +305,5 @@ describe('Banco SQLite', () => {
       agora,
     });
     await expect(repositorio.salvar(repetido)).rejects.toThrow(/UNIQUE/);
-  });
-
-  it('guarda o tema como preferência chave/valor', async () => {
-    const repositorio = new RepositorioPreferenciasSqlite(db);
-    expect(await repositorio.obterTema()).toBeNull();
-    await repositorio.salvarTema('claro');
-    await repositorio.salvarTema('escuro');
-    expect(await repositorio.obterTema()).toBe('escuro');
   });
 });

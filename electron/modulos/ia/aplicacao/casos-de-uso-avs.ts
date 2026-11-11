@@ -114,6 +114,6 @@ export class ConversarSobreAvs implements CasoDeUso<ConversarComIaEntrada, Respo
     });
     const pergunta = mensagens.at(-1)!.texto;
     const guardadaEm = await guardarNaConversa(historico, usuarioId, 'avs', conversaId, pergunta, resultado);
-    return { texto: resultado.texto, modelo: resultado.modelo, conversaId: guardadaEm };
+    return { texto: resultado.texto, modelo: resultado.modelo, conversaId: guardadaEm, proposta: null };
   }
 }

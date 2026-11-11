@@ -48,6 +48,8 @@ export interface PropsAv extends CamposComerciaisAv {
   grupoNome: string | null;
   /** Campos a preencher à mão depois de herdar dados do grupo; `null` = nunca herdou. */
   camposPendentes: string[] | null;
+  /** Criada antes do uso multiusuário (migração 0042): aba própria e fora dos contadores; segue editável. */
+  historico: boolean;
 }
 
 /** Campos que mudam de produto para produto: não são herdados do grupo e ficam em alerta até serem preenchidos. */
@@ -111,6 +113,7 @@ export class Av {
       grupoId: null,
       grupoNome: null,
       camposPendentes: null,
+      historico: false,
     });
   }
 
@@ -225,6 +228,9 @@ export class Av {
   }
   get grupoNome(): string | null {
     return this.props.grupoNome;
+  }
+  get historico(): boolean {
+    return this.props.historico;
   }
   get camposPendentes(): string[] | null {
     return this.props.camposPendentes ? [...this.props.camposPendentes] : null;

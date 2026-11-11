@@ -35,6 +35,8 @@ export interface ModuloResponsaveis {
     obterUsuarios(ids: string[]): Promise<Map<string, string>>;
     /** Nome do recurso vinculado ao usuário (como ele aparece nas tarefas); `null` sem vínculo. */
     obterNomeDoRecursoDoUsuario(usuarioId: string): Promise<string | null>;
+    /** Todos os recursos (id, nome e função), para o agente da IA designar responsáveis. */
+    listar(): Promise<{ id: string; nome: string; funcao: string | null }[]>;
   };
 }
 
@@ -72,6 +74,9 @@ export function montarModuloResponsaveis(
           }
         }
         return usuarios;
+      },
+      async listar() {
+        return (await repositorio.listar()).map((recurso) => ({ id: recurso.id, nome: recurso.nome, funcao: recurso.funcao }));
       },
       async obterNomeDoRecursoDoUsuario(usuarioId) {
         return (await repositorio.obterPorUsuario(usuarioId))?.nome ?? null;

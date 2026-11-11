@@ -7,6 +7,7 @@ import {
   LIMITE_DE_CARACTERES_DA_PERGUNTA,
   LIMITE_DE_MENSAGENS_DO_CHAT,
   type MensagemDoChatDTO,
+  type PropostaDeAlteracaoDTO,
   type ResumoDeConversaDTO,
 } from '@contratos/ia.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
@@ -17,6 +18,7 @@ import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { usarStoreIa } from '../store/use-ia-store';
 import { DESTINO_DOS_DADOS, IaNaoConfigurada, nomeDoModelo } from './comum';
+import { CartaoDaProposta } from './CartaoDaProposta';
 import { HistoricoDoChat } from './HistoricoDoChat';
 
 const SUGESTOES = [
@@ -24,6 +26,13 @@ const SUGESTOES = [
   'O que vence nos próximos 14 dias e quem é o responsável?',
   'Quais responsáveis estão com mais tarefas em aberto?',
   'Quais tarefas foram concluídas com atraso?',
+];
+
+/** Para quem pode editar: exemplos do que o agente faz (ele propõe; a pessoa aplica). */
+const SUGESTOES_DO_AGENTE = [
+  'Dê baixa nas tarefas que concluí hoje no projeto …',
+  'Crie a atividade "…" na fase … depois de …',
+  'Arrume a sequência cronológica das atividades do projeto …',
 ];
 
 const SUGESTOES_DAS_AVS = [
@@ -36,7 +45,7 @@ const SUGESTOES_DAS_AVS = [
 const TEXTOS = {
   projetos: {
     descricao:
-      'Pergunte sobre os cronogramas em andamento: prazos, atrasos, responsáveis, datas efetivas. A IA só consulta; nada é alterado.',
+      'Pergunte sobre os cronogramas em andamento ou peça alterações: dar baixa, criar atividades, ajustar datas e a sequência. A IA propõe; nada muda sem você clicar em Aplicar.',
     vazio: 'A IA responde com base nas atividades, datas, percentuais e responsáveis de todos os cronogramas em andamento.',
     consultando: 'Consultando os cronogramas… pode levar até 1 minuto.',
     envio: (destino: string) =>
@@ -52,19 +61,28 @@ const TEXTOS = {
   },
 } as const;
 
-/** Uma fala na tela; a da IA guarda também o modelo que respondeu. */
-type Fala = MensagemDoChatDTO & { modelo?: string };
+/** Uma fala na tela; a da IA guarda também o modelo que respondeu e a proposta do agente, se houver. */
+type Fala = MensagemDoChatDTO & { modelo?: string; proposta?: PropostaDeAlteracaoDTO | null };
 
 /**
- * Chat de perguntas e respostas (Projetos ou AVs). Só consulta: não altera nada. Cada conversa fica
- * guardada para o próprio usuário (barra à esquerda) e pode ser retomada ou excluída.
+ * Chat com IA (Projetos ou AVs). Em Projetos, para quem edita tarefas, a IA também propõe alterações nos
+ * cronogramas (cartão com Aplicar/Descartar). Cada conversa fica guardada para o próprio usuário (barra à
+ * esquerda) e pode ser retomada ou excluída.
+ * @param podeEditarTarefas libera o "Aplicar" das propostas (só no escopo Projetos)
  */
-export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' }) {
+export function ChatIa({
+  escopo = 'projetos',
+  podeEditarTarefas = false,
+}: {
+  escopo?: 'projetos' | 'avs';
+  podeEditarTarefas?: boolean;
+}) {
   const usarStore = usarStoreIa(escopo);
   const estado = usarStore((store) => store.estado);
   const carregar = usarStore((store) => store.carregar);
   const textos = TEXTOS[escopo];
   const sugestoes = escopo === 'avs' ? SUGESTOES_DAS_AVS : SUGESTOES;
+  const sugestoesDoAgente = escopo === 'projetos' && podeEditarTarefas ? SUGESTOES_DO_AGENTE : [];
 
   const [falas, setFalas] = useState<Fala[]>([]);
   const [texto, setTexto] = useState('');
@@ -102,7 +120,14 @@ export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' })
     setErro(null);
     try {
       const conversa = await clienteDesktop.ia.obterConversa(id);
-      setFalas(conversa.mensagens.map(({ papel, texto: conteudo, modelo }) => ({ papel, texto: conteudo, modelo: modelo ?? undefined })));
+      setFalas(
+        conversa.mensagens.map(({ papel, texto: conteudo, modelo, proposta }) => ({
+          papel,
+          texto: conteudo,
+          modelo: modelo ?? undefined,
+          proposta,
+        })),
+      );
       setConversaId(conversa.id);
     } catch (falha) {
       setErro(mensagemDeErro(falha));
@@ -142,7 +167,7 @@ export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' })
       };
       const resposta =
         escopo === 'avs' ? await clienteDesktop.ia.conversarAvs(entrada) : await clienteDesktop.ia.conversar(entrada);
-      setFalas([...historico, { papel: 'ia', texto: resposta.texto, modelo: resposta.modelo }]);
+      setFalas([...historico, { papel: 'ia', texto: resposta.texto, modelo: resposta.modelo, proposta: resposta.proposta }]);
       if (resposta.conversaId) setConversaId(resposta.conversaId);
       void recarregarConversas();
     } catch (falha) {
@@ -212,6 +237,25 @@ export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' })
                     </li>
                   ))}
                 </ul>
+                {sugestoesDoAgente.length > 0 && (
+                  <div className="flex flex-col items-center gap-2">
+                    <p className="text-xs font-medium text-texto-sutil">Ou peça uma alteração (complete os “…”):</p>
+                    <ul className="flex flex-wrap justify-center gap-2">
+                      {sugestoesDoAgente.map((sugestao) => (
+                        <li key={sugestao}>
+                          <button
+                            type="button"
+                            onClick={() => setTexto(sugestao)}
+                            disabled={enviando || !estado}
+                            className="rounded-full border border-dashed border-primaria/50 px-3 py-1.5 text-xs text-primaria transition-colors hover:bg-primaria/8 disabled:opacity-50"
+                          >
+                            {sugestao}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ) : (
               <ol className="selecionavel mx-auto flex max-w-3xl flex-col gap-4">
@@ -224,6 +268,19 @@ export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' })
                       )}
                     >
                       {fala.texto}
+                      {fala.proposta && (
+                        <div className="whitespace-normal">
+                          <CartaoDaProposta
+                            proposta={fala.proposta}
+                            podeAplicar={podeEditarTarefas}
+                            aoDecidir={(decidida) =>
+                              setFalas((atuais) =>
+                                atuais.map((atual) => (atual.proposta?.id === decidida.id ? { ...atual, proposta: decidida } : atual)),
+                              )
+                            }
+                          />
+                        </div>
+                      )}
                       {fala.modelo && (
                         <p className="mt-1.5 text-[11px] text-texto-sutil">{nomeDoModelo(fala.modelo)}</p>
                       )}

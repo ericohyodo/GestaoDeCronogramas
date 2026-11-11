@@ -9,7 +9,8 @@ export class ObterDashboard implements CasoDeUso<void, DashboardAvDTO> {
   constructor(private readonly repositorio: RepositorioAvs) {}
 
   async executar(): Promise<DashboardAvDTO> {
-    const avs = await this.repositorio.listar();
+    // O histórico (antes do uso multiusuário) fica fora dos contadores.
+    const avs = (await this.repositorio.listar()).filter((av) => !av.historico);
     const contagemPorEtapa = new Map<number, number>();
     let concluidas = 0;
     let declinadas = 0;

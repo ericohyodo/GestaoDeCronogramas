@@ -44,7 +44,7 @@ export function montarRoteiro(r: RoteiroDaApresentacaoDTO): PassoDoRoteiro[] {
       alvo: 'sino',
       titulo: 'Notificações',
       texto:
-        'O sino mostra o que precisa de você: a AV chegou à sua área, uma SD aguarda o seu aceite, uma tarefa foi atribuída ou atrasou. Com o app aberto, o Windows também avisa.',
+        'O sino acende um ponto vermelho quando chega algo para você: a AV chegou à sua área, uma SD aguarda o seu aceite, uma tarefa foi atribuída ou atrasou. A lista fica no menu Notificações, com a bolinha de não lidas. Com o app aberto, o Windows também avisa.',
     },
     {
       rota: '/avs/',

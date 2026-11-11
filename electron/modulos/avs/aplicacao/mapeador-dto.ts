@@ -30,6 +30,7 @@ export function paraAvResumoDTO(av: Av, nomesPorId: Map<string, string>): AvResu
     propostaEnviada: av.propostaEnviada,
     criadoEm: av.criadoEm.toISOString(),
     grupo: av.grupoId ? { id: av.grupoId, nome: av.grupoNome ?? '' } : null,
+    historico: av.historico,
   };
 }
 
