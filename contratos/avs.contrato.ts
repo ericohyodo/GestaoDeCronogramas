@@ -4,6 +4,35 @@ export type AreaAvDTO = (typeof AREAS_AV)[number];
 export const PAPEIS_AV = ['padrao', 'visualizador'] as const;
 export type PapelAvDTO = (typeof PAPEIS_AV)[number];
 
+/** Papéis que dão o aceite da SD (Engenharia). Atribuídos pelo administrador. */
+export const PAPEIS_ESPECIAIS = ['gerente_engenharia', 'gestor_programa'] as const;
+export type PapelEspecialDTO = (typeof PAPEIS_ESPECIAIS)[number];
+
+/** Perfil de um usuário no fluxo AV/SD: competências (áreas que pode assumir) e papéis especiais. */
+export interface PerfilAvDTO {
+  usuarioId: string;
+  nome: string;
+  papelAv: PapelAvDTO;
+  competencias: AreaAvDTO[];
+  papeisEspeciais: PapelEspecialDTO[];
+}
+
+export interface SalvarPerfilAvEntrada {
+  usuarioId: string;
+  papelAv: PapelAvDTO;
+  competencias: AreaAvDTO[];
+  papeisEspeciais: PapelEspecialDTO[];
+}
+
+/** O que o usuário logado pode fazer no fluxo AV/SD (a tela usa para habilitar botões e campos). */
+export interface MeuPerfilAvDTO {
+  usuarioId: string;
+  administrador: boolean;
+  papelAv: PapelAvDTO;
+  competencias: AreaAvDTO[];
+  papeisEspeciais: PapelEspecialDTO[];
+}
+
 export interface EtapaAvDTO {
   numero: number;
   chave: string;

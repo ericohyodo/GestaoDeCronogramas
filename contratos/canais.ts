@@ -112,6 +112,9 @@ export const CANAIS = {
     obterContatos: 'avs:obter-contatos',
     salvarContatos: 'avs:salvar-contatos',
     aplicarAoGrupo: 'avs:aplicar-ao-grupo',
+    listarPerfis: 'avs:listar-perfis',
+    salvarPerfil: 'avs:salvar-perfil',
+    obterMeuPerfil: 'avs:obter-meu-perfil',
   },
   preferencias: {
     obter: 'preferencias:obter',

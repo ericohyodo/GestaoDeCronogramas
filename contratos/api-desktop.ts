@@ -4,33 +4,36 @@ import type {
   AnexoAvDTO,
   AplicarAoGrupoEntrada,
   AplicarAoGrupoSaida,
-  GrupoAvDTO,
-  AtualizarSecaoPcpEntrada,
-  ContatoAvDTO,
-  LinhaRelatorioAvDTO,
-  CriarGrupoAvEntrada,
-  SecaoPcpDTO,
-  SalvarContatosAvEntrada,
   AtualizarComercialEntrada,
   AtualizarEquipeEntrada,
   AtualizarSecaoCustoEntrada,
+  AtualizarSecaoPcpEntrada,
   AtualizarSecaoProcessoEntrada,
   AtualizarSecaoProdutoEntrada,
-  AvancarEtapaEntrada,
   AvDetalheDTO,
   AvResumoDTO,
+  AvancarEtapaEntrada,
   CatalogoCustoDTO,
+  ContatoAvDTO,
   ConteudoAnexoDTO,
   CriarAvEntrada,
+  CriarGrupoAvEntrada,
   DashboardAvDTO,
   DeclinarAvEntrada,
+  GerarAvsExemploSaida,
+  GrupoAvDTO,
   HistoricoAvItemDTO,
+  LinhaRelatorioAvDTO,
   MembroAreaDTO,
+  MeuPerfilAvDTO,
+  PerfilAvDTO,
+  SalvarContatosAvEntrada,
+  SalvarPerfilAvEntrada,
   SecaoCustoDTO,
+  SecaoPcpDTO,
   SecaoProcessoDTO,
   SecaoProdutoDTO,
   SelecionarEAnexarEntrada,
-  GerarAvsExemploSaida,
   TemplateAvDTO,
   TemplateAvEntrada,
   TipoTemplateAvDTO,
@@ -160,6 +163,11 @@ export interface ApiDesktop {
     salvarSecaoPcp(entrada: AtualizarSecaoPcpEntrada): Promise<Resultado<SecaoPcpDTO>>;
     obterContatos(avId: string): Promise<Resultado<ContatoAvDTO[]>>;
     salvarContatos(entrada: SalvarContatosAvEntrada): Promise<Resultado<ContatoAvDTO[]>>;
+    /** Competências e papéis especiais de cada usuário ativo (administrador). */
+    listarPerfis(): Promise<Resultado<PerfilAvDTO[]>>;
+    salvarPerfil(entrada: SalvarPerfilAvEntrada): Promise<Resultado<PerfilAvDTO>>;
+    /** O que o usuário logado pode fazer no fluxo AV/SD. */
+    obterMeuPerfil(): Promise<Resultado<MeuPerfilAvDTO>>;
     /** Copia da AV informada para as demais do grupo (só os campos preenchidos). */
     aplicarAoGrupo(entrada: AplicarAoGrupoEntrada): Promise<Resultado<AplicarAoGrupoSaida>>;
   };

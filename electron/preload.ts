@@ -76,6 +76,9 @@ const api: ApiDesktop = {
     obterContatos: (avId) => invocar(CANAIS.avs.obterContatos, avId),
     salvarContatos: (entrada) => invocar(CANAIS.avs.salvarContatos, entrada),
     aplicarAoGrupo: (entrada) => invocar(CANAIS.avs.aplicarAoGrupo, entrada),
+    listarPerfis: () => invocar(CANAIS.avs.listarPerfis),
+    salvarPerfil: (entrada) => invocar(CANAIS.avs.salvarPerfil, entrada),
+    obterMeuPerfil: () => invocar(CANAIS.avs.obterMeuPerfil),
   },
   cronogramas: {
     listar: () => invocar(CANAIS.cronogramas.listar),

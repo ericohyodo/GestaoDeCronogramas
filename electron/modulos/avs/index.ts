@@ -37,6 +37,7 @@ import { ObterSecaoProcesso } from './aplicacao/casos-de-uso/obter-secao-process
 import { ObterSecaoProduto } from './aplicacao/casos-de-uso/obter-secao-produto';
 import { ObterRelatorioAvs } from './aplicacao/casos-de-uso/obter-relatorio-avs';
 import { ObterSecaoPcp, SalvarSecaoPcp } from './aplicacao/casos-de-uso/secao-pcp';
+import { ListarPerfisAv, ObterMeuPerfilAv, SalvarPerfilAv } from './aplicacao/casos-de-uso/perfis-av';
 import { SalvarSecaoCusto } from './aplicacao/casos-de-uso/salvar-secao-custo';
 import { SalvarSecaoProcesso } from './aplicacao/casos-de-uso/salvar-secao-processo';
 import { SalvarSecaoProduto } from './aplicacao/casos-de-uso/salvar-secao-produto';
@@ -229,6 +230,9 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     listarTemplates: new ListarTemplatesAv(repositorioTemplates, autorizacao),
     salvarTemplate: new SalvarTemplateAv(repositorioTemplates, autorizacao, deps.relogio, deps.geradorDeId),
     excluirTemplate: new ExcluirTemplateAv(repositorioTemplates, autorizacao),
+    listarPerfis: new ListarPerfisAv(repositorioPerfis, autorizacao, deps.consultaDeUsuarios),
+    salvarPerfil: new SalvarPerfilAv(repositorioPerfis, autorizacao, deps.consultaDeUsuarios),
+    obterMeuPerfil: new ObterMeuPerfilAv(autorizacao),
   });
 
   return {

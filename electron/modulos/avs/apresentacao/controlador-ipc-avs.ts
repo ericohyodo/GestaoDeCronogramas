@@ -8,12 +8,15 @@ import {
   ETAPAS_DE_DECLINIO,
   INCOTERMS,
   SECOES_CUSTO_MATERIAL,
+  PAPEIS_AV,
+  PAPEIS_ESPECIAIS,
 } from '@contratos/avs.contrato';
 import { CANAIS } from '@contratos/canais';
 import { esquemaId, esquemaSemEntrada } from '../../../nucleo/infraestrutura/ipc/esquemas';
 import type { RegistradorIpc } from '../../../nucleo/infraestrutura/ipc/registrador-ipc';
 import type { AbrirCaminho } from '../aplicacao/casos-de-uso/abrir-caminho';
 import type { AtualizarComercial } from '../aplicacao/casos-de-uso/atualizar-comercial';
+import type { ListarPerfisAv, ObterMeuPerfilAv, SalvarPerfilAv } from '../aplicacao/casos-de-uso/perfis-av';
 import type { AtualizarEquipe } from '../aplicacao/casos-de-uso/atualizar-equipe';
 import type { AvancarEtapa } from '../aplicacao/casos-de-uso/avancar-etapa';
 import type { ObterContatosAv, SalvarContatosAv } from '../aplicacao/casos-de-uso/contatos-av';
@@ -88,6 +91,9 @@ export interface CasosDeUsoAvs {
   listarTemplates: ListarTemplatesAv;
   salvarTemplate: SalvarTemplateAv;
   excluirTemplate: ExcluirTemplateAv;
+  listarPerfis: ListarPerfisAv;
+  salvarPerfil: SalvarPerfilAv;
+  obterMeuPerfil: ObterMeuPerfilAv;
 }
 
 const esquemaVersao = z.number().int().positive().nullish();
@@ -261,11 +267,11 @@ const esquemaSelecionarEAnexar = z.object({
 export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void {
   ipc.registrar(CANAIS.avs.listar, 'leitura', esquemaSemEntrada, () => casos.listar.executar());
   ipc.registrar(CANAIS.avs.obter, 'leitura', esquemaId, (id) => casos.obter.executar(id));
-  ipc.registrar(CANAIS.avs.criar, 'leitura', esquemaCriar, (entrada) => casos.criar.executar(entrada));
-  ipc.registrar(CANAIS.avs.atualizarComercial, 'leitura', esquemaAtualizarComercial, (entrada) =>
+  ipc.registrar(CANAIS.avs.criar, 'tarefas', esquemaCriar, (entrada) => casos.criar.executar(entrada));
+  ipc.registrar(CANAIS.avs.atualizarComercial, 'tarefas', esquemaAtualizarComercial, (entrada) =>
     casos.atualizarComercial.executar(entrada),
   );
-  ipc.registrar(CANAIS.avs.atualizarEquipe, 'leitura', esquemaAtualizarEquipe, (entrada) =>
+  ipc.registrar(CANAIS.avs.atualizarEquipe, 'tarefas', esquemaAtualizarEquipe, (entrada) =>
     casos.atualizarEquipe.executar(entrada),
   );
   ipc.registrar(CANAIS.avs.listarMembros, 'leitura', esquemaSemEntrada, () =>
@@ -274,10 +280,10 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
   ipc.registrar(CANAIS.avs.obterDashboard, 'leitura', esquemaSemEntrada, () =>
     casos.obterDashboard.executar(),
   );
-  ipc.registrar(CANAIS.avs.avancarEtapa, 'leitura', esquemaAvancarEtapa, (entrada) =>
+  ipc.registrar(CANAIS.avs.avancarEtapa, 'tarefas', esquemaAvancarEtapa, (entrada) =>
     casos.avancarEtapa.executar(entrada),
   );
-  ipc.registrar(CANAIS.avs.declinar, 'leitura', esquemaDeclinar, (entrada) =>
+  ipc.registrar(CANAIS.avs.declinar, 'tarefas', esquemaDeclinar, (entrada) =>
     casos.declinar.executar(entrada),
   );
   ipc.registrar(CANAIS.avs.listarHistorico, 'leitura', esquemaId, (avId) =>
@@ -289,19 +295,19 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
   ipc.registrar(CANAIS.avs.obterSecaoCusto, 'leitura', esquemaId, (avId) =>
     casos.obterSecaoCusto.executar(avId),
   );
-  ipc.registrar(CANAIS.avs.salvarSecaoCusto, 'leitura', esquemaSalvarSecaoCusto, (entrada) =>
+  ipc.registrar(CANAIS.avs.salvarSecaoCusto, 'tarefas', esquemaSalvarSecaoCusto, (entrada) =>
     casos.salvarSecaoCusto.executar(entrada),
   );
   ipc.registrar(CANAIS.avs.obterSecaoProduto, 'leitura', esquemaId, (avId) =>
     casos.obterSecaoProduto.executar(avId),
   );
-  ipc.registrar(CANAIS.avs.salvarSecaoProduto, 'leitura', esquemaSalvarSecaoProduto, (entrada) =>
+  ipc.registrar(CANAIS.avs.salvarSecaoProduto, 'tarefas', esquemaSalvarSecaoProduto, (entrada) =>
     casos.salvarSecaoProduto.executar(entrada),
   );
   ipc.registrar(CANAIS.avs.obterSecaoProcesso, 'leitura', esquemaId, (avId) =>
     casos.obterSecaoProcesso.executar(avId),
   );
-  ipc.registrar(CANAIS.avs.salvarSecaoProcesso, 'leitura', esquemaSalvarSecaoProcesso, (entrada) =>
+  ipc.registrar(CANAIS.avs.salvarSecaoProcesso, 'tarefas', esquemaSalvarSecaoProcesso, (entrada) =>
     casos.salvarSecaoProcesso.executar(entrada),
   );
   ipc.registrar(CANAIS.avs.abrirCaminho, 'leitura', esquemaId, (caminho) =>
@@ -313,38 +319,38 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
   ipc.registrar(CANAIS.avs.listarAnexos, 'leitura', esquemaId, (avId) =>
     casos.listarAnexos.executar(avId),
   );
-  ipc.registrar(CANAIS.avs.selecionarEAnexar, 'leitura', esquemaSelecionarEAnexar, (entrada) =>
+  ipc.registrar(CANAIS.avs.selecionarEAnexar, 'tarefas', esquemaSelecionarEAnexar, (entrada) =>
     casos.selecionarEAnexar.executar(entrada),
   );
   ipc.registrar(CANAIS.avs.obterConteudoAnexo, 'leitura', esquemaId, (anexoId) =>
     casos.obterConteudoAnexo.executar(anexoId),
   );
-  ipc.registrar(CANAIS.avs.excluirAnexo, 'leitura', esquemaId, (anexoId) =>
+  ipc.registrar(CANAIS.avs.excluirAnexo, 'tarefas', esquemaId, (anexoId) =>
     casos.excluirAnexo.executar(anexoId),
   );
-  ipc.registrar(CANAIS.avs.gerarExemplos, 'leitura', esquemaSemEntrada, () =>
+  ipc.registrar(CANAIS.avs.gerarExemplos, 'administracao', esquemaSemEntrada, () =>
     casos.gerarExemplos.executar(),
   );
-  ipc.registrar(CANAIS.avs.finalizarECriarPreSd, 'leitura', esquemaId, (avId) =>
+  ipc.registrar(CANAIS.avs.finalizarECriarPreSd, 'tarefas', esquemaId, (avId) =>
     casos.finalizarECriarPreSd.executar(avId),
   );
   ipc.registrar(CANAIS.avs.listarTemplates, 'leitura', z.enum(TIPOS_TEMPLATE_AV), (tipo) =>
     casos.listarTemplates.executar(tipo),
   );
-  ipc.registrar(CANAIS.avs.salvarTemplate, 'leitura', esquemaTemplate, (entrada) =>
+  ipc.registrar(CANAIS.avs.salvarTemplate, 'tarefas', esquemaTemplate, (entrada) =>
     casos.salvarTemplate.executar(entrada),
   );
-  ipc.registrar(CANAIS.avs.excluirTemplate, 'leitura', esquemaId, (id) => casos.excluirTemplate.executar(id));
+  ipc.registrar(CANAIS.avs.excluirTemplate, 'tarefas', esquemaId, (id) => casos.excluirTemplate.executar(id));
   ipc.registrar(CANAIS.avs.listarGrupos, 'leitura', esquemaSemEntrada, () => casos.listarGrupos.executar());
   ipc.registrar(
     CANAIS.avs.criarGrupo,
-    'leitura',
+    'tarefas',
     z.object({ nome: z.string(), quantidade: z.number() }),
     (entrada) => casos.criarGrupo.executar(entrada),
   );
   ipc.registrar(
     CANAIS.avs.aplicarAoGrupo,
-    'leitura',
+    'tarefas',
     z.object({ avId: esquemaId, secao: z.enum(SECOES_APLICAVEIS_AO_GRUPO) }),
     (entrada) => casos.aplicarAoGrupo.executar(entrada),
   );
@@ -352,7 +358,7 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
   ipc.registrar(CANAIS.avs.obterSecaoPcp, 'leitura', esquemaId, (avId) => casos.obterSecaoPcp.executar(avId));
   ipc.registrar(
     CANAIS.avs.salvarSecaoPcp,
-    'leitura',
+    'tarefas',
     z.object({
       avId: esquemaId,
       versaoEsperada: esquemaVersao,
@@ -373,7 +379,7 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
   ipc.registrar(CANAIS.avs.obterContatos, 'leitura', esquemaId, (avId) => casos.obterContatos.executar(avId));
   ipc.registrar(
     CANAIS.avs.salvarContatos,
-    'leitura',
+    'tarefas',
     z.object({
       avId: esquemaId,
       contatos: z.array(
@@ -387,4 +393,17 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
     }),
     (entrada) => casos.salvarContatos.executar(entrada),
   );
+  ipc.registrar(CANAIS.avs.listarPerfis, 'administracao', esquemaSemEntrada, () => casos.listarPerfis.executar());
+  ipc.registrar(
+    CANAIS.avs.salvarPerfil,
+    'administracao',
+    z.object({
+      usuarioId: esquemaId,
+      papelAv: z.enum(PAPEIS_AV),
+      competencias: z.array(z.enum(AREAS_AV)).max(AREAS_AV.length),
+      papeisEspeciais: z.array(z.enum(PAPEIS_ESPECIAIS)).max(PAPEIS_ESPECIAIS.length),
+    }),
+    (entrada) => casos.salvarPerfil.executar(entrada),
+  );
+  ipc.registrar(CANAIS.avs.obterMeuPerfil, 'leitura', esquemaSemEntrada, () => casos.obterMeuPerfil.executar());
 }

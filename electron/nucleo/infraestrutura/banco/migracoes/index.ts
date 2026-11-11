@@ -30,6 +30,7 @@ import { migracao0028 } from './0028-avs-estrutura-com-componentes';
 import { migracao0029 } from './0029-avs-estrutura-materia-prima';
 import { migracao0030 } from './0030-controle-de-versao';
 import { migracao0031 } from './0031-numeracao-unificada';
+import { migracao0032 } from './0032-papeis-especiais';
 
 export const MIGRACOES: readonly Migracao[] = [
   migracao0001,
@@ -63,4 +64,5 @@ export const MIGRACOES: readonly Migracao[] = [
   migracao0029,
   migracao0030,
   migracao0031,
+  migracao0032,
 ];
