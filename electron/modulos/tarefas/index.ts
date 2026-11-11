@@ -53,15 +53,19 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): ModuloTare
     deps.consultaDeResponsaveis,
   );
 
+  const transacao = new UnidadeDeTrabalhoSqlite(deps.db);
   registrarIpcTarefas(deps.ipc, {
     obterEstrutura,
-    criar: new CriarTarefa(
+    criar: transacional(
+      new CriarTarefa(
       repositorio,
       repositorioFases,
       deps.consultaDeCronogramas,
       deps.consultaDeResponsaveis,
       deps.relogio,
       deps.geradorDeId,
+      ),
+      transacao,
     ),
     atualizar: new AtualizarTarefa(repositorio, deps.consultaDeResponsaveis, deps.relogio),
     excluir: new ExcluirTarefa(repositorio),
@@ -77,10 +81,10 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): ModuloTare
     atualizarFase: new AtualizarFase(repositorioFases, deps.relogio),
     excluirFase: new ExcluirFase(repositorioFases),
     reordenar: new ReordenarTarefas(repositorio),
-    duplicar: new DuplicarTarefa(repositorio, repositorioFases, deps.relogio, deps.geradorDeId),
+    duplicar: transacional(new DuplicarTarefa(repositorio, repositorioFases, deps.relogio, deps.geradorDeId), transacao),
     copiarEstrutura: transacional(
       new CopiarEstrutura(repositorio, repositorioFases, deps.consultaDeCronogramas, deps.relogio, deps.geradorDeId),
-      new UnidadeDeTrabalhoSqlite(deps.db),
+      transacao,
     ),
     listarAgenda: new ListarAgenda(
       repositorio,

@@ -33,6 +33,10 @@ export interface CriarTarefaEntrada {
   dataFim: string;
   faseId?: string | null;
   responsavelId?: string | null;
+  /** Insere logo abaixo desta tarefa (herda a fase dela), descendo as seguintes — "inserir linha" do Word. */
+  inserirApos?: string | null;
+  /** Com `faseId`: insere como primeira tarefa da fase. */
+  inserirNoInicio?: boolean;
 }
 
 export interface AtualizarTarefaEntrada {
