@@ -1,9 +1,9 @@
 'use client';
 
-import { Plus, RotateCcw, Trash2 } from 'lucide-react';
+import { Calculator, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { formatarMoeda } from '@/compartilhado/formatacao';
-import { BotaoIcone } from '@/compartilhado/ui/Botao';
+import { Botao, BotaoIcone } from '@/compartilhado/ui/Botao';
 import { CelulaCabecalho, CelulaTabela, LinhaTabela, Tabela } from '@/compartilhado/ui/Tabela';
 import { CLASSE_CELULA_EDITAVEL } from './TabelaDeMateriais';
 import { Ajuda } from '@/compartilhado/ui/Ajuda';
@@ -20,9 +20,12 @@ export function TabelaDeProcesso({
   aoAdicionar,
   aoRemover,
   aoLimpar,
+  aoCalcular,
   acoes,
 }: {
   aoLimpar: () => void;
+  /** Recalcula o custo total de todas as linhas: (MOD + MOI + GGF) ÷ peças/hora. */
+  aoCalcular: () => void;
   linhas: LinhaProcessoEditavel[];
   operacoes: string[];
   maquinas: string[];
@@ -42,6 +45,15 @@ export function TabelaDeProcesso({
           <Ajuda texto="Custo de transformação por operação: pessoas e máquina necessárias, taxas horárias e custo por peça. Traga a sequência da Eng. Processo e complete colaboradores, taxas e custo." />
         </div>
         <div className="flex items-center gap-2">
+          <Botao
+            tamanho="sm"
+            icone={Calculator}
+            disabled={linhas.length === 0}
+            title="Custo total = (taxa MOD + MOI + GGF) ÷ peças/hora, em todas as linhas. Substitui valores digitados à mão."
+            onClick={aoCalcular}
+          >
+            Calcular
+          </Botao>
           <BotaoLimparCampos aoLimpar={aoLimpar} disabled={linhas.length === 0} />
           <BotaoIcone icone={Plus} rotulo="Adicionar linha de processo" onClick={aoAdicionar} />
         </div>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   alterarLinhaProcesso,
+  calcularLinhaProcesso,
   custoAutomatico,
   custoEhManual,
   novaLinhaProcesso,
@@ -50,5 +51,23 @@ describe('custo total da mão de obra por processo', () => {
     expect(custoEhManual({ ...base, custoTotal: '0.205' })).toBe(false);
     expect(custoEhManual({ ...base, custoTotal: '1.15' })).toBe(true);
     expect(custoEhManual({ ...base, custoTotal: '' })).toBe(false);
+  });
+});
+
+describe('botão Calcular da mão de obra por processo', () => {
+  it('descarta o custo digitado à mão e volta ao cálculo automático', () => {
+    const linha = {
+      ...novaLinhaProcesso('a'),
+      taxaMod: '45',
+      taxaMoi: '18',
+      taxaGgf: '60',
+      pecasHora: '600',
+      custoTotal: '0.40',
+      custoManual: true,
+    };
+    const calculada = calcularLinhaProcesso(linha);
+    expect(calculada.custoTotal).toBe('0.205');
+    expect(calculada.custoManual).toBe(false);
+    expect(calcularLinhaProcesso({ ...linha, pecasHora: '' }).custoTotal).toBe('');
   });
 });

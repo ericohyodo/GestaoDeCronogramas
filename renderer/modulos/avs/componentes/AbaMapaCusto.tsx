@@ -12,6 +12,7 @@ import {
   type OperacaoDTO,
   type SecaoCustoDTO,
   type SecaoCustoMaterialDTO,
+  type TipoNoEstruturaDTO,
 } from '@contratos/avs.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { formatarMoeda } from '@/compartilhado/formatacao';
@@ -23,9 +24,10 @@ import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { ROTULO_SECAO_CUSTO_MATERIAL } from '../rotulos';
 import { componentesDaEstrutura, estruturaDeDto } from './ArvoreDeEstrutura';
 import { BarraDeTemplates } from './BarraDeTemplates';
-import { novaLinhaMaterial, TabelaDeMateriais, type LinhaMaterialEditavel } from './TabelaDeMateriais';
+import { calcularCustoTotal, novaLinhaMaterial, TabelaDeMateriais, type LinhaMaterialEditavel } from './TabelaDeMateriais';
 import {
   alterarLinhaProcesso,
+  calcularLinhaProcesso,
   custoEhManual,
   novaLinhaProcesso,
   type LinhaProcessoEditavel,
@@ -110,6 +112,19 @@ function paraItensProcesso(linhas: LinhaProcessoEditavel[]): ItemCustoProcessoEn
 
 type ComponenteDaEstrutura = ReturnType<typeof componentesDaEstrutura>[number];
 
+/** Tipos da estrutura do produto que alimentam cada seção do mapa (insumos da árvore → "Outros insumos"). */
+const TIPOS_DA_ESTRUTURA_POR_SECAO: Record<SecaoCustoMaterialDTO, readonly TipoNoEstruturaDTO[]> = {
+  materia_prima: ['componente', 'materia_prima'],
+  outros_insumos: ['insumo'],
+  embalagem: ['embalagem'],
+};
+
+const ROTULO_ITENS_DA_ESTRUTURA: Record<SecaoCustoMaterialDTO, string> = {
+  materia_prima: 'componente(s)',
+  outros_insumos: 'insumo(s)',
+  embalagem: 'embalagem(ns)',
+};
+
 const igual = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 /**
@@ -165,8 +180,12 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
   const [outrosInsumos, setOutrosInsumos] = useState<LinhaMaterialEditavel[]>([]);
   const [embalagem, setEmbalagem] = useState<LinhaMaterialEditavel[]>([]);
   const [processo, setProcesso] = useState<LinhaProcessoEditavel[]>([]);
-  const [avisoComponentes, setAvisoComponentes] = useState<string | null>(null);
-  const [componentesTrazidos, setComponentesTrazidos] = useState<ComponenteDaEstrutura[]>([]);
+  const [avisoPorSecao, setAvisoPorSecao] = useState<Partial<Record<SecaoCustoMaterialDTO, string>>>({});
+  const [itensDaEstrutura, setItensDaEstrutura] = useState<Record<SecaoCustoMaterialDTO, ComponenteDaEstrutura[]>>({
+    materia_prima: [],
+    outros_insumos: [],
+    embalagem: [],
+  });
   const [operacoesDaEngenharia, setOperacoesDaEngenharia] = useState<OperacaoDTO[]>([]);
   const [avisoImportacao, setAvisoImportacao] = useState<string | null>(null);
 
@@ -182,13 +201,22 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
       .then(([secao, catalogo, secaoProcesso, secaoProduto]) => {
         setIncoterm(secao.incoterm ?? '');
         setObservacoes(secao.observacoes ?? '');
-        const componentes = componentesDaEstrutura(estruturaDeDto(secaoProduto.estrutura));
-        setComponentesTrazidos(componentes);
-        const materiasSalvas = paraLinhasMateriais(secao, 'materia_prima');
-        // Sem matéria-prima salva, a lista já nasce com os componentes da estrutura do produto.
-        setMateriaPrima(materiasSalvas.length === 0 && componentes.length > 0 ? mesclarComponentes([], componentes) : materiasSalvas);
-        setOutrosInsumos(paraLinhasMateriais(secao, 'outros_insumos'));
-        setEmbalagem(paraLinhasMateriais(secao, 'embalagem'));
+        const arvore = estruturaDeDto(secaoProduto.estrutura);
+        const daEstrutura = {} as Record<SecaoCustoMaterialDTO, ComponenteDaEstrutura[]>;
+        for (const secaoAtual of SECOES_CUSTO_MATERIAL) {
+          daEstrutura[secaoAtual] = componentesDaEstrutura(arvore, TIPOS_DA_ESTRUTURA_POR_SECAO[secaoAtual]);
+        }
+        setItensDaEstrutura(daEstrutura);
+        // Seção sem itens salvos já nasce com o que a Eng. Produto especificou na estrutura, nas quantidades da árvore.
+        const inicial = (secaoAtual: SecaoCustoMaterialDTO) => {
+          const salvas = paraLinhasMateriais(secao, secaoAtual);
+          return salvas.length === 0 && daEstrutura[secaoAtual].length > 0
+            ? mesclarComponentes([], daEstrutura[secaoAtual])
+            : salvas;
+        };
+        setMateriaPrima(inicial('materia_prima'));
+        setOutrosInsumos(inicial('outros_insumos'));
+        setEmbalagem(inicial('embalagem'));
         setOperacoesDaEngenharia(secaoProcesso.operacoes);
         // Sem custo de processo salvo, a tabela já nasce com a sequência definida pela Eng. Processo.
         setProcesso(
@@ -306,33 +334,33 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
         <SecaoAv tom={TOM_MATERIAL[secaoAtual]} key={secaoAtual} className="p-5">
           <TabelaDeMateriais
             acoes={
-              secaoAtual === 'materia_prima' ? (
-                <div className="flex flex-col gap-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Botao
-                      tamanho="sm"
-                      icone={Network}
-                      disabled={componentesTrazidos.length === 0}
-                      title={
-                        componentesTrazidos.length === 0
-                          ? 'A Eng. Produto ainda não salvou componentes na estrutura do produto'
-                          : undefined
-                      }
-                      onClick={() => {
-                        setMateriaPrima((atual) => mesclarComponentes(atual, componentesTrazidos));
-                        setAvisoComponentes(
-                          `${componentesTrazidos.length} componente(s) da estrutura do produto trazidos. Salve o mapa para gravar.`,
-                        );
-                      }}
-                    >
-                      Trazer componentes da Estrutura do produto
-                    </Botao>
-                  </div>
-                  {avisoComponentes && <p className="text-xs text-texto-secundario">{avisoComponentes}</p>}
+              <div className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Botao
+                    tamanho="sm"
+                    icone={Network}
+                    disabled={itensDaEstrutura[secaoAtual].length === 0}
+                    title={
+                      itensDaEstrutura[secaoAtual].length === 0
+                        ? `A Eng. Produto ainda não salvou ${ROTULO_ITENS_DA_ESTRUTURA[secaoAtual]} na estrutura do produto`
+                        : undefined
+                    }
+                    onClick={() => {
+                      setPorSecao[secaoAtual]((atual) => mesclarComponentes(atual, itensDaEstrutura[secaoAtual]));
+                      setAvisoPorSecao((atual) => ({
+                        ...atual,
+                        [secaoAtual]: `${itensDaEstrutura[secaoAtual].length} ${ROTULO_ITENS_DA_ESTRUTURA[secaoAtual]} da estrutura do produto trazidos. Salve o mapa para gravar.`,
+                      }));
+                    }}
+                  >
+                    Trazer da Estrutura do produto
+                  </Botao>
                 </div>
-              ) : undefined
+                {avisoPorSecao[secaoAtual] && <p className="text-xs text-texto-secundario">{avisoPorSecao[secaoAtual]}</p>}
+              </div>
             }
             aoLimpar={() => setPorSecao[secaoAtual]([])}
+            aoCalcular={() => setPorSecao[secaoAtual]((atual) => atual.map(calcularCustoTotal))}
             titulo={ROTULO_SECAO_CUSTO_MATERIAL[secaoAtual]}
             idCatalogo={`av-catalogo-materiais-${secaoAtual}`}
             catalogo={catalogoPorSecao[secaoAtual]}
@@ -366,6 +394,7 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
       <SecaoAv tom="ciano" className="p-5">
         <TabelaDeProcesso
           aoLimpar={() => setProcesso([])}
+          aoCalcular={() => setProcesso((atual) => atual.map(calcularLinhaProcesso))}
           linhas={processo}
           operacoes={operacoes}
           maquinas={maquinas}

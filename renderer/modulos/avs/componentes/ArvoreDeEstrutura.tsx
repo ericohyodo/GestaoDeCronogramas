@@ -70,6 +70,7 @@ export function estruturaParaEnvio(nos: readonly NoEditavel[]): NoEstruturaEntra
  */
 export function componentesDaEstrutura(
   nos: readonly NoEditavel[],
+  tipos: readonly NoEditavel['tipo'][] = ['componente', 'materia_prima'],
 ): { codigo: string; descricao: string; quantidade: number | null; unidade: string }[] {
   const porChave = new Map(nos.map((no) => [no.chave, no]));
   const acumulada = (no: NoEditavel): number => {
@@ -78,7 +79,7 @@ export function componentesDaEstrutura(
     return pai ? propria * acumulada(pai) : propria;
   };
   return nos
-    .filter((no) => (no.tipo === 'componente' || no.tipo === 'materia_prima') && no.descricao.trim())
+    .filter((no) => tipos.includes(no.tipo) && no.descricao.trim())
     .map((no) => ({
       codigo: no.codigo.trim(),
       descricao: no.descricao.trim(),
@@ -148,7 +149,11 @@ export function ArvoreDeEstrutura({
         role="treeitem"
         aria-selected={selecionada === no.chave}
         aria-expanded={filhosDoNo.length > 0 ? !recolhidos.has(no.chave) : undefined}
-        className="relative before:absolute before:-left-4 before:top-[15px] before:w-4 before:border-t before:border-dotted before:border-texto-sutil/60"
+        className={clsx(
+          'relative before:absolute before:-left-4 before:top-[15px] before:border-t before:border-dotted before:border-texto-sutil/60',
+          // Sem expansor, o conector segue até perto do ícone; com expansor, até a caixa do +/−.
+          filhosDoNo.length > 0 ? 'before:w-5' : 'before:w-[42px]',
+        )}
       >
         <div
           onClick={() => setSelecionada(no.chave)}

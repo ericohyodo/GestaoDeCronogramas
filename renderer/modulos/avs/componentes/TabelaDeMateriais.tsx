@@ -1,41 +1,20 @@
 'use client';
 
-import { Plus, Trash2 } from 'lucide-react';
+import { Calculator, Plus, Trash2 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { ItemCatalogoMaterialDTO } from '@contratos/avs.contrato';
 import { formatarMoeda } from '@/compartilhado/formatacao';
-import { BotaoIcone } from '@/compartilhado/ui/Botao';
+import { Botao, BotaoIcone } from '@/compartilhado/ui/Botao';
 import { CelulaCabecalho, CelulaTabela, LinhaTabela, Tabela } from '@/compartilhado/ui/Tabela';
 import { Ajuda } from '@/compartilhado/ui/Ajuda';
 import { BotaoLimparCampos, TituloSecao } from './SecaoAv';
+import type { LinhaMaterialEditavel } from '../linha-de-material';
 
-export interface LinhaMaterialEditavel {
-  chave: string;
-  codigoItem: string;
-  descricao: string;
-  qtdeBruta: string;
-  qtdeNet: string;
-  unidadeMedida: string;
-  custoUnitario: string;
-  custoTotal: string;
-}
+export { calcularCustoTotal, novaLinhaMaterial, type LinhaMaterialEditavel } from '../linha-de-material';
 
 export const CLASSE_CELULA_EDITAVEL =
   'h-8 w-full rounded-md border border-borda bg-superficie-solida/80 px-2 text-xs text-texto ' +
   'placeholder:text-texto-sutil focus:border-primaria focus:outline-none focus:ring-2 focus:ring-primaria/20';
-
-export function novaLinhaMaterial(chave: string): LinhaMaterialEditavel {
-  return {
-    chave,
-    codigoItem: '',
-    descricao: '',
-    qtdeBruta: '',
-    qtdeNet: '',
-    unidadeMedida: '',
-    custoUnitario: '',
-    custoTotal: '',
-  };
-}
 
 export function TabelaDeMateriais({
   titulo,
@@ -46,9 +25,12 @@ export function TabelaDeMateriais({
   aoAdicionar,
   aoRemover,
   aoLimpar,
+  aoCalcular,
   acoes,
 }: {
   aoLimpar: () => void;
+  /** Recalcula o custo total de todos os itens (quantidade bruta × custo unitário). */
+  aoCalcular: () => void;
   /** Botões extras (ex.: trazer componentes da estrutura do produto) acima da tabela. */
   acoes?: ReactNode;
   titulo: string;
@@ -71,6 +53,15 @@ export function TabelaDeMateriais({
           <Ajuda texto={`Itens de ${titulo.toLowerCase()} consumidos por peça. Informe código, descrição, quantidades, unidade e custo; o custo total de cada item soma no Custo/Pç.`} />
         </div>
         <div className="flex items-center gap-2">
+          <Botao
+            tamanho="sm"
+            icone={Calculator}
+            disabled={linhas.length === 0}
+            title="Custo total = quantidade bruta × custo unitário, em todos os itens"
+            onClick={aoCalcular}
+          >
+            Calcular
+          </Botao>
           <BotaoLimparCampos aoLimpar={aoLimpar} disabled={linhas.length === 0} />
           <BotaoIcone icone={Plus} rotulo={`Adicionar item em ${titulo}`} onClick={aoAdicionar} />
         </div>

@@ -49,6 +49,11 @@ export function alterarLinhaProcesso(
   return proxima;
 }
 
+/** Volta o custo total ao cálculo automático, descartando um valor digitado à mão. */
+export function calcularLinhaProcesso(linha: LinhaProcessoEditavel): LinhaProcessoEditavel {
+  return { ...linha, custoManual: false, custoTotal: custoAutomatico(linha) };
+}
+
 export function novaLinhaProcesso(chave: string): LinhaProcessoEditavel {
   return {
     chave,
