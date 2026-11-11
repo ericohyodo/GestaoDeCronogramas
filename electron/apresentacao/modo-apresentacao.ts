@@ -128,8 +128,9 @@ export function registrarIpcApresentacao(ipc: RegistradorIpc, roteiro: RoteiroDa
     ativo: ehModoApresentacao(),
     roteiro,
   }));
-  // Entrar exige administrador (dados reais abertos); no modo apresentação o usuário já é administrador.
-  ipc.registrar(CANAIS.apresentacao.entrar, 'administracao', esquemaSemEntrada, async () => {
+  // Qualquer usuário logado pode entrar (serve de tutorial): o modo abre só o banco fictício da pasta local e
+  // nunca toca nos dados reais. Lá dentro a pessoa é o administrador "Apresentação" do banco fictício.
+  ipc.registrar(CANAIS.apresentacao.entrar, 'leitura', esquemaSemEntrada, async () => {
     reiniciar(true);
     return null;
   });

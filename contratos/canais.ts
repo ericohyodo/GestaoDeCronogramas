@@ -5,6 +5,13 @@ export const CANAIS = {
     entrar: 'apresentacao:entrar',
     sair: 'apresentacao:sair',
   },
+  atualizacao: {
+    obterEstado: 'atualizacao:obter-estado',
+    fecharAgora: 'atualizacao:fechar-agora',
+    solicitar: 'atualizacao:solicitar',
+    cancelar: 'atualizacao:cancelar',
+    listarAppsAbertos: 'atualizacao:listar-apps-abertos',
+  },
   notificacoes: {
     obterCaixa: 'notificacoes:obter-caixa',
     marcarLida: 'notificacoes:marcar-lida',

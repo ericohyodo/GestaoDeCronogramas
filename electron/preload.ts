@@ -19,6 +19,13 @@ const api: ApiDesktop = {
     entrar: () => invocar(CANAIS.apresentacao.entrar),
     sair: () => invocar(CANAIS.apresentacao.sair),
   },
+  atualizacao: {
+    obterEstado: () => invocar(CANAIS.atualizacao.obterEstado),
+    fecharAgora: () => invocar(CANAIS.atualizacao.fecharAgora),
+    solicitar: (entrada) => invocar(CANAIS.atualizacao.solicitar, entrada),
+    cancelar: () => invocar(CANAIS.atualizacao.cancelar),
+    listarAppsAbertos: () => invocar(CANAIS.atualizacao.listarAppsAbertos),
+  },
   notificacoes: {
     obterCaixa: () => invocar(CANAIS.notificacoes.obterCaixa),
     marcarLida: (id) => invocar(CANAIS.notificacoes.marcarLida, id),

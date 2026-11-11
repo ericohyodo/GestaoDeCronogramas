@@ -44,7 +44,8 @@ export function resolverPastaDoBanco(): string {
   return ehModoApresentacao() ? pastaDoModoApresentacao() : resolverPastaDosDadosReais();
 }
 
-function resolverPastaDosDadosReais(): string {
+/** Pasta dos dados reais (ao lado do .exe), mesmo no modo apresentação: o aviso de atualização fica nela. */
+export function resolverPastaDosDadosReais(): string {
   const pastaPortatil = process.env.PORTABLE_EXECUTABLE_DIR;
   if (pastaPortatil) return pastaPortatil;
   if (app.isPackaged) return path.dirname(process.execPath);

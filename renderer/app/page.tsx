@@ -4,6 +4,7 @@ import { CalendarRange, ClipboardCheck, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { BotaoEntrarNaApresentacao } from '@/modulos/apresentacao/componentes/ControlesDaApresentacao';
+import { PainelDeAtualizacao } from '@/modulos/atualizacao/componentes/PainelDeAtualizacao';
 import { UsuariosOnline } from '@/modulos/usuarios/componentes/UsuariosOnline';
 import { usePermissao } from '@/modulos/usuarios/store/use-sessao-store';
 
@@ -56,10 +57,13 @@ export default function Inicio() {
         <UsuariosOnline />
       </div>
       {administrador && (
-        <div className="flex w-full max-w-5xl justify-end">
-          <BotaoEntrarNaApresentacao />
+        <div className="w-full max-w-5xl">
+          <PainelDeAtualizacao />
         </div>
       )}
+      <div className="flex w-full max-w-5xl justify-end">
+        <BotaoEntrarNaApresentacao />
+      </div>
     </div>
   );
 }

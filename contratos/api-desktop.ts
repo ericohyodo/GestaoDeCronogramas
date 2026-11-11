@@ -1,5 +1,10 @@
 import type { AparenciaDTO } from './aparencia.contrato';
 import type { EstadoApresentacaoDTO } from './apresentacao.contrato';
+import type {
+  AppAbertoDTO,
+  EstadoDaAtualizacaoDTO,
+  SolicitarFechamentoEntrada,
+} from './atualizacao.contrato';
 import type { CaixaDeNotificacoesDTO } from './notificacoes.contrato';
 import type {
   AceitarSdEntrada,
@@ -111,6 +116,14 @@ export interface ApiDesktop {
     obterEstado(): Promise<Resultado<EstadoApresentacaoDTO>>;
     entrar(): Promise<Resultado<null>>;
     sair(): Promise<Resultado<null>>;
+  };
+  /** Atualização do sistema: pedido de fechamento de todos os apps e a lista de apps abertos. */
+  atualizacao: {
+    obterEstado(): Promise<Resultado<EstadoDaAtualizacaoDTO>>;
+    fecharAgora(): Promise<Resultado<null>>;
+    solicitar(entrada: SolicitarFechamentoEntrada): Promise<Resultado<EstadoDaAtualizacaoDTO>>;
+    cancelar(): Promise<Resultado<EstadoDaAtualizacaoDTO>>;
+    listarAppsAbertos(): Promise<Resultado<AppAbertoDTO[]>>;
   };
   /** Sino da barra superior: só as notificações do usuário logado. */
   notificacoes: {

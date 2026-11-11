@@ -1,10 +1,12 @@
+import os from 'node:os';
 import path from 'node:path';
-import { ipcMain } from 'electron';
+import { app, ipcMain } from 'electron';
 import type { AparenciaDTO } from '@contratos/aparencia.contrato';
 import { CANAIS } from '@contratos/canais';
 import { suportaVidroNativo } from './janela/aparencia';
 import { limparPastaDaApresentacao, registrarIpcApresentacao, semearApresentacao } from './apresentacao/modo-apresentacao';
 import { ehModoApresentacao } from './nucleo/infraestrutura/banco/caminho-do-banco';
+import { montarModuloAtualizacao } from './modulos/atualizacao';
 import { montarModuloAvs } from './modulos/avs';
 import { montarModuloCronogramas } from './modulos/cronogramas';
 import { montarModuloIa } from './modulos/ia';
@@ -20,6 +22,7 @@ import {
   garantirPastaGravavel,
   NOME_ARQUIVO_BANCO,
   resolverPastaDoBanco,
+  resolverPastaDosDadosReais,
 } from './nucleo/infraestrutura/banco/caminho-do-banco';
 import { abrirConexao } from './nucleo/infraestrutura/banco/conexao-sqlite';
 import { fazerBackup } from './nucleo/infraestrutura/banco/backup';
@@ -225,6 +228,30 @@ ${pasta}`,
     : null;
   registrarIpcApresentacao(ipc, roteiro);
 
+  // Atualização do sistema: aviso de fechamento e lista de apps abertos, num quadro na pasta de rede dos
+  // dados reais (também lido no modo apresentação, que trava o mesmo .exe).
+  const atualizacao = montarModuloAtualizacao({
+    ipc,
+    relogio,
+    geradorDeId,
+    pastaDosDados: resolverPastaDosDadosReais(),
+    esteApp: {
+      instanciaId: geradorDeId.gerar(),
+      computador: os.hostname(),
+      usuarioDoWindows: usuarioDoWindows(),
+      versao: app.getVersion(),
+      modo: ehModoApresentacao() ? 'apresentacao' : 'normal',
+      desde: relogio.agora(),
+    },
+    logado: { nomeDoUsuarioAtual: () => usuarios.consultas.nomeDoUsuarioAtual() },
+    fecharApp: () => {
+      app.quit();
+      // Se algo segurar o fechamento normal, encerra mesmo assim: o .exe precisa ficar livre.
+      setTimeout(() => app.exit(0), 5_000).unref();
+    },
+  });
+  atualizacao.iniciar();
+
   // Rotina de prazos (tarefas vencendo/atrasadas e prazo do cliente nas AVs): na abertura e a cada hora.
   // Cada aviso sai uma vez só, mesmo com vários PCs rodando a rotina (deduplicação por chave no banco).
   const verificarPrazos = async () => {
@@ -247,9 +274,19 @@ ${pasta}`,
     encerrar: () => {
       clearTimeout(primeiraVerificacao);
       clearInterval(rotinaDePrazos);
+      atualizacao.encerrar();
       // Sai da lista de usuários online antes de fechar o banco (falha aqui não deve impedir o fechamento).
       void usuarios.encerrar().catch(() => undefined);
       db.close();
     },
   };
+}
+
+/** Login do Windows de quem abriu o app (identifica quem está na tela de login na lista de apps abertos). */
+function usuarioDoWindows(): string {
+  try {
+    return os.userInfo().username;
+  } catch {
+    return '?';
+  }
 }

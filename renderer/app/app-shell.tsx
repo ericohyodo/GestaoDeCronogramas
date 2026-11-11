@@ -10,6 +10,7 @@ import { BarraDeTitulo } from '@/compartilhado/layout/BarraDeTitulo';
 import { BarraLateral, NAV_AVS, NAV_PROJETOS, NAV_SDS } from '@/compartilhado/layout/BarraLateral';
 import { FundoDecorativo } from '@/compartilhado/layout/FundoDecorativo';
 import { SeletorTema } from '@/modulos/preferencias/componentes/SeletorTema';
+import { AvisoDeAtualizacao } from '@/modulos/atualizacao/componentes/AvisoDeAtualizacao';
 import { SeloDoModoApresentacao } from '@/modulos/apresentacao/componentes/ControlesDaApresentacao';
 import { TourDaApresentacao } from '@/modulos/apresentacao/componentes/TourDaApresentacao';
 import { useApresentacaoStore } from '@/modulos/apresentacao/store/use-apresentacao-store';
@@ -105,6 +106,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
       <FundoDecorativo />
+      <AvisoDeAtualizacao />
       {autenticado && estadoDaApresentacao?.ativo && estadoDaApresentacao.roteiro && (
         <Suspense>
           <TourDaApresentacao roteiro={estadoDaApresentacao.roteiro} />

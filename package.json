@@ -1,7 +1,7 @@
 {
   "name": "gestao-cronogramas",
   "productName": "Gestão de Novos Desenvolvimentos",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Gestão de novos desenvolvimentos: AV → SD → Projeto (PRO)",
   "private": true,
   "main": "dist-electron/main.js",
@@ -14,6 +14,7 @@
     "build:electron": "tsup",
     "start": "npm run build && electron .",
     "dist": "npm run build && electron-builder --win portable",
+    "publicar": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/publicar-producao.ps1",
     "typecheck": "tsc -p electron --noEmit && tsc -p renderer --noEmit && tsc -p testes --noEmit",
     "lint": "eslint .",
     "test": "vitest run",

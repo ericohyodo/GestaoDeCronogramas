@@ -3,13 +3,16 @@
 import clsx from 'clsx';
 import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { CabecalhoPagina } from '@/compartilhado/ui/CabecalhoPagina';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { TOPICOS } from '../conteudo';
 
-/** Tutoriais: um índice à esquerda e o passo a passo do tópico escolhido. */
-export function PaginaTutoriais() {
+/**
+ * Tutoriais: um índice à esquerda e o passo a passo do tópico escolhido.
+ * @param destaque conteúdo acima dos tópicos (o convite para o tour guiado, montado pela rota)
+ */
+export function PaginaTutoriais({ destaque }: { destaque?: ReactNode }) {
   const [ativo, setAtivo] = useState(TOPICOS[0]!.id);
   const topico = TOPICOS.find((item) => item.id === ativo) ?? TOPICOS[0]!;
 
@@ -19,6 +22,7 @@ export function PaginaTutoriais() {
         titulo="Tutoriais"
         descricao="Como o app funciona no dia a dia: primeiro acesso, AVs, SDs, projetos e avisos."
       />
+      {destaque}
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[240px_1fr]">
         <PainelVidro className="h-fit p-2">
           <nav aria-label="Tópicos dos tutoriais" className="flex flex-col">

@@ -1,5 +1,28 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.2.2 — 11/11/2026
+
+### Novidades
+- **Modo Apresentação para todos os usuários:** serve de tutorial prático. Fica no painel inicial e no topo de
+  **Tutoriais** ("Fazer o tour guiado"). Abre só os dados fictícios, numa pasta local; os dados reais não são
+  abertos nem alterados. Ao sair, o app reinicia e pede o login de novo.
+- **Atualização do sistema (administrador, painel inicial):**
+  - "Pedir fechamento para atualizar", com prazo de 2, 5, 10 ou 15 minutos e mensagem opcional;
+  - em todos os apps abertos (inclusive na tela de login e no modo apresentação) aparece um aviso na frente
+    da tela, com contagem regressiva, "Fechar agora" e "Salvar meu trabalho primeiro" (minimiza; no último
+    minuto o aviso volta para a frente);
+  - no fim do prazo o app fecha sozinho e, por até 30 minutos, não abre; a versão nova libera ao ser aberta;
+  - lista "Apps abertos agora", com usuário (ou "Tela de login"), computador, usuário do Windows, versão e
+    modo, para saber quem ainda trava o executável.
+
+### Técnico
+- Quadro da atualização em arquivos na pasta de produção (`controle-de-atualizacao/`: `aviso.json` e um
+  arquivo por app aberto), fora do banco, para valer também no modo apresentação.
+- `npm run publicar` (`scripts/publicar-producao.ps1`):
+  - recusa se houver apps abertos;
+  - move o executável em uso para `Versões anteriores` (só a última versão anterior fica guardada);
+  - copia o novo com o nome fixo e confere o hash.
+
 ## 0.2.1 — 11/11/2026
 
 ### Novidades
