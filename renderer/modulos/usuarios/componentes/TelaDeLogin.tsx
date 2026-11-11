@@ -1,8 +1,8 @@
 'use client';
 
-import { CalendarRange, LogIn, ShieldCheck } from 'lucide-react';
+import { CalendarRange, KeyRound, LogIn, ShieldCheck } from 'lucide-react';
 import { type FormEvent, useState } from 'react';
-import { mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
+import { ErroDaApi, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { Botao } from '@/compartilhado/ui/Botao';
 import { CampoTexto } from '@/compartilhado/ui/Campos';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
@@ -13,6 +13,7 @@ export function TelaDeLogin() {
   const sessao = useSessaoStore((estado) => estado.sessao);
   const entrar = useSessaoStore((estado) => estado.entrar);
   const primeiroAcesso = useSessaoStore((estado) => estado.primeiroAcesso);
+  const concluirPrimeiroAcesso = useSessaoStore((estado) => estado.concluirPrimeiroAcesso);
 
   const configurando = sessao?.precisaConfigurar ?? false;
   const [nome, setNome] = useState('');
@@ -21,13 +22,17 @@ export function TelaDeLogin() {
   // Espelha LOGIN_DE_ACESSO_RAPIDO do processo principal; quem decide de fato é lá.
   const semSenha = !configurando && login.trim().toLowerCase() === 'erico';
   const [confirmacao, setConfirmacao] = useState('');
+  // Primeiro acesso de usuário criado sem senha: mensagem de boas-vindas vinda do servidor.
+  const [boasVindas, setBoasVindas] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
+  const definindoSenha = boasVindas !== null;
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
   const enviar = async (evento: FormEvent) => {
     evento.preventDefault();
     setErro(null);
-    if (configurando && senha !== confirmacao) {
+    if ((configurando || definindoSenha) && senha !== confirmacao) {
       setErro('A confirmação não confere com a senha.');
       return;
     }
@@ -35,8 +40,14 @@ export function TelaDeLogin() {
     setEnviando(true);
     try {
       if (configurando) await primeiroAcesso({ nome, login, senha });
+      else if (definindoSenha) await concluirPrimeiroAcesso({ login, email, senha });
       else await entrar({ login, senha });
     } catch (falha) {
+      if (falha instanceof ErroDaApi && falha.codigo === 'PRIMEIRO_ACESSO') {
+        setBoasVindas(falha.message);
+        setSenha('');
+        return;
+      }
       setErro(mensagemDeErro(falha));
     } finally {
       setEnviando(false);
@@ -55,7 +66,7 @@ export function TelaDeLogin() {
           <p className="mt-1 text-sm text-texto-secundario">
             {configurando
               ? 'Primeiro acesso: crie o usuário administrador deste computador.'
-              : 'Entre para acessar seus cronogramas.'}
+              : (boasVindas ?? 'Entre com o seu usuário. No primeiro acesso, informe só o usuário.')}
           </p>
         </div>
 
@@ -76,24 +87,37 @@ export function TelaDeLogin() {
             onChange={(e) => setLogin(e.target.value)}
             placeholder="ex.: maria.silva"
             autoComplete="username"
+            readOnly={definindoSenha}
             required
           />
+          {definindoSenha && (
+            <CampoTexto
+              rotulo="Seu e-mail"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="nome@ferkoda.com.br"
+              autoComplete="email"
+              maxLength={254}
+              required
+            />
+          )}
           <CampoTexto
-            rotulo="Senha"
+            rotulo={definindoSenha ? 'Crie uma senha' : 'Senha'}
             type="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            autoComplete={configurando ? 'new-password' : 'current-password'}
+            autoComplete={configurando || definindoSenha ? 'new-password' : 'current-password'}
             dica={
-              configurando
+              configurando || definindoSenha
                 ? 'Mínimo de 8 caracteres.'
                 : semSenha
                   ? 'Este usuário tem acesso rápido: a senha é opcional.'
                   : undefined
             }
-            required={!semSenha}
+            required={!semSenha && (configurando || definindoSenha)}
           />
-          {configurando && (
+          {(configurando || definindoSenha) && (
             <CampoTexto
               rotulo="Confirme a senha"
               type="password"
@@ -109,12 +133,31 @@ export function TelaDeLogin() {
           <Botao
             type="submit"
             variante="primario"
-            icone={configurando ? ShieldCheck : LogIn}
+            icone={configurando ? ShieldCheck : definindoSenha ? KeyRound : LogIn}
             disabled={enviando}
             className="mt-1 w-full"
           >
-            {enviando ? 'Aguarde…' : configurando ? 'Criar administrador' : 'Entrar'}
+            {enviando
+              ? 'Aguarde…'
+              : configurando
+                ? 'Criar administrador'
+                : definindoSenha
+                  ? 'Salvar e entrar'
+                  : 'Entrar'}
           </Botao>
+          {definindoSenha && (
+            <button
+              type="button"
+              onClick={() => {
+                setBoasVindas(null);
+                setConfirmacao('');
+                setSenha('');
+              }}
+              className="text-xs text-texto-secundario hover:text-texto"
+            >
+              Não é você? Voltar
+            </button>
+          )}
         </form>
 
         {configurando && (

@@ -11,7 +11,7 @@ import {
 } from '../../electron/nucleo/infraestrutura/banco/backup';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { haMigracoesPendentes, executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 
 const dia = (d: number, h = 8) => new Date(2026, 10, d, h, 0, 0);
 

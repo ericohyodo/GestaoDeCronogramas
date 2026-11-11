@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Periodo } from '../../electron/nucleo/dominio/periodo';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 import { Cronograma } from '../../electron/modulos/cronogramas/dominio/cronograma';
 import { RepositorioCronogramasSqlite } from '../../electron/modulos/cronogramas/infraestrutura/repositorio-cronogramas-sqlite';
 import { ConfiguracaoIaSqlite } from '../../electron/modulos/ia/infraestrutura/configuracao-ia-sqlite';

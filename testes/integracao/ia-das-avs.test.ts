@@ -24,7 +24,7 @@ import { Usuario } from '../../electron/modulos/usuarios/dominio/usuario';
 import { RepositorioUsuariosSqlite } from '../../electron/modulos/usuarios/infraestrutura/repositorio-usuarios-sqlite';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 import { ArquivoDeAnalisesEmMemoria, GeradorDeIdSequencial, RelogioFixo } from '../dubles/dubles';
 
 const CHAVE_VALIDA = 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123';

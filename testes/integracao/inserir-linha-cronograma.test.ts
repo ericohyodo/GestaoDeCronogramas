@@ -9,7 +9,7 @@ import { RepositorioTarefasSqlite } from '../../electron/modulos/tarefas/infraes
 import { Periodo } from '../../electron/nucleo/dominio/periodo';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 import { GeradorDeIdSequencial, RelogioFixo } from '../dubles/dubles';
 
 describe('inserir linha no cronograma', () => {

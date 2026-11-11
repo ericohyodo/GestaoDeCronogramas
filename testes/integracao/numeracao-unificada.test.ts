@@ -3,7 +3,7 @@ import { gerarNumeroAv } from '../../electron/modulos/avs/dominio/av';
 import { trocarPrefixoDoNumero } from '../../electron/modulos/sds/dominio/sd';
 import { abrirConexao } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 
 describe('numeração unificada AV → SD → PRO', () => {
   it('gera AV AA-SSS e o mesmo sufixo para SD e PRO', () => {

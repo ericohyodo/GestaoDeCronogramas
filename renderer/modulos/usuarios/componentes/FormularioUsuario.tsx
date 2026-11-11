@@ -7,7 +7,7 @@ import { Botao } from '@/compartilhado/ui/Botao';
 import { CampoTexto, Selecao } from '@/compartilhado/ui/Campos';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { Modal, RodapeModal } from '@/compartilhado/ui/Modal';
-import { OPCOES_PERFIL } from '../rotulos';
+import { DEPARTAMENTOS, OPCOES_PERFIL } from '../rotulos';
 import { useUsuariosStore } from '../store/use-usuarios-store';
 
 interface PropsFormularioUsuario {
@@ -36,6 +36,8 @@ function ConteudoFormulario({ usuario, aoFechar }: PropsFormularioUsuario) {
   const [nome, setNome] = useState(usuario?.nome ?? '');
   const [login, setLogin] = useState(usuario?.login ?? '');
   const [email, setEmail] = useState(usuario?.email ?? '');
+  const [departamento, setDepartamento] = useState(usuario?.departamento ?? '');
+  const [exigirPrimeiroAcesso, setExigirPrimeiroAcesso] = useState(false);
   const [senha, setSenha] = useState('');
   const [perfil, setPerfil] = useState<PerfilDTO>(usuario?.perfil ?? 'usuario');
   const [salvando, setSalvando] = useState(false);
@@ -47,8 +49,17 @@ function ConteudoFormulario({ usuario, aoFechar }: PropsFormularioUsuario) {
     setErro(null);
     try {
       const emailInformado = email.trim() || null;
-      if (usuario) await atualizar({ id: usuario.id, nome, email: emailInformado, perfil });
-      else await criar({ nome, login, email: emailInformado, senha, perfil });
+      const depto = departamento || null;
+      if (usuario) {
+        await atualizar({
+          id: usuario.id,
+          nome,
+          email: emailInformado,
+          departamento: depto,
+          perfil,
+          ...(exigirPrimeiroAcesso ? { exigirPrimeiroAcesso: true } : {}),
+        });
+      } else await criar({ nome, login, email: emailInformado, departamento: depto, senha, perfil });
       aoFechar();
     } catch (falha) {
       setErro(mensagemDeErro(falha));
@@ -75,6 +86,18 @@ function ConteudoFormulario({ usuario, aoFechar }: PropsFormularioUsuario) {
         placeholder="nome@ferkoda.com.br"
         dica="Opcional. Será usado no status report automático por e-mail."
       />
+      <Selecao
+        rotulo="Departamento"
+        value={departamento}
+        onChange={(e) => setDepartamento(e.target.value)}
+        opcoes={[
+          { valor: '', rotulo: '— selecione —' },
+          ...DEPARTAMENTOS.map((item) => ({ valor: item, rotulo: item })),
+          ...(departamento && !(DEPARTAMENTOS as readonly string[]).includes(departamento)
+            ? [{ valor: departamento, rotulo: departamento }]
+            : []),
+        ]}
+      />
       {!usuario && (
         <>
           <CampoTexto
@@ -89,9 +112,8 @@ function ConteudoFormulario({ usuario, aoFechar }: PropsFormularioUsuario) {
             type="password"
             value={senha}
             onChange={(e) => setSenha(e.target.value)}
-            dica="Mínimo de 8 caracteres."
+            dica="Deixe em branco para a pessoa criar a própria senha no primeiro acesso."
             autoComplete="new-password"
-            required
           />
         </>
       )}
@@ -101,6 +123,17 @@ function ConteudoFormulario({ usuario, aoFechar }: PropsFormularioUsuario) {
         onChange={(e) => setPerfil(e.target.value as PerfilDTO)}
         opcoes={OPCOES_PERFIL}
       />
+      {usuario && !usuario.precisaDefinirSenha && (
+        <label className="flex items-center gap-2 text-xs text-texto-secundario">
+          <input
+            type="checkbox"
+            className="size-4 accent-primaria"
+            checked={exigirPrimeiroAcesso}
+            onChange={(e) => setExigirPrimeiroAcesso(e.target.checked)}
+          />
+          Exigir novo primeiro acesso (a pessoa cadastra e-mail e cria senha nova no próximo login)
+        </label>
+      )}
 
       {erro && <MensagemErro mensagem={erro} />}
       <RodapeModal>

@@ -13,6 +13,9 @@ export interface UsuarioDTO {
   nome: string;
   login: string;
   email: string | null;
+  departamento: string | null;
+  /** Primeiro acesso pendente (ainda não cadastrou e-mail e senha). */
+  precisaDefinirSenha: boolean;
   perfil: PerfilDTO;
   ativo: boolean;
   criadoEm: string;
@@ -28,6 +31,13 @@ export interface SessaoDTO {
 
 export interface EntrarEntrada {
   login: string;
+  senha: string;
+}
+
+/** Primeiro acesso de um usuário criado sem senha: ele mesmo cadastra o e-mail e cria a senha. */
+export interface ConcluirPrimeiroAcessoEntrada {
+  login: string;
+  email: string;
   senha: string;
 }
 

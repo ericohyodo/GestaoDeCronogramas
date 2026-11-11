@@ -15,7 +15,7 @@ import { ErroConflitoDeEdicao } from '../../electron/nucleo/aplicacao/erros';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { ControleDeVersaoSqlite } from '../../electron/nucleo/infraestrutura/banco/controle-de-versao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 import { GeradorDeIdSequencial, RelogioFixo } from '../dubles/dubles';
 
 describe('gravação otimista', () => {

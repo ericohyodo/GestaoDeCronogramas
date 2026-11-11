@@ -21,7 +21,7 @@ import { CriarPreSd } from '../../electron/modulos/sds/aplicacao/casos-de-uso/cr
 import { RepositorioSdsSqlite } from '../../electron/modulos/sds/infraestrutura/repositorio-sds-sqlite';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 import { Usuario } from '../../electron/modulos/usuarios/dominio/usuario';
 import { RepositorioUsuariosSqlite } from '../../electron/modulos/usuarios/infraestrutura/repositorio-usuarios-sqlite';
 import { GeradorDeIdSequencial, RelogioFixo } from '../dubles/dubles';

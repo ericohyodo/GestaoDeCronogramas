@@ -9,7 +9,7 @@ import { RepositorioUsuariosSqlite } from '../../electron/modulos/usuarios/infra
 import { Periodo } from '../../electron/nucleo/dominio/periodo';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 import { ConsultaDeResponsaveisFalsa, GeradorDeIdSequencial, RelogioFixo } from '../dubles/dubles';
 
 describe('avisos das tarefas', () => {

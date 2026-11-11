@@ -7,6 +7,7 @@ import type { GeradorDeId } from '../../nucleo/aplicacao/portas/gerador-de-id';
 import type { Relogio } from '../../nucleo/aplicacao/portas/relogio';
 import type { BancoDeDados } from '../../nucleo/infraestrutura/banco/conexao-sqlite';
 import type { RegistradorIpc } from '../../nucleo/infraestrutura/ipc/registrador-ipc';
+import { ConcluirPrimeiroAcesso } from './aplicacao/casos-de-uso/concluir-primeiro-acesso';
 import { CriarPrimeiroUsuario } from './aplicacao/casos-de-uso/criar-primeiro-usuario';
 import { Entrar } from './aplicacao/casos-de-uso/entrar';
 import {
@@ -69,6 +70,7 @@ export function montarModuloUsuarios(deps: DependenciasModuloUsuarios): ModuloUs
       deps.relogio,
       deps.geradorDeId,
     ),
+    concluirPrimeiroAcesso: new ConcluirPrimeiroAcesso(repositorio, hashDeSenha, sessao, deps.relogio),
     listar: new ListarUsuarios(repositorio),
     criar: new CriarUsuario(repositorio, hashDeSenha, deps.relogio, deps.geradorDeId),
     atualizar: new AtualizarUsuario(repositorio, deps.relogio),

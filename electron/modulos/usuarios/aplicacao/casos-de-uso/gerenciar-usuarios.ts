@@ -57,7 +57,10 @@ export class CriarUsuario implements CasoDeUso<CriarUsuarioEntrada, UsuarioDTO> 
       nome: entrada.nome,
       login,
       email: entrada.email,
-      senhaHash: await this.hashDeSenha.gerar(validarSenha(entrada.senha)),
+      // Sem senha: a própria pessoa cria no primeiro acesso.
+      senhaHash: entrada.senha ? await this.hashDeSenha.gerar(validarSenha(entrada.senha)) : '!primeiro-acesso',
+      precisaDefinirSenha: !entrada.senha,
+      departamento: entrada.departamento,
       perfil: entrada.perfil,
       agora: this.relogio.agora(),
     });
@@ -83,6 +86,8 @@ export class AtualizarUsuario implements CasoDeUso<AtualizarUsuarioEntrada, Usua
     const agora = this.relogio.agora();
     if (entrada.nome !== undefined) usuario.renomear(entrada.nome, agora);
     if (entrada.email !== undefined) usuario.alterarEmail(entrada.email, agora);
+    if (entrada.departamento !== undefined) usuario.alterarDepartamento(entrada.departamento, agora);
+    if (entrada.exigirPrimeiroAcesso) usuario.exigirPrimeiroAcesso(agora);
     if (entrada.perfil !== undefined) usuario.alterarPerfil(entrada.perfil, agora);
     if (entrada.ativo !== undefined) usuario.definirAtivo(entrada.ativo, agora);
 

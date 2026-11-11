@@ -72,7 +72,12 @@ import type {
   ResponsavelDTO,
 } from './responsaveis.contrato';
 import type { Resultado } from './resultado';
-import type { EntrarEntrada, PrimeiroAcessoEntrada, SessaoDTO, UsuarioDTO,
+import type {
+  ConcluirPrimeiroAcessoEntrada,
+  EntrarEntrada,
+  PrimeiroAcessoEntrada,
+  SessaoDTO,
+  UsuarioDTO,
   UsuarioOnlineDTO,
 } from './sessao.contrato';
 import type {
@@ -110,6 +115,8 @@ export interface ApiDesktop {
     /** Batimento periódico: avisa que esta instância do aplicativo continua aberta. */
     presenca(): Promise<Resultado<null>>;
     primeiroAcesso(entrada: PrimeiroAcessoEntrada): Promise<Resultado<SessaoDTO>>;
+    /** Usuário criado sem senha: cadastra e-mail, cria a senha e entra. */
+    concluirPrimeiroAcesso(entrada: ConcluirPrimeiroAcessoEntrada): Promise<Resultado<SessaoDTO>>;
   };
   usuarios: {
     listar(): Promise<Resultado<UsuarioDTO[]>>;

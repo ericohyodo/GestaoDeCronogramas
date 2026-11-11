@@ -5,6 +5,17 @@ import { type Perfil, type Permissao, permissoesDoPerfil, validarPerfil } from '
 
 const TAMANHO_MAXIMO_NOME = 120;
 
+/** Departamentos da empresa (cadastro de usuários). */
+export const DEPARTAMENTOS = [
+  'Comercial',
+  'Engenharia de Processo',
+  'Engenharia de Produto',
+  'Gestão de Projetos',
+  'Qualidade',
+  'PCP',
+  'Financeiro',
+] as const;
+
 export interface PropsUsuario {
   id: string;
   nome: string;
@@ -13,6 +24,10 @@ export interface PropsUsuario {
   email: string | null;
   senhaHash: string;
   perfil: Perfil;
+  /** Departamento (Comercial, PCP…); texto livre para não travar quem já existe. */
+  departamento: string | null;
+  /** Primeiro acesso pendente: no próximo login a pessoa cadastra e-mail e cria a senha. */
+  precisaDefinirSenha: boolean;
   ativo: boolean;
   criadoEm: Date;
   atualizadoEm: Date;
@@ -26,6 +41,9 @@ export interface DadosNovoUsuario {
   email?: string | null;
   senhaHash: string;
   perfil: string;
+  departamento?: string | null;
+  /** Criado sem senha: define no primeiro acesso. */
+  precisaDefinirSenha?: boolean;
   agora: Date;
 }
 
@@ -40,6 +58,8 @@ export class Usuario {
       email: validarEmail(dados.email),
       senhaHash: dados.senhaHash,
       perfil: validarPerfil(dados.perfil),
+      departamento: normalizarTextoOpcional(dados.departamento),
+      precisaDefinirSenha: dados.precisaDefinirSenha ?? false,
       ativo: true,
       criadoEm: dados.agora,
       atualizadoEm: dados.agora,
@@ -62,6 +82,12 @@ export class Usuario {
   }
   get email(): string | null {
     return this.props.email;
+  }
+  get departamento(): string | null {
+    return this.props.departamento;
+  }
+  get precisaDefinirSenha(): boolean {
+    return this.props.precisaDefinirSenha;
   }
   get senhaHash(): string {
     return this.props.senhaHash;
@@ -100,6 +126,32 @@ export class Usuario {
     this.props.atualizadoEm = agora;
   }
 
+  alterarDepartamento(departamento: string | null, agora: Date): void {
+    this.props.departamento = normalizarTextoOpcional(departamento);
+    this.props.atualizadoEm = agora;
+  }
+
+  /**
+   * Conclui o primeiro acesso: grava o e-mail (obrigatório aqui) e a senha criada pela própria pessoa.
+   * @param senhaHash hash da senha nova (já validada)
+   */
+  concluirPrimeiroAcesso(email: string, senhaHash: string, agora: Date): void {
+    const informado = validarEmail(email);
+    if (!informado) throw new ErroDeValidacao('Informe o seu e-mail.');
+    if (!senhaHash) throw new ErroDeValidacao('Hash de senha inválido.');
+    this.props.email = informado;
+    this.props.senhaHash = senhaHash;
+    this.props.precisaDefinirSenha = false;
+    this.props.atualizadoEm = agora;
+  }
+
+  /** O administrador pede que a pessoa refaça o primeiro acesso (e-mail e senha nova). */
+  exigirPrimeiroAcesso(agora: Date): void {
+    this.props.precisaDefinirSenha = true;
+    this.props.senhaHash = '!primeiro-acesso';
+    this.props.atualizadoEm = agora;
+  }
+
   alterarPerfil(perfil: string, agora: Date): void {
     this.props.perfil = validarPerfil(perfil);
     this.props.atualizadoEm = agora;
@@ -113,6 +165,7 @@ export class Usuario {
   definirSenhaHash(senhaHash: string, agora: Date): void {
     if (!senhaHash) throw new ErroDeValidacao('Hash de senha inválido.');
     this.props.senhaHash = senhaHash;
+    this.props.precisaDefinirSenha = false;
     this.props.atualizadoEm = agora;
   }
 

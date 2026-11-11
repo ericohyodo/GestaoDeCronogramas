@@ -31,7 +31,7 @@ import { RepositorioUsuariosSqlite } from '../../electron/modulos/usuarios/infra
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { ControleDeVersaoSqlite } from '../../electron/nucleo/infraestrutura/banco/controle-de-versao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 import { UnidadeDeTrabalhoSqlite } from '../../electron/nucleo/infraestrutura/banco/unidade-de-trabalho-sqlite';
 import { GeradorDeIdSequencial, RelogioFixo } from '../dubles/dubles';
 

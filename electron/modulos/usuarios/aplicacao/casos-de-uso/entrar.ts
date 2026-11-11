@@ -39,6 +39,10 @@ export class Entrar implements CasoDeUso<EntrarEntrada, SessaoDTO> {
     this.verificarBloqueio(login);
 
     const usuario = await this.repositorio.obterPorLogin(login);
+    // Primeiro acesso pendente: a tela pede e-mail e senha nova (a senha digitada aqui é ignorada).
+    if (usuario?.ativo && usuario.precisaDefinirSenha && login !== this.loginSemSenha) {
+      throw new ErroDeDominio('PRIMEIRO_ACESSO', `Olá, ${usuario.nome}! Este é o seu primeiro acesso: cadastre o seu e-mail e crie uma senha.`);
+    }
     // Confere o hash mesmo sem usuário, para o tempo de resposta não denunciar logins existentes.
     const hashReferencia = usuario?.senhaHash ?? (await this.hashDeSenha.gerar('senha-inexistente'));
     const acessoRapido = login === this.loginSemSenha && !!usuario;

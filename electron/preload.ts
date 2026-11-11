@@ -25,6 +25,7 @@ const api: ApiDesktop = {
     sair: () => invocar(CANAIS.sessao.sair),
     presenca: () => invocar(CANAIS.sessao.presenca),
     primeiroAcesso: (entrada) => invocar(CANAIS.sessao.primeiroAcesso, entrada),
+    concluirPrimeiroAcesso: (entrada) => invocar(CANAIS.sessao.concluirPrimeiroAcesso, entrada),
   },
   usuarios: {
     listar: () => invocar(CANAIS.usuarios.listar),

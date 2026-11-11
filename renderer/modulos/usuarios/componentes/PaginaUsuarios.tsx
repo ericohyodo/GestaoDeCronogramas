@@ -53,6 +53,7 @@ export function PaginaUsuarios() {
               <tr>
                 <CelulaCabecalho className="pl-5">Nome</CelulaCabecalho>
                 <CelulaCabecalho>Usuário</CelulaCabecalho>
+                <CelulaCabecalho>Departamento</CelulaCabecalho>
                 <CelulaCabecalho>Perfil</CelulaCabecalho>
                 <CelulaCabecalho>Situação</CelulaCabecalho>
                 <CelulaCabecalho>Último acesso</CelulaCabecalho>
@@ -71,15 +72,20 @@ export function PaginaUsuarios() {
                       {ehVoce && <span className="ml-2 text-xs text-texto-sutil">(você)</span>}
                     </CelulaTabela>
                     <CelulaTabela className="text-texto-secundario">{usuario.login}</CelulaTabela>
+                    <CelulaTabela className="text-texto-secundario">{usuario.departamento ?? '—'}</CelulaTabela>
                     <CelulaTabela>
                       <Etiqueta tom={TOM_PERFIL[usuario.perfil]}>
                         {ROTULO_PERFIL[usuario.perfil]}
                       </Etiqueta>
                     </CelulaTabela>
                     <CelulaTabela>
-                      <Etiqueta tom={usuario.ativo ? 'sucesso' : 'neutro'}>
-                        {usuario.ativo ? 'Ativo' : 'Desativado'}
-                      </Etiqueta>
+                      {usuario.ativo && usuario.precisaDefinirSenha ? (
+                        <Etiqueta tom="alerta">Aguardando 1º acesso</Etiqueta>
+                      ) : (
+                        <Etiqueta tom={usuario.ativo ? 'sucesso' : 'neutro'}>
+                          {usuario.ativo ? 'Ativo' : 'Desativado'}
+                        </Etiqueta>
+                      )}
                     </CelulaTabela>
                     <CelulaTabela className="tabular-nums text-texto-secundario">
                       {usuario.ultimoAcessoEm

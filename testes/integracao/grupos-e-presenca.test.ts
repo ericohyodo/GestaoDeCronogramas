@@ -12,7 +12,7 @@ import { RepositorioGruposAvSqlite } from '../../electron/modulos/avs/infraestru
 import { RepositorioPerfisAvSqlite } from '../../electron/modulos/avs/infraestrutura/repositorio-perfis-av-sqlite';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 import { BaterPresenca, ListarUsuariosOnline } from '../../electron/modulos/usuarios/aplicacao/casos-de-uso/presenca';
 import { Sessao } from '../../electron/modulos/usuarios/aplicacao/sessao';
 import { RepositorioPresencaSqlite } from '../../electron/modulos/usuarios/infraestrutura/repositorio-presenca-sqlite';

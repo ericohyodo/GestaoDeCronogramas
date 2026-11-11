@@ -3,6 +3,7 @@ import { CANAIS } from '@contratos/canais';
 import { PERFIS } from '@contratos/sessao.contrato';
 import { esquemaId, esquemaSemEntrada } from '../../../nucleo/infraestrutura/ipc/esquemas';
 import type { RegistradorIpc } from '../../../nucleo/infraestrutura/ipc/registrador-ipc';
+import type { ConcluirPrimeiroAcesso } from '../aplicacao/casos-de-uso/concluir-primeiro-acesso';
 import type { CriarPrimeiroUsuario } from '../aplicacao/casos-de-uso/criar-primeiro-usuario';
 import type { Entrar } from '../aplicacao/casos-de-uso/entrar';
 import type {
@@ -20,6 +21,7 @@ export interface CasosDeUsoUsuarios {
   entrar: Entrar;
   sair: Sair;
   primeiroAcesso: CriarPrimeiroUsuario;
+  concluirPrimeiroAcesso: ConcluirPrimeiroAcesso;
   listar: ListarUsuarios;
   criar: CriarUsuario;
   atualizar: AtualizarUsuario;
@@ -39,6 +41,7 @@ const esquemaCriar = z.object({
   nome: z.string(),
   login: z.string(),
   email: z.string().max(254).nullish(),
+  departamento: z.string().max(60).nullish(),
   senha: z.string(),
   perfil: z.enum(PERFIS),
 });
@@ -46,6 +49,8 @@ const esquemaAtualizar = z.object({
   id: esquemaId,
   nome: z.string().optional(),
   email: z.string().max(254).nullish(),
+  departamento: z.string().max(60).nullish(),
+  exigirPrimeiroAcesso: z.boolean().optional(),
   perfil: z.enum(PERFIS).optional(),
   ativo: z.boolean().optional(),
 });
@@ -62,6 +67,12 @@ export function registrarIpcUsuarios(ipc: RegistradorIpc, casos: CasosDeUsoUsuar
     casos.entrar.executar(entrada),
   );
   ipc.registrar(CANAIS.sessao.sair, 'publico', esquemaSemEntrada, () => casos.sair.executar());
+  ipc.registrar(
+    CANAIS.sessao.concluirPrimeiroAcesso,
+    'publico',
+    z.object({ login: z.string().max(64), email: z.string().max(254), senha: z.string().max(200) }),
+    (entrada) => casos.concluirPrimeiroAcesso.executar(entrada),
+  );
   ipc.registrar(CANAIS.sessao.primeiroAcesso, 'publico', esquemaPrimeiroAcesso, (entrada) =>
     casos.primeiroAcesso.executar(entrada),
   );

@@ -11,6 +11,7 @@ export const CANAIS = {
     sair: 'sessao:sair',
     presenca: 'sessao:presenca',
     primeiroAcesso: 'sessao:primeiro-acesso',
+    concluirPrimeiroAcesso: 'sessao:concluir-primeiro-acesso',
   },
   usuarios: {
     listar: 'usuarios:listar',

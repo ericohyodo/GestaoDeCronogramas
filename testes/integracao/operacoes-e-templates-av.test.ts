@@ -5,7 +5,7 @@ import { RepositorioSecaoProcessoSqlite } from '../../electron/modulos/avs/infra
 import { RepositorioTemplatesAvSqlite } from '../../electron/modulos/avs/infraestrutura/repositorio-templates-av-sqlite';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 
 const agora = new Date('2026-09-22T12:00:00.000Z');
 

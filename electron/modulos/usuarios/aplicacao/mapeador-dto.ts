@@ -8,6 +8,8 @@ export function paraUsuarioDTO(usuario: Usuario): UsuarioDTO {
     nome: usuario.nome,
     login: usuario.login,
     email: usuario.email,
+    departamento: usuario.departamento,
+    precisaDefinirSenha: usuario.precisaDefinirSenha,
     perfil: usuario.perfil,
     ativo: usuario.ativo,
     criadoEm: usuario.criadoEm.toISOString(),
