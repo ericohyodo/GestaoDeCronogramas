@@ -1,0 +1,166 @@
+// =====================================================================================================
+// Conteúdo dos Tutoriais (para os usuários do dia a dia). Texto puro: a página só organiza e exibe.
+// Ao mudar uma regra do app, atualize o tópico correspondente aqui.
+// =====================================================================================================
+
+export interface PassoDoTutorial {
+  titulo: string;
+  texto: string;
+}
+
+export interface TopicoDoTutorial {
+  id: string;
+  titulo: string;
+  resumo: string;
+  passos: PassoDoTutorial[];
+  /** Rota da tela relacionada, para o botão "Ir para a tela". */
+  rota?: string;
+}
+
+export const TOPICOS: TopicoDoTutorial[] = [
+  {
+    id: 'primeiros-passos',
+    titulo: 'Primeiros passos',
+    resumo: 'Primeiro acesso, os três módulos e onde ficam os avisos.',
+    rota: '/',
+    passos: [
+      {
+        titulo: 'Primeiro acesso',
+        texto:
+          'Digite o seu usuário (ex.: luciana ou andre.pinto) e clique em Entrar sem senha. O app pede o seu e-mail e que você crie uma senha de no mínimo 8 caracteres. Depois disso, entre sempre com usuário e senha.',
+      },
+      {
+        titulo: 'Os três módulos',
+        texto:
+          'Gestão AVs (análise de viabilidade), Gestão SDs (passagem do Comercial para a Engenharia) e Gestão de Projetos (cronogramas). O código acompanha o desenvolvimento: AV 26-001 vira SD 26-001 e depois PRO 26-001.',
+      },
+      {
+        titulo: 'Notificações (sino)',
+        texto:
+          'O sino no topo mostra o que precisa de você: uma área da AV que chegou até você, uma SD aguardando aceite, uma tarefa atribuída ou atrasada. Clique no aviso para ir direto à tela. Com o app aberto, o Windows também mostra o aviso.',
+      },
+      {
+        titulo: 'Esqueci a senha',
+        texto:
+          'Peça ao administrador para marcar "Exigir novo primeiro acesso" no seu cadastro. No próximo login você cria uma senha nova.',
+      },
+    ],
+  },
+  {
+    id: 'avs',
+    titulo: 'Gestão AVs',
+    resumo: 'Como preencher a sua área e liberar a próxima etapa.',
+    rota: '/avs/',
+    passos: [
+      {
+        titulo: 'Quem cria a AV',
+        texto:
+          'O Comercial cria a AV e indica o responsável de cada área (Comercial, Eng. Produto, Eng. Processo, PCP e Mapa de Custo). Cada responsável recebe um aviso no sino.',
+      },
+      {
+        titulo: 'Etapas em sequência',
+        texto:
+          'A AV passa por Comercial → Eng. Produto → Eng. Processo → PCP → Mapa de Custo → Proposta → SD. Só o responsável da área da etapa atual libera a próxima, pelo botão "Salvar e Liberar Próximo".',
+      },
+      {
+        titulo: 'Blocos da aba',
+        texto:
+          'Cada aba é dividida em blocos. O bloco em destaque ("Preencha agora") é o próximo a completar; os já preenchidos ganham o selo "Bloco completo" e os seguintes ficam esmaecidos até lá, mas continuam editáveis. O topo da aba mostra quantos blocos já foram preenchidos.',
+      },
+      {
+        titulo: 'Itens que não se aplicam',
+        texto:
+          'Em "Dados de Entrada Técnica" (Eng. Produto), marque N/A no item que foi visto mas não se aplica. Item marcado como Disponível pede o link ou a pasta da evidência.',
+      },
+      {
+        titulo: 'Salvar e somente leitura',
+        texto:
+          'Salve antes de sair da aba. Se a aba não é sua, ela aparece como somente leitura. Se outra pessoa salvou a mesma aba depois que você abriu, o app avisa e oferece "Recarregar aba": copie o que digitou antes de recarregar.',
+      },
+      {
+        titulo: 'Finalizar a AV',
+        texto:
+          'Depois do Mapa de Custo, o Comercial usa "Finalizar AV e criar Pré-SD" na aba Resumo. A AV vai para "SD Aberta" e a SD aparece em Gestão SDs.',
+      },
+    ],
+  },
+  {
+    id: 'sds',
+    titulo: 'Gestão SDs',
+    resumo: 'Oficialização do cliente e aceite da Engenharia.',
+    rota: '/sds/',
+    passos: [
+      {
+        titulo: 'Comercial: oficialização',
+        texto:
+          'Abra a SD, informe a data de envio da cotação e o nº do PO e anexe a evidência do cliente: e-mail do Outlook (.msg), PDF ou documento. Clique em "Abrir SD e enviar à Engenharia".',
+      },
+      {
+        titulo: 'Engenharia: parecer e aceite',
+        texto:
+          'O Gerente de Engenharia ou um Gestor de Programa lê a SD, escreve o parecer e escolhe: "Dar aceite e criar projeto" (informa o período previsto) ou "Devolver ao Comercial" (o parecer vira o motivo, por exemplo: o anexo não é o PO).',
+      },
+      {
+        titulo: 'O que o aceite faz',
+        texto:
+          'Fecha a SD, cria o projeto PRO com o mesmo número em Gestão de Projetos e conclui a AV. O Comercial e a equipe da AV recebem o aviso.',
+      },
+    ],
+  },
+  {
+    id: 'projetos',
+    titulo: 'Gestão de Projetos',
+    resumo: 'Fases, tarefas, Gantt e prazos.',
+    rota: '/projetos/',
+    passos: [
+      {
+        titulo: 'Estrutura do projeto',
+        texto:
+          'Organize o projeto em fases e tarefas. Cada tarefa tem responsável, início, término, % concluído e, se quiser, predecessoras (a tarefa só começa depois delas).',
+      },
+      {
+        titulo: 'Inserir linha',
+        texto:
+          'Passe o mouse na borda esquerda entre duas linhas: aparece um ⊕ com uma linha azul. Clique para inserir uma tarefa ali, como no Word.',
+      },
+      {
+        titulo: 'Atrasos',
+        texto:
+          'Ao adiar o término de uma tarefa, o app mostra as sucessoras e pergunta se deve deslocá-las pelos mesmos dias. Quem decide é você; os responsáveis afetados são avisados.',
+      },
+      {
+        titulo: 'Avisos de prazo',
+        texto:
+          'Quem está vinculado a um Recurso recebe aviso quando a tarefa é atribuída, quando pode começar (predecessoras concluídas), quando vence em até 2 dias e quando atrasa.',
+      },
+      {
+        titulo: 'Relatórios e PDF',
+        texto: 'Use Relatórios para a agenda por responsável ou período e o botão de PDF no projeto para imprimir.',
+      },
+    ],
+  },
+  {
+    id: 'duvidas',
+    titulo: 'Dúvidas frequentes',
+    resumo: 'Mensagens que podem aparecer e o que fazer.',
+    passos: [
+      {
+        titulo: '"O banco está sendo usado por outro usuário"',
+        texto: 'Alguém está salvando ao mesmo tempo. Aguarde alguns segundos e tente de novo.',
+      },
+      {
+        titulo: '"Seu perfil não permite esta ação"',
+        texto: 'A ação é de outra área ou de outro perfil. Fale com o responsável da área ou com o administrador.',
+      },
+      {
+        titulo: 'Não recebo avisos das tarefas',
+        texto: 'Peça para vincular o seu usuário ao seu nome em Recursos (Gestão de Projetos).',
+      },
+      {
+        titulo: 'Os dados ficam seguros?',
+        texto:
+          'O app faz uma cópia de segurança do banco todos os dias e antes de cada atualização. O acesso é por usuário e senha, e cada área só edita o que é dela.',
+      },
+    ],
+  },
+];

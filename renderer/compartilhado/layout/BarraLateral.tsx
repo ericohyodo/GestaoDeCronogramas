@@ -7,6 +7,7 @@ import {
   ClipboardCheck,
   FileClock,
   FileText,
+  GraduationCap,
   Home,
   type LucideIcon,
   MessageSquareText,
@@ -59,6 +60,7 @@ export const NAV_PROJETOS: NavegacaoLateral = {
       rotas: ['/configuracoes'],
       permissao: 'administracao',
     },
+    { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
   ],
 };
 
@@ -87,6 +89,7 @@ export const NAV_AVS: NavegacaoLateral = {
       rotas: ['/avs/configuracoes'],
       permissao: 'administracao',
     },
+    { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
   ],
 };
 
@@ -96,6 +99,7 @@ export const NAV_SDS: NavegacaoLateral = {
   itens: [
     { rotulo: 'SDs', icone: FileText, href: '/sds/', rotas: ['/sds'] },
     { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
+    { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
   ],
 };
 
