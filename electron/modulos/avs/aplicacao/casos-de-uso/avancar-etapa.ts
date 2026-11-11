@@ -38,8 +38,14 @@ export class AvancarEtapa implements CasoDeUso<AvancarEtapaEntrada, AvDetalheDTO
     }
     if (etapaAtual.chave === 'sd_aberta') {
       throw new ErroDeDominio(
-        'SD_NAO_IMPLEMENTADA',
-        'A etapa de abertura de SD ainda não está disponível nesta versão.',
+        'AGUARDANDO_ACEITE_DA_SD',
+        'A AV vai para "Projeto Criado" quando a Engenharia der o aceite da SD (módulo de SDs).',
+      );
+    }
+    if (obterEtapaAv(etapaAtual.numero + 1).chave === 'sd_aberta') {
+      throw new ErroDeDominio(
+        'USE_FINALIZAR_AV',
+        'Para abrir a SD, use "Finalizar AV e criar Pré-SD" no Resumo da AV.',
       );
     }
     if (!etapaAtual.area) {

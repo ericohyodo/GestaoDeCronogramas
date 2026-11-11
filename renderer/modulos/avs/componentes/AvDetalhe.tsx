@@ -199,19 +199,28 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
 
         {etapa.terminal ? (
           <p className="text-sm text-texto-secundario">
-            {etapa.chave === 'projeto_criado'
-              ? 'Esta AV foi concluída.'
-              : 'Esta AV foi declinada e não pode mais avançar.'}
+            {etapa.chave === 'projeto_criado' ? (
+              <>
+                Esta AV foi concluída: a SD recebeu o aceite e o projeto foi criado.{' '}
+                {av.cronogramaId && (
+                  <Link href={`/cronograma/?id=${av.cronogramaId}`} className="text-primaria hover:text-primaria-hover">
+                    Abrir o projeto
+                  </Link>
+                )}
+              </>
+            ) : (
+              'Esta AV foi declinada e não pode mais avançar.'
+            )}
           </p>
         ) : (
           <div className="flex flex-col gap-2">
             {etapa.chave === 'sd_aberta' && (
               <p className="text-sm text-texto-secundario">
-                A análise foi finalizada e a Pré-SD foi criada.{' '}
+                Análise finalizada: a SD foi criada. O Comercial preenche e abre a SD; o aceite da Engenharia cria
+                o projeto e conclui esta AV.{' '}
                 <Link href="/sds/" className="text-primaria hover:text-primaria-hover">
-                  Abrir o módulo de SDs
+                  Ir para Gestão SDs
                 </Link>
-                . A abertura e o fechamento da SD (que criam o projeto) ainda não foram implementados.
               </p>
             )}
             <div className="flex flex-wrap items-center gap-2">

@@ -1,6 +1,6 @@
 import type { BancoDeDados } from '../../../nucleo/infraestrutura/banco/conexao-sqlite';
+import type { AnexoSd, RepositorioAnexosSd, RepositorioSds } from '../dominio/repositorio-sds';
 import type { Sd, SdListada, StatusSd } from '../dominio/sd';
-import type { RepositorioSds } from '../dominio/repositorio-sds';
 
 interface LinhaSd {
   id: string;
@@ -9,19 +9,38 @@ interface LinhaSd {
   status: StatusSd;
   criado_por: string | null;
   criado_em: string;
+  data_envio_cotacao: string | null;
+  numero_po: string | null;
+  observacoes: string | null;
+  aberta_por: string | null;
+  aberta_em: string | null;
+  aceite_por: string | null;
+  aceite_em: string | null;
+  devolucao_motivo: string | null;
+  devolucao_por: string | null;
+  devolucao_em: string | null;
+  cronograma_id: string | null;
 }
 
 interface LinhaSdListada extends LinhaSd {
   av_numero: string;
   cliente: string | null;
   descricao: string;
+  membro_comercial: string | null;
+  codigo_projeto: string | null;
 }
 
-// Junta a AV de origem só para leitura (número, cliente, descrição); a SD nunca altera a AV.
+// Junta a AV de origem e o projeto só para leitura; a SD nunca grava na AV por aqui.
 const SELECT_LISTADA = `
-  SELECT sd.*, av.numero AS av_numero, av.cliente AS cliente, av.descricao AS descricao
-  FROM sd JOIN av ON av.id = sd.av_id
+  SELECT sd.*, av.numero AS av_numero, av.cliente AS cliente, av.descricao AS descricao,
+         av.membro_comercial AS membro_comercial, c.codigo AS codigo_projeto
+  FROM sd
+  JOIN av ON av.id = sd.av_id
+  LEFT JOIN cronogramas c ON c.id = sd.cronograma_id
 `;
+
+const data = (valor: Date | null) => (valor ? valor.toISOString() : null);
+const dataOuNull = (valor: string | null) => (valor ? new Date(valor) : null);
 
 export class RepositorioSdsSqlite implements RepositorioSds {
   private readonly sql;
@@ -30,22 +49,58 @@ export class RepositorioSdsSqlite implements RepositorioSds {
     this.sql = {
       listar: db.prepare<[], LinhaSdListada>(`${SELECT_LISTADA} ORDER BY sd.criado_em DESC`),
       obterPorAv: db.prepare<[string], LinhaSdListada>(`${SELECT_LISTADA} WHERE sd.av_id = ?`),
-      inserir: db.prepare<[LinhaSd]>(`
-        INSERT INTO sd (id, av_id, numero, status, criado_por, criado_em)
-        VALUES (@id, @av_id, @numero, @status, @criado_por, @criado_em)
+      obterPorId: db.prepare<[string], LinhaSdListada>(`${SELECT_LISTADA} WHERE sd.id = ?`),
+      salvar: db.prepare<[LinhaSd]>(`
+        INSERT INTO sd (
+          id, av_id, numero, status, criado_por, criado_em, data_envio_cotacao, numero_po, observacoes,
+          aberta_por, aberta_em, aceite_por, aceite_em, devolucao_motivo, devolucao_por, devolucao_em, cronograma_id
+        ) VALUES (
+          @id, @av_id, @numero, @status, @criado_por, @criado_em, @data_envio_cotacao, @numero_po, @observacoes,
+          @aberta_por, @aberta_em, @aceite_por, @aceite_em, @devolucao_motivo, @devolucao_por, @devolucao_em,
+          @cronograma_id
+        )
+        ON CONFLICT (id) DO UPDATE SET
+          status             = excluded.status,
+          data_envio_cotacao = excluded.data_envio_cotacao,
+          numero_po          = excluded.numero_po,
+          observacoes        = excluded.observacoes,
+          aberta_por         = excluded.aberta_por,
+          aberta_em          = excluded.aberta_em,
+          aceite_por         = excluded.aceite_por,
+          aceite_em          = excluded.aceite_em,
+          devolucao_motivo   = excluded.devolucao_motivo,
+          devolucao_por      = excluded.devolucao_por,
+          devolucao_em       = excluded.devolucao_em,
+          cronograma_id      = excluded.cronograma_id
       `),
     };
   }
 
   async salvar(sd: Sd): Promise<void> {
-    this.sql.inserir.run({
+    this.sql.salvar.run({
       id: sd.id,
       av_id: sd.avId,
       numero: sd.numero,
       status: sd.status,
       criado_por: sd.criadoPor,
       criado_em: sd.criadoEm.toISOString(),
+      data_envio_cotacao: sd.dataEnvioCotacao,
+      numero_po: sd.numeroPo,
+      observacoes: sd.observacoes,
+      aberta_por: sd.abertaPor,
+      aberta_em: data(sd.abertaEm),
+      aceite_por: sd.aceitePor,
+      aceite_em: data(sd.aceiteEm),
+      devolucao_motivo: sd.devolucaoMotivo,
+      devolucao_por: sd.devolucaoPor,
+      devolucao_em: data(sd.devolucaoEm),
+      cronograma_id: sd.cronogramaId,
     });
+  }
+
+  async obterPorId(id: string): Promise<SdListada | null> {
+    const linha = this.sql.obterPorId.get(id);
+    return linha ? paraListada(linha) : null;
   }
 
   async obterPorAv(avId: string): Promise<SdListada | null> {
@@ -67,9 +122,91 @@ function paraListada(linha: LinhaSdListada): SdListada {
       status: linha.status,
       criadoPor: linha.criado_por,
       criadoEm: new Date(linha.criado_em),
+      dataEnvioCotacao: linha.data_envio_cotacao,
+      numeroPo: linha.numero_po,
+      observacoes: linha.observacoes,
+      abertaPor: linha.aberta_por,
+      abertaEm: dataOuNull(linha.aberta_em),
+      aceitePor: linha.aceite_por,
+      aceiteEm: dataOuNull(linha.aceite_em),
+      devolucaoMotivo: linha.devolucao_motivo,
+      devolucaoPor: linha.devolucao_por,
+      devolucaoEm: dataOuNull(linha.devolucao_em),
+      cronogramaId: linha.cronograma_id,
     },
     avNumero: linha.av_numero,
     cliente: linha.cliente,
     descricao: linha.descricao,
+    responsavelComercialId: linha.membro_comercial,
+    codigoProjeto: linha.codigo_projeto,
   };
+}
+
+interface LinhaAnexoSd {
+  id: string;
+  sd_id: string;
+  nome_arquivo: string;
+  nome_armazenado: string;
+  tipo_mime: string | null;
+  tamanho_bytes: number;
+  usuario_id: string | null;
+  criado_em: string;
+}
+
+const paraAnexo = (linha: LinhaAnexoSd): AnexoSd => ({
+  id: linha.id,
+  sdId: linha.sd_id,
+  nomeArquivo: linha.nome_arquivo,
+  nomeArmazenado: linha.nome_armazenado,
+  tipoMime: linha.tipo_mime,
+  tamanhoBytes: linha.tamanho_bytes,
+  usuarioId: linha.usuario_id,
+  criadoEm: new Date(linha.criado_em),
+});
+
+export class RepositorioAnexosSdSqlite implements RepositorioAnexosSd {
+  private readonly sql;
+
+  constructor(db: BancoDeDados) {
+    this.sql = {
+      inserir: db.prepare<[LinhaAnexoSd]>(`
+        INSERT INTO sd_anexos (id, sd_id, nome_arquivo, nome_armazenado, tipo_mime, tamanho_bytes, usuario_id, criado_em)
+        VALUES (@id, @sd_id, @nome_arquivo, @nome_armazenado, @tipo_mime, @tamanho_bytes, @usuario_id, @criado_em)
+      `),
+      listar: db.prepare<[string], LinhaAnexoSd>('SELECT * FROM sd_anexos WHERE sd_id = ? ORDER BY criado_em'),
+      obterPorId: db.prepare<[string], LinhaAnexoSd>('SELECT * FROM sd_anexos WHERE id = ?'),
+      excluir: db.prepare<[string]>('DELETE FROM sd_anexos WHERE id = ?'),
+      contar: db.prepare<[string], number>('SELECT COUNT(*) FROM sd_anexos WHERE sd_id = ?').pluck(),
+    };
+  }
+
+  async inserir(anexo: AnexoSd): Promise<void> {
+    this.sql.inserir.run({
+      id: anexo.id,
+      sd_id: anexo.sdId,
+      nome_arquivo: anexo.nomeArquivo,
+      nome_armazenado: anexo.nomeArmazenado,
+      tipo_mime: anexo.tipoMime,
+      tamanho_bytes: anexo.tamanhoBytes,
+      usuario_id: anexo.usuarioId,
+      criado_em: anexo.criadoEm.toISOString(),
+    });
+  }
+
+  async listar(sdId: string): Promise<AnexoSd[]> {
+    return this.sql.listar.all(sdId).map(paraAnexo);
+  }
+
+  async obterPorId(id: string): Promise<AnexoSd | null> {
+    const linha = this.sql.obterPorId.get(id);
+    return linha ? paraAnexo(linha) : null;
+  }
+
+  async excluir(id: string): Promise<void> {
+    this.sql.excluir.run(id);
+  }
+
+  async contar(sdId: string): Promise<number> {
+    return this.sql.contar.get(sdId) ?? 0;
+  }
 }

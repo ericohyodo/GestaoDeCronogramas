@@ -16,6 +16,7 @@ import type { AutorizacaoAv } from '../autorizacao';
 import type { ConsultaDeUsuarios } from '../portas';
 import type { AtualizarComercial } from './atualizar-comercial';
 import type { AvancarEtapa } from './avancar-etapa';
+import type { FinalizarECriarPreSd } from './finalizar-e-criar-pre-sd';
 import type { CriarAv } from './criar-av';
 import type { DeclinarAv } from './declinar-av';
 import type { SalvarSecaoCusto } from './salvar-secao-custo';
@@ -96,6 +97,10 @@ export class GerarAvsExemplo implements CasoDeUso<void, GerarAvsExemploSaida> {
     private readonly salvarCusto: SalvarSecaoCusto,
     private readonly avancarEtapa: AvancarEtapa,
     private readonly declinar: DeclinarAv,
+    /** Finaliza a AV criando a Pré-SD (mesmo caminho do usuário). */
+    private readonly finalizar?: Pick<FinalizarECriarPreSd, 'executar'>,
+    /** Leva a SD até "aberta" ou "fechada" (com projeto PRO), via módulo de SDs. */
+    private readonly avancarSd?: (avId: string, ate: 'aberta' | 'fechada', usuarioId: string) => Promise<void>,
   ) {}
 
   async executar(): Promise<GerarAvsExemploSaida> {
@@ -163,8 +168,10 @@ export class GerarAvsExemplo implements CasoDeUso<void, GerarAvsExemploSaida> {
       await this.salvarCusto.executar(this.dadosCusto(avId, indice, alcance > nivel('custo')));
     }
 
-    // A abertura de SD ainda não é um fluxo do app: para "Projeto Criado" o avanço para na SD e o último passo é gravado direto.
-    const avancos = destino === 'projeto' ? nivel('sd') : alcance;
+    // SD e Projeto seguem o fluxo real: avança até a Proposta, finaliza (Pré-SD) e, via módulo de SDs,
+    // abre a SD e dá o aceite (cria o projeto PRO). Uma das AVs em "SD" fica aberta aguardando aceite.
+    const chegaNaSd = destino === 'sd' || destino === 'projeto';
+    const avancos = chegaNaSd ? nivel('proposta') : alcance;
     for (let passo = 0; passo < avancos; passo += 1) {
       await this.avancarEtapa.executar({ avId, comentario: 'Etapa concluída (exemplo).' });
     }
@@ -178,22 +185,37 @@ export class GerarAvsExemplo implements CasoDeUso<void, GerarAvsExemploSaida> {
             ? 'Cliente optou por outro fornecedor.'
             : 'Capacidade indisponível no período.',
       });
-    } else if (destino === 'projeto') {
-      const av = await this.repositorio.obterPorId(avId);
-      if (!av) return;
-      const etapaDe = av.etapaAtual;
-      av.moverParaEtapa(8);
-      await this.repositorio.salvar(av);
-      await this.historico.registrar({
-        id: this.geradorDeId.gerar(),
-        avId,
-        etapaDe,
-        etapaPara: 8,
-        usuarioId,
-        comentario: 'Projeto criado (exemplo).',
-        data: this.relogio.agora(),
-      });
+      return;
     }
+    if (!chegaNaSd) return;
+
+    if (this.finalizar) {
+      await this.finalizar.executar(avId);
+      if (this.avancarSd && destino === 'projeto') await this.avancarSd(avId, 'fechada', usuarioId);
+      else if (this.avancarSd && indice % 2 === 1) await this.avancarSd(avId, 'aberta', usuarioId);
+      else if (destino === 'projeto') await this.moverDireto(avId, 8, usuarioId, 'Projeto criado (exemplo).');
+    } else {
+      await this.moverDireto(avId, 7, usuarioId, 'SD aberta (exemplo).');
+      if (destino === 'projeto') await this.moverDireto(avId, 8, usuarioId, 'Projeto criado (exemplo).');
+    }
+  }
+
+  /** Só quando os módulos de SD não estão ligados (testes): grava a etapa direto, com histórico. */
+  private async moverDireto(avId: string, etapaPara: number, usuarioId: string, comentario: string): Promise<void> {
+    const av = await this.repositorio.obterPorId(avId);
+    if (!av) return;
+    const etapaDe = av.etapaAtual;
+    av.moverParaEtapa(etapaPara);
+    await this.repositorio.salvar(av);
+    await this.historico.registrar({
+      id: this.geradorDeId.gerar(),
+      avId,
+      etapaDe,
+      etapaPara,
+      usuarioId,
+      comentario,
+      data: this.relogio.agora(),
+    });
   }
 
   private dadosComerciais(

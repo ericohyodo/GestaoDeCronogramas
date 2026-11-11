@@ -38,6 +38,8 @@ import { ObterSecaoProduto } from './aplicacao/casos-de-uso/obter-secao-produto'
 import { ObterRelatorioAvs } from './aplicacao/casos-de-uso/obter-relatorio-avs';
 import { ObterSecaoPcp, SalvarSecaoPcp } from './aplicacao/casos-de-uso/secao-pcp';
 import { ListarPerfisAv, ObterMeuPerfilAv, SalvarPerfilAv } from './aplicacao/casos-de-uso/perfis-av';
+import { ConcluirAvComProjeto, type ConcluirComProjetoEntrada } from './aplicacao/casos-de-uso/concluir-com-projeto';
+import { podeDarAceiteDaSd } from './dominio/papel-av';
 import { SalvarSecaoCusto } from './aplicacao/casos-de-uso/salvar-secao-custo';
 import { SalvarSecaoProcesso } from './aplicacao/casos-de-uso/salvar-secao-processo';
 import { SalvarSecaoProduto } from './aplicacao/casos-de-uso/salvar-secao-produto';
@@ -70,12 +72,20 @@ export interface DependenciasModuloAvs {
   geradorDeId: GeradorDeId;
   consultaDeUsuarios: ConsultaDeUsuarios;
   criadorDePreSd: CriadorDePreSd;
+  /** Dados de exemplo: leva a SD da AV até aberta/fechada (módulo de SDs). */
+  avancarSdDeExemplo?: (avId: string, ate: 'aberta' | 'fechada', usuarioId: string) => Promise<void>;
 }
 
 type LinhasDoRelatorio = Awaited<ReturnType<ObterRelatorioAvs['executar']>>;
 
 export interface ModuloAvs {
+  comandos: {
+    /** Aceite da SD: a AV vai para "Projeto Criado" apontando para o projeto. */
+    concluirComProjeto(entrada: ConcluirComProjetoEntrada): Promise<void>;
+  };
   consultas: {
+    /** Gerente de Engenharia ou Gestor de Programa (aceite da SD). */
+    podeDarAceite(usuarioId: string): Promise<boolean>;
     listarIdsAtivos(): Promise<string[]>;
     /** Uma linha por AV (etapa, prazo, valores consolidados): o módulo de IA usa isto para analisar as AVs. */
     relatorio(): Promise<LinhasDoRelatorio>;
@@ -155,6 +165,15 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     deps.consultaDeUsuarios,
     deps.relogio,
   );
+  const finalizar = new FinalizarECriarPreSd(
+    repositorio,
+    repositorioHistorico,
+    autorizacao,
+    deps.criadorDePreSd,
+    deps.relogio,
+    deps.geradorDeId,
+  );
+  const concluirComProjeto = new ConcluirAvComProjeto(repositorio, repositorioHistorico, deps.relogio, deps.geradorDeId);
   const gerarExemplos = new GerarAvsExemplo(
     repositorio,
     repositorioHistorico,
@@ -169,6 +188,8 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     salvarSecaoCusto,
     avancarEtapa,
     declinarAv,
+    finalizar,
+    deps.avancarSdDeExemplo,
   );
 
   registrarIpcAvs(deps.ipc, {
@@ -216,17 +237,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     salvarSecaoPcp: new SalvarSecaoPcp(repositorio, repositorioSecaoPcp, autorizacao, deps.relogio, deps.geradorDeId, versoes),
     obterContatos: new ObterContatosAv(repositorioContatos, autorizacao),
     salvarContatos: new SalvarContatosAv(repositorio, repositorioContatos, autorizacao, deps.geradorDeId),
-    finalizarECriarPreSd: transacional(
-      new FinalizarECriarPreSd(
-        repositorio,
-        repositorioHistorico,
-        autorizacao,
-        deps.criadorDePreSd,
-        deps.relogio,
-        deps.geradorDeId,
-      ),
-      transacao,
-    ),
+    finalizarECriarPreSd: transacional(finalizar, transacao),
     listarTemplates: new ListarTemplatesAv(repositorioTemplates, autorizacao),
     salvarTemplate: new SalvarTemplateAv(repositorioTemplates, autorizacao, deps.relogio, deps.geradorDeId),
     excluirTemplate: new ExcluirTemplateAv(repositorioTemplates, autorizacao),
@@ -236,7 +247,9 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
   });
 
   return {
+    comandos: { concluirComProjeto: (entrada) => concluirComProjeto.executar(entrada) },
     consultas: {
+      podeDarAceite: async (usuarioId) => podeDarAceiteDaSd(await autorizacao.obterPerfilAv(usuarioId)),
       async listarIdsAtivos() {
         return (await repositorio.listar()).map((av) => av.id);
       },

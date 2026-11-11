@@ -74,6 +74,15 @@ export const CANAIS = {
   sds: {
     listar: 'sds:listar',
     obterPorAv: 'sds:obter-por-av',
+    obter: 'sds:obter',
+    salvar: 'sds:salvar',
+    abrir: 'sds:abrir',
+    aceitar: 'sds:aceitar',
+    devolver: 'sds:devolver',
+    listarEvidencias: 'sds:listar-evidencias',
+    anexarEvidencias: 'sds:anexar-evidencias',
+    abrirEvidencia: 'sds:abrir-evidencia',
+    excluirEvidencia: 'sds:excluir-evidencia',
   },
   avs: {
     listar: 'avs:listar',

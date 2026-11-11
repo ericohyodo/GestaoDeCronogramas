@@ -7,7 +7,7 @@ import type { Relogio } from '../../nucleo/aplicacao/portas/relogio';
 import type { BancoDeDados } from '../../nucleo/infraestrutura/banco/conexao-sqlite';
 import type { RegistradorIpc } from '../../nucleo/infraestrutura/ipc/registrador-ipc';
 import { AtualizarCronograma } from './aplicacao/casos-de-uso/atualizar-cronograma';
-import { CriarCronograma } from './aplicacao/casos-de-uso/criar-cronograma';
+import { CriarCronograma, CriarProjetoDaSd } from './aplicacao/casos-de-uso/criar-cronograma';
 import { ExcluirCronograma } from './aplicacao/casos-de-uso/excluir-cronograma';
 import { ListarCronogramas } from './aplicacao/casos-de-uso/listar-cronogramas';
 import { ObterCronograma } from './aplicacao/casos-de-uso/obter-cronograma';
@@ -22,6 +22,17 @@ export interface DependenciasModuloCronogramas {
 }
 
 export interface ModuloCronogramas {
+  comandos: {
+    /** Projeto nascido do aceite de uma SD, com o código `PRO AA-SSS`. */
+    criarProjeto(entrada: {
+      nome: string;
+      descricao: string | null;
+      codigo: string;
+      sdId: string;
+      dataInicio: string;
+      dataFim: string;
+    }): Promise<{ id: string }>;
+  };
   /** Consultas que o módulo oferece aos demais módulos. */
   consultas: {
     existe(id: string): Promise<boolean>;
@@ -49,7 +60,10 @@ export function montarModuloCronogramas(deps: DependenciasModuloCronogramas): Mo
     excluir: new ExcluirCronograma(repositorio),
   });
 
+  const criarProjeto = new CriarProjetoDaSd(repositorio, deps.relogio, deps.geradorDeId);
+
   return {
+    comandos: { criarProjeto: (entrada) => criarProjeto.executar(entrada) },
     consultas: {
       existe: (id) => repositorio.existe(id),
       async obterPeriodo(id) {

@@ -106,7 +106,24 @@ ${pasta}`,
     },
   });
 
-  const sds = montarModuloSds({ db, ipc, relogio, geradorDeId });
+  // SDs e AVs dependem um do outro (Pré-SD ↔ aceite): as referências a `avs` só são usadas em tempo de
+  // execução, depois de os dois módulos estarem montados.
+  const sds = montarModuloSds({
+    db,
+    ipc,
+    relogio,
+    geradorDeId,
+    acesso: {
+      usuarioAtual: () => {
+        const usuario = usuarios.consultas.usuarioAtual();
+        return usuario ? { id: usuario.id, nome: usuario.nome, administrador: usuario.perfil === 'administrador' } : null;
+      },
+      podeDarAceite: (usuarioId) => avs.consultas.podeDarAceite(usuarioId),
+      listarNomes: () => usuarios.consultas.listarAtivos(),
+    },
+    avs: { concluirComProjeto: (entrada) => avs.comandos.concluirComProjeto(entrada) },
+    projetos: { criar: (entrada) => cronogramas.comandos.criarProjeto(entrada) },
+  });
 
   const avs = montarModuloAvs({
     db,
@@ -119,6 +136,7 @@ ${pasta}`,
       obterPerfilGlobal: (id) => usuarios.consultas.obterPerfilGlobal(id),
     },
     criadorDePreSd: { criar: (entrada) => sds.comandos.criarPreSd(entrada) },
+    avancarSdDeExemplo: (avId, ate, usuarioId) => sds.comandos.avancarSdDeExemplo(avId, ate, usuarioId),
   });
 
   const ia = montarModuloIa({

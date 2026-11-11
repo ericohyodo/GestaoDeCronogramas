@@ -334,6 +334,11 @@ export class Av {
     this.props.etapaAtual = numero;
   }
 
+  /** Aceite da SD: a AV passa a apontar para o projeto criado. */
+  vincularProjeto(cronogramaId: string): void {
+    this.props.cronogramaId = cronogramaId;
+  }
+
   marcarPropostaEnviada(agora: Date): void {
     this.props.propostaEnviada = true;
     this.props.dataProposta = agora;

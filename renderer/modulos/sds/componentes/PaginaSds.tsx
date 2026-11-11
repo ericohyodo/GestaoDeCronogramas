@@ -2,26 +2,21 @@
 
 import { FileText } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import type { StatusSdDTO } from '@contratos/sds.contrato';
-import { formatarData } from '@/compartilhado/formatacao';
+import { formatarDataLocal } from '@/compartilhado/formatacao';
 import { CabecalhoPagina } from '@/compartilhado/ui/CabecalhoPagina';
 import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
-import { Etiqueta, type Tom } from '@/compartilhado/ui/Etiqueta';
+import { Etiqueta } from '@/compartilhado/ui/Etiqueta';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { CelulaCabecalho, CelulaTabela, LinhaTabela, Tabela } from '@/compartilhado/ui/Tabela';
+import { STATUS_SD_VISUAL as STATUS } from '../rotulos';
 import { useSdsStore } from '../store/use-sds-store';
-
-const STATUS: Record<StatusSdDTO, { rotulo: string; tom: Tom }> = {
-  pre_sd: { rotulo: 'Pré-SD', tom: 'alerta' },
-  aberta: { rotulo: 'Aberta', tom: 'info' },
-  fechada: { rotulo: 'Fechada', tom: 'sucesso' },
-  cancelada: { rotulo: 'Cancelada', tom: 'perigo' },
-};
 
 /** Cada SD nasce de uma AV e herda o número dela (AV 26-007 → SD 26-007 → PRO 26-007). */
 export function PaginaSds() {
-  const { itens, erro, carregar, limparErro } = useSdsStore();
+  const { itens, erro, carregando, carregar, limparErro } = useSdsStore();
+  const router = useRouter();
 
   useEffect(() => {
     void carregar();
@@ -31,12 +26,14 @@ export function PaginaSds() {
     <div className="flex flex-col gap-6 p-6">
       <CabecalhoPagina
         titulo="Solicitações de Desenvolvimento"
-        descricao="SDs criadas a partir das AVs finalizadas. O número acompanha o da AV e o do projeto."
+        descricao="Passagem de bastão do Comercial para a Engenharia. O número acompanha o da AV e o do projeto."
       />
 
       {erro && <MensagemErro mensagem={erro} aoFechar={limparErro} />}
 
-      {itens.length === 0 ? (
+      {carregando && itens.length === 0 ? (
+        <p className="text-sm text-texto-secundario">Carregando SDs…</p>
+      ) : itens.length === 0 ? (
         <EstadoVazio
           icone={FileText}
           titulo="Nenhuma SD ainda"
@@ -56,10 +53,26 @@ export function PaginaSds() {
           </thead>
           <tbody>
             {itens.map((sd) => (
-              <LinhaTabela key={sd.id}>
-                <CelulaTabela className="pl-5 font-medium tabular-nums">{sd.numero}</CelulaTabela>
+              <LinhaTabela
+                key={sd.id}
+                className="cursor-pointer"
+                onClick={() => router.push(`/sds/detalhe/?id=${sd.id}`)}
+              >
+                <CelulaTabela className="pl-5 font-medium tabular-nums">
+                  <Link
+                    href={`/sds/detalhe/?id=${sd.id}`}
+                    className="text-primaria hover:text-primaria-hover"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {sd.numero}
+                  </Link>
+                </CelulaTabela>
                 <CelulaTabela className="tabular-nums">
-                  <Link href={`/avs/detalhe/?id=${sd.avId}`} className="text-primaria hover:text-primaria-hover">
+                  <Link
+                    href={`/avs/detalhe/?id=${sd.avId}`}
+                    className="text-primaria hover:text-primaria-hover"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     {sd.avNumero}
                   </Link>
                 </CelulaTabela>
@@ -72,7 +85,7 @@ export function PaginaSds() {
                 </CelulaTabela>
                 <CelulaTabela className="tabular-nums text-texto-secundario">{sd.numeroProjeto}</CelulaTabela>
                 <CelulaTabela className="pr-5 tabular-nums text-texto-secundario">
-                  {formatarData(sd.criadoEm.slice(0, 10))}
+                  {formatarDataLocal(sd.criadoEm)}
                 </CelulaTabela>
               </LinhaTabela>
             ))}

@@ -1,5 +1,11 @@
 import type { AparenciaDTO } from './aparencia.contrato';
-import type { SdDTO } from './sds.contrato';
+import type {
+  AceitarSdEntrada,
+  AnexoSdDTO,
+  DevolverSdEntrada,
+  SalvarSdEntrada,
+  SdDTO,
+} from './sds.contrato';
 import type {
   AnexoAvDTO,
   AplicarAoGrupoEntrada,
@@ -116,6 +122,20 @@ export interface ApiDesktop {
     listar(): Promise<Resultado<SdDTO[]>>;
     /** `null` quando a AV ainda não gerou uma SD. */
     obterPorAv(avId: string): Promise<Resultado<SdDTO | null>>;
+    obter(id: string): Promise<Resultado<SdDTO>>;
+    /** Comercial: data de envio da cotação, nº do PO e observações. */
+    salvar(entrada: SalvarSdEntrada): Promise<Resultado<SdDTO>>;
+    /** Comercial entrega a SD para a Engenharia (exige data de envio e evidência). */
+    abrir(id: string): Promise<Resultado<SdDTO>>;
+    /** Gerente de Engenharia / Gestor de Programa: fecha a SD e cria o projeto PRO. */
+    aceitar(entrada: AceitarSdEntrada): Promise<Resultado<SdDTO>>;
+    devolver(entrada: DevolverSdEntrada): Promise<Resultado<SdDTO>>;
+    listarEvidencias(sdId: string): Promise<Resultado<AnexoSdDTO[]>>;
+    /** Abre o seletor de arquivos; `null` quando o usuário cancela. */
+    anexarEvidencias(sdId: string): Promise<Resultado<AnexoSdDTO[] | null>>;
+    /** Abre o arquivo no programa padrão (Outlook, leitor de PDF…). */
+    abrirEvidencia(anexoId: string): Promise<Resultado<null>>;
+    excluirEvidencia(anexoId: string): Promise<Resultado<null>>;
   };
   avs: {
     listar(): Promise<Resultado<AvResumoDTO[]>>;

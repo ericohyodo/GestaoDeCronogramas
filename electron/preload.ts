@@ -38,6 +38,15 @@ const api: ApiDesktop = {
   sds: {
     listar: () => invocar(CANAIS.sds.listar),
     obterPorAv: (avId) => invocar(CANAIS.sds.obterPorAv, avId),
+    obter: (id) => invocar(CANAIS.sds.obter, id),
+    salvar: (entrada) => invocar(CANAIS.sds.salvar, entrada),
+    abrir: (id) => invocar(CANAIS.sds.abrir, id),
+    aceitar: (entrada) => invocar(CANAIS.sds.aceitar, entrada),
+    devolver: (entrada) => invocar(CANAIS.sds.devolver, entrada),
+    listarEvidencias: (sdId) => invocar(CANAIS.sds.listarEvidencias, sdId),
+    anexarEvidencias: (sdId) => invocar(CANAIS.sds.anexarEvidencias, sdId),
+    abrirEvidencia: (anexoId) => invocar(CANAIS.sds.abrirEvidencia, anexoId),
+    excluirEvidencia: (anexoId) => invocar(CANAIS.sds.excluirEvidencia, anexoId),
   },
   avs: {
     listar: () => invocar(CANAIS.avs.listar),
