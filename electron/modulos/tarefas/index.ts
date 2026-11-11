@@ -3,6 +3,8 @@
  * Outros módulos e a raiz de composição só podem importar deste arquivo.
  */
 import type { GeradorDeId } from '../../nucleo/aplicacao/portas/gerador-de-id';
+import { type Notificador, semNotificacao } from '../../nucleo/aplicacao/portas/notificador';
+import { AvisosDeTarefas, diaLocal } from './aplicacao/avisos-de-tarefas';
 import type { Relogio } from '../../nucleo/aplicacao/portas/relogio';
 import type { BancoDeDados } from '../../nucleo/infraestrutura/banco/conexao-sqlite';
 import type { RegistradorIpc } from '../../nucleo/infraestrutura/ipc/registrador-ipc';
@@ -34,6 +36,9 @@ export interface DependenciasModuloTarefas {
   geradorDeId: GeradorDeId;
   consultaDeCronogramas: ConsultaDeCronogramas;
   consultaDeResponsaveis: ConsultaDeResponsaveis;
+  notificador?: Notificador;
+  /** Quem está agindo (não recebe a própria notificação). */
+  usuarioAtualId?: () => string | null;
 }
 
 export interface ModuloTarefas {
@@ -41,11 +46,21 @@ export interface ModuloTarefas {
   consultas: {
     obterEstrutura(cronogramaId: string): ReturnType<ObterEstrutura['executar']>;
   };
+  rotinas: {
+    /** Avisa tarefas vencendo (até 2 dias) ou atrasadas de projetos ativos; devolve quantos avisos saíram. */
+    verificarPrazos(): Promise<number>;
+  };
 }
 
 export function montarModuloTarefas(deps: DependenciasModuloTarefas): ModuloTarefas {
   const repositorio = new RepositorioTarefasSqlite(deps.db);
   const repositorioFases = new RepositorioFasesSqlite(deps.db);
+  const avisos = new AvisosDeTarefas(
+    deps.notificador ?? semNotificacao,
+    deps.consultaDeResponsaveis,
+    deps.consultaDeCronogramas,
+    deps.usuarioAtualId,
+  );
   const obterEstrutura = new ObterEstrutura(
     repositorio,
     repositorioFases,
@@ -64,12 +79,13 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): ModuloTare
       deps.consultaDeResponsaveis,
       deps.relogio,
       deps.geradorDeId,
+      avisos,
       ),
       transacao,
     ),
-    atualizar: new AtualizarTarefa(repositorio, deps.consultaDeResponsaveis, deps.relogio),
+    atualizar: new AtualizarTarefa(repositorio, deps.consultaDeResponsaveis, deps.relogio, avisos),
     excluir: new ExcluirTarefa(repositorio),
-    deslocarSucessoras: new DeslocarSucessoras(repositorio, deps.relogio),
+    deslocarSucessoras: new DeslocarSucessoras(repositorio, deps.relogio, avisos),
     ajustarDatasDaFase: new AjustarDatasDaFase(repositorio, repositorioFases, deps.relogio),
     criarFase: new CriarFase(
       repositorioFases,
@@ -94,5 +110,15 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): ModuloTare
     ),
   });
 
-  return { consultas: { obterEstrutura: (cronogramaId) => obterEstrutura.executar(cronogramaId) } };
+  return {
+    consultas: { obterEstrutura: (cronogramaId) => obterEstrutura.executar(cronogramaId) },
+    rotinas: {
+      async verificarPrazos() {
+        const ativos = (await deps.consultaDeCronogramas.listar()).filter((cronograma) => !cronograma.arquivado);
+        const tarefas = (await Promise.all(ativos.map((c) => repositorio.listarPorCronograma(c.id)))).flat();
+        const nomes = new Map(ativos.map((c) => [c.id, c.nome]));
+        return avisos.verificarPrazos(tarefas, diaLocal(deps.relogio.agora()), nomes);
+      },
+    },
+  };
 }

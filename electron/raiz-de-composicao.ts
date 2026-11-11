@@ -127,7 +127,10 @@ ${pasta}`,
     consultaDeResponsaveis: {
       obterNomes: (ids) => responsaveis.consultas.obterNomes(ids),
       existe: (id) => responsaveis.consultas.existe(id),
+      obterUsuarios: (ids) => responsaveis.consultas.obterUsuarios(ids),
     },
+    notificador,
+    usuarioAtualId: () => usuarios.consultas.usuarioAtual()?.id ?? null,
   });
 
   // SDs e AVs dependem um do outro (Pré-SD ↔ aceite): as referências a `avs` só são usadas em tempo de
@@ -198,10 +201,26 @@ ${pasta}`,
     evento.returnValue = aparencia;
   });
 
+  // Rotina de prazos (tarefas vencendo/atrasadas e prazo do cliente nas AVs): na abertura e a cada hora.
+  // Cada aviso sai uma vez só, mesmo com vários PCs rodando a rotina (deduplicação por chave no banco).
+  const verificarPrazos = async () => {
+    try {
+      const tarefasAvisadas = await tarefas.rotinas.verificarPrazos();
+      const avsAvisadas = await avs.rotinas.verificarPrazosDoCliente();
+      if (tarefasAvisadas + avsAvisadas > 0) console.info(`[prazos] avisos verificados: ${tarefasAvisadas} tarefa(s), ${avsAvisadas} AV(s)`);
+    } catch (erro) {
+      console.error('[prazos] falha na verificação de prazos:', erro);
+    }
+  };
+  const primeiraVerificacao = setTimeout(() => void verificarPrazos(), 15_000);
+  const rotinaDePrazos = setInterval(() => void verificarPrazos(), 60 * 60 * 1000);
+
   return {
     caminhoDoBanco,
     aparencia,
     encerrar: () => {
+      clearTimeout(primeiraVerificacao);
+      clearInterval(rotinaDePrazos);
       // Sai da lista de usuários online antes de fechar o banco (falha aqui não deve impedir o fechamento).
       void usuarios.encerrar().catch(() => undefined);
       db.close();

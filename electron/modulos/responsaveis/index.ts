@@ -27,6 +27,8 @@ export interface ModuloResponsaveis {
     /** Nomes por id, para o módulo de tarefas exibir o responsável sem conhecer este módulo. */
     obterNomes(ids: string[]): Promise<Map<string, string>>;
     existe(id: string): Promise<boolean>;
+    /** Usuário do sistema vinculado a cada responsável (só os que têm vínculo). */
+    obterUsuarios(ids: string[]): Promise<Map<string, string>>;
   };
 }
 
@@ -51,6 +53,16 @@ export function montarModuloResponsaveis(
           if (procurados.has(responsavel.id)) nomes.set(responsavel.id, responsavel.nome);
         }
         return nomes;
+      },
+      async obterUsuarios(ids) {
+        const procurados = new Set(ids);
+        const usuarios = new Map<string, string>();
+        for (const responsavel of await repositorio.listar()) {
+          if (procurados.has(responsavel.id) && responsavel.usuarioId && responsavel.ativo) {
+            usuarios.set(responsavel.id, responsavel.usuarioId);
+          }
+        }
+        return usuarios;
       },
       async existe(id) {
         return (await repositorio.obterPorId(id)) !== null;

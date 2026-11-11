@@ -9,6 +9,7 @@ import type { RepositorioFases } from '../../dominio/repositorio-fases';
 import type { RepositorioTarefas } from '../../dominio/repositorio-tarefas';
 import { Tarefa } from '../../dominio/tarefa';
 import { abrirEspacoNaOrdem } from '../abrir-espaco-na-ordem';
+import type { AvisosDeTarefas } from '../avisos-de-tarefas';
 import { paraTarefaDTO } from '../mapeador-dto';
 import type { ConsultaDeCronogramas } from '../portas/consulta-de-cronogramas';
 import type { ConsultaDeResponsaveis } from '../portas/consulta-de-responsaveis';
@@ -21,6 +22,7 @@ export class CriarTarefa implements CasoDeUso<CriarTarefaEntrada, TarefaDTO> {
     private readonly consultaDeResponsaveis: ConsultaDeResponsaveis,
     private readonly relogio: Relogio,
     private readonly geradorDeId: GeradorDeId,
+    private readonly avisos?: AvisosDeTarefas,
   ) {}
 
   async executar(entrada: CriarTarefaEntrada): Promise<TarefaDTO> {
@@ -60,6 +62,7 @@ export class CriarTarefa implements CasoDeUso<CriarTarefaEntrada, TarefaDTO> {
       agora: this.relogio.agora(),
     });
     await this.repositorio.salvar(tarefa);
+    if (tarefa.responsavelId) await this.avisos?.atribuida(tarefa);
     return paraTarefaDTO(tarefa);
   }
 

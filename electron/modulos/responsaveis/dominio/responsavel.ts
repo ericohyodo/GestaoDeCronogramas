@@ -10,6 +10,8 @@ export interface PropsResponsavel {
   nome: string;
   email: string | null;
   funcao: string | null;
+  /** Usuário do sistema que é esta pessoa (recebe as notificações das tarefas). */
+  usuarioId: string | null;
   ativo: boolean;
   criadoEm: Date;
   atualizadoEm: Date;
@@ -20,6 +22,7 @@ export interface DadosNovoResponsavel {
   nome: string;
   email?: string | null;
   funcao?: string | null;
+  usuarioId?: string | null;
   agora: Date;
 }
 
@@ -32,6 +35,7 @@ export class Responsavel {
       nome: validarNome(dados.nome),
       email: validarEmail(dados.email),
       funcao: validarFuncao(dados.funcao),
+      usuarioId: dados.usuarioId ?? null,
       ativo: true,
       criadoEm: dados.agora,
       atualizadoEm: dados.agora,
@@ -54,6 +58,9 @@ export class Responsavel {
   get funcao(): string | null {
     return this.props.funcao;
   }
+  get usuarioId(): string | null {
+    return this.props.usuarioId;
+  }
   get ativo(): boolean {
     return this.props.ativo;
   }
@@ -72,6 +79,11 @@ export class Responsavel {
   alterarContato(email: string | null, funcao: string | null, agora: Date): void {
     this.props.email = validarEmail(email);
     this.props.funcao = validarFuncao(funcao);
+    this.props.atualizadoEm = agora;
+  }
+
+  vincularUsuario(usuarioId: string | null, agora: Date): void {
+    this.props.usuarioId = usuarioId;
     this.props.atualizadoEm = agora;
   }
 

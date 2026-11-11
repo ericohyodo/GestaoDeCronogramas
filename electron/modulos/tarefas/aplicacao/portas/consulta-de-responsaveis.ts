@@ -2,4 +2,6 @@
 export interface ConsultaDeResponsaveis {
   obterNomes(ids: string[]): Promise<Map<string, string>>;
   existe(responsavelId: string): Promise<boolean>;
+  /** Usuário do sistema vinculado a cada responsável (só os que têm vínculo). */
+  obterUsuarios(ids: string[]): Promise<Map<string, string>>;
 }

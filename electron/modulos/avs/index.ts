@@ -40,6 +40,7 @@ import { ObterRelatorioAvs } from './aplicacao/casos-de-uso/obter-relatorio-avs'
 import { ObterSecaoPcp, SalvarSecaoPcp } from './aplicacao/casos-de-uso/secao-pcp';
 import { ListarPerfisAv, ObterMeuPerfilAv, SalvarPerfilAv } from './aplicacao/casos-de-uso/perfis-av';
 import { ConcluirAvComProjeto, type ConcluirComProjetoEntrada } from './aplicacao/casos-de-uso/concluir-com-projeto';
+import { VerificarPrazosDoCliente } from './aplicacao/casos-de-uso/verificar-prazos-do-cliente';
 import { podeDarAceiteDaSd } from './dominio/papel-av';
 import { SalvarSecaoCusto } from './aplicacao/casos-de-uso/salvar-secao-custo';
 import { SalvarSecaoProcesso } from './aplicacao/casos-de-uso/salvar-secao-processo';
@@ -82,6 +83,10 @@ export interface DependenciasModuloAvs {
 type LinhasDoRelatorio = Awaited<ReturnType<ObterRelatorioAvs['executar']>>;
 
 export interface ModuloAvs {
+  rotinas: {
+    /** Avisa o responsável da etapa atual quando o prazo do cliente está a 5 dias ou venceu. */
+    verificarPrazosDoCliente(): Promise<number>;
+  };
   comandos: {
     /** Aceite da SD: a AV vai para "Projeto Criado" apontando para o projeto. */
     concluirComProjeto(entrada: ConcluirComProjetoEntrada): Promise<void>;
@@ -261,7 +266,10 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     obterMeuPerfil: new ObterMeuPerfilAv(autorizacao),
   });
 
+  const verificarPrazosDoCliente = new VerificarPrazosDoCliente(repositorio, notificador, deps.relogio);
+
   return {
+    rotinas: { verificarPrazosDoCliente: () => verificarPrazosDoCliente.executar() },
     comandos: { concluirComProjeto: (entrada) => concluirComProjeto.executar(entrada) },
     consultas: {
       podeDarAceite: async (usuarioId) => podeDarAceiteDaSd(await autorizacao.obterPerfilAv(usuarioId)),

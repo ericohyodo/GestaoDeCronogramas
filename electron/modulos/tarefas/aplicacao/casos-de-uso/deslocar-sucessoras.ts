@@ -5,6 +5,7 @@ import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
 import { ErroDeValidacao } from '../../../../nucleo/dominio/erro-de-dominio';
 import type { RepositorioTarefas } from '../../dominio/repositorio-tarefas';
 import { sucessorasTransitivas } from '../../dominio/servicos/calculo-do-cronograma';
+import type { AvisosDeTarefas } from '../avisos-de-tarefas';
 
 const LIMITE_DE_DIAS = 3650;
 
@@ -13,6 +14,7 @@ export class DeslocarSucessoras implements CasoDeUso<DeslocarSucessorasEntrada, 
   constructor(
     private readonly repositorio: RepositorioTarefas,
     private readonly relogio: Relogio,
+    private readonly avisos?: AvisosDeTarefas,
   ) {}
 
   async executar(entrada: DeslocarSucessorasEntrada): Promise<null> {
@@ -33,6 +35,7 @@ export class DeslocarSucessoras implements CasoDeUso<DeslocarSucessorasEntrada, 
     const deslocadas = irmas.filter((irma) => idsSucessoras.has(irma.id));
     for (const sucessora of deslocadas) sucessora.deslocar(entrada.dias, agora);
     await this.repositorio.salvarVarias(deslocadas);
+    await this.avisos?.deslocadas(deslocadas, entrada.dias, tarefa.titulo);
 
     return null;
   }

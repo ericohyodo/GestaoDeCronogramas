@@ -36,6 +36,7 @@ import { migracao0034 } from './0034-avs-checklist-nao-aplica';
 import { migracao0035 } from './0035-sd-parecer-do-aceite';
 import { migracao0036 } from './0036-notificacoes';
 import { migracao0037 } from './0037-usuarios-email';
+import { migracao0038 } from './0038-responsaveis-usuario';
 
 export const MIGRACOES: readonly Migracao[] = [
   migracao0001,
@@ -75,4 +76,5 @@ export const MIGRACOES: readonly Migracao[] = [
   migracao0035,
   migracao0036,
   migracao0037,
+  migracao0038,
 ];

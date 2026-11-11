@@ -3,6 +3,8 @@ export interface ResponsavelDTO {
   nome: string;
   email: string | null;
   funcao: string | null;
+  /** Usuário do sistema que é esta pessoa (recebe as notificações das tarefas). */
+  usuarioId: string | null;
   ativo: boolean;
 }
 
@@ -10,6 +12,7 @@ export interface CriarResponsavelEntrada {
   nome: string;
   email?: string | null;
   funcao?: string | null;
+  usuarioId?: string | null;
 }
 
 export interface AtualizarResponsavelEntrada {
@@ -17,5 +20,6 @@ export interface AtualizarResponsavelEntrada {
   nome?: string;
   email?: string | null;
   funcao?: string | null;
+  usuarioId?: string | null;
   ativo?: boolean;
 }

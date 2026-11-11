@@ -203,6 +203,9 @@ export class RepositorioResponsaveisEmMemoria implements RepositorioResponsaveis
   async excluir(id: string) {
     this.itens.delete(id);
   }
+  async obterPorUsuario(usuarioId: string) {
+    return [...this.itens.values()].find((responsavel) => responsavel.usuarioId === usuarioId) ?? null;
+  }
 }
 
 export class RepositorioPreferenciasEmMemoria implements RepositorioPreferencias {
@@ -283,7 +286,14 @@ export class ConsultaDeCronogramasFalsa implements ConsultaDeCronogramas {
 }
 
 export class ConsultaDeResponsaveisFalsa implements ConsultaDeResponsaveis {
-  constructor(private readonly nomes = new Map<string, string>([['resp-1', 'Ana Souza']])) {}
+  constructor(
+    private readonly nomes = new Map<string, string>([['resp-1', 'Ana Souza']]),
+    /** responsável → usuário vinculado (notificações das tarefas). */
+    readonly usuarios = new Map<string, string>(),
+  ) {}
+  async obterUsuarios(ids: string[]) {
+    return new Map([...this.usuarios].filter(([id]) => ids.includes(id)));
+  }
   async obterNomes(ids: string[]) {
     return new Map([...this.nomes].filter(([id]) => ids.includes(id)));
   }

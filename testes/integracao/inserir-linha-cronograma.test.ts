@@ -32,7 +32,7 @@ describe('inserir linha no cronograma', () => {
       tarefas,
       fases,
       { existe: async () => true, obterPeriodo: async () => null, listar: async () => [] },
-      { existe: async () => true, obterNomes: async () => new Map() },
+      { existe: async () => true, obterNomes: async () => new Map(), obterUsuarios: async () => new Map() },
       relogio,
       new GeradorDeIdSequencial('t'),
     );

@@ -32,6 +32,14 @@
     devolvida (Comercial, com o parecer);
   - Sistema: novas permissões no fluxo AV/SD, falha no backup automático (administradores).
 - **E-mail no cadastro de usuários** (opcional), base do futuro status report por e-mail.
+- **Recursos vinculados a usuários:** no cadastro de Recursos, campo "Usuário do sistema" (um usuário por
+  recurso). A lista mostra quem está vinculado.
+- **Notificações de Projetos** (para o usuário vinculado ao responsável da tarefa): tarefa atribuída, tarefa
+  liberada (todas as predecessoras concluídas), datas deslocadas por atraso de outra tarefa, tarefa vencendo em até
+  2 dias e tarefa atrasada.
+- **Aviso de prazo do cliente na AV:** a 5 dias do prazo (ou vencido), o responsável da etapa atual é avisado.
+- Os avisos de prazo são verificados na abertura do app e a cada hora, e cada um sai uma única vez por prazo, mesmo
+  com vários computadores abertos.
 
 ### Dados e multiusuário
 - **Backup automático** do banco em `backups/` (ao lado do .db): antes de toda atualização de estrutura e uma vez
@@ -61,8 +69,6 @@
 - Regra única de "tarefa atrasada" (hoje há três definições: tela, portfólio e IA).
 - Cifra das chaves de IA com `safeStorage` do Windows; versões de dependências fixadas.
 - Cancelamento de SD (status existe, sem fluxo na tela).
-- Notificações de Projetos (tarefa atribuída, vencendo, atrasada, liberada pela predecessora): dependem de
-  vincular cada Recurso a um usuário do sistema.
-- Aviso de prazo do cliente vencendo em AV parada (precisa de verificação agendada).
+- Notificar também o gestor do projeto (o projeto ainda não tem campo de gestor).
 - Status report automático por e-mail (notificações e próximas atividades): precisa de um serviço que rode sem o
   app aberto (tarefa agendada do Windows, Power Automate ou serviço dedicado) e de conta SMTP/Microsoft 365.

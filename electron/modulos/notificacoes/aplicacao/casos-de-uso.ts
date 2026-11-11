@@ -57,6 +57,7 @@ export class NotificadorInterno implements Notificador {
         titulo: limitarTitulo(nova.titulo),
         mensagem: limitarMensagem(nova.mensagem),
         link: nova.link ?? null,
+        chave: nova.chave ?? null,
         criadaEm: agora,
         lidaEm: null,
       })),

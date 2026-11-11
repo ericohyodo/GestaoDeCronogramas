@@ -7,6 +7,7 @@ export function paraResponsavelDTO(responsavel: Responsavel): ResponsavelDTO {
     nome: responsavel.nome,
     email: responsavel.email,
     funcao: responsavel.funcao,
+    usuarioId: responsavel.usuarioId,
     ativo: responsavel.ativo,
   };
 }

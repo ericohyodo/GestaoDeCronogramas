@@ -13,6 +13,8 @@ export interface NovaNotificacao {
   mensagem: string;
   /** Rota do app aberta ao clicar (ex.: `/sds/detalhe/?id=…`). */
   link?: string | null;
+  /** Evita repetir: quem já recebeu este `tipo` com esta `chave` não recebe de novo (avisos de rotina). */
+  chave?: string | null;
 }
 
 export interface Notificador {

@@ -5,6 +5,8 @@ export interface Notificacao {
   titulo: string;
   mensagem: string;
   link: string | null;
+  /** Deduplicação de avisos de rotina (ver `NovaNotificacao.chave`). */
+  chave: string | null;
   criadaEm: Date;
   lidaEm: Date | null;
 }

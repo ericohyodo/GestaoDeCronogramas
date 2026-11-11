@@ -19,6 +19,7 @@ export interface CasosDeUsoResponsaveis {
 const esquemaCriar = z.object({
   nome: z.string(),
   email: z.string().nullish(),
+  usuarioId: esquemaId.nullish(),
   funcao: z.string().nullish(),
 });
 
@@ -26,6 +27,7 @@ const esquemaAtualizar = z.object({
   id: esquemaId,
   nome: z.string().optional(),
   email: z.string().nullable().optional(),
+  usuarioId: esquemaId.nullish(),
   funcao: z.string().nullable().optional(),
   ativo: z.boolean().optional(),
 });
