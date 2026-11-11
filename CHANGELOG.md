@@ -47,7 +47,7 @@
   (ex.: `leandro.cruz`, `andre.pinto`). O administrador pode "Exigir novo primeiro acesso" (esqueci a senha).
 - **Menu Tutoriais** nos três módulos, com o passo a passo para a equipe.
 - **Modo Apresentação** (administrador, botão no painel inicial): o app reinicia com dados fictícios numa pasta
-  própria (`modo-apresentacao/`), recriada a cada entrada, e abre um **roteiro guiado de 18 passos** com destaque
+  própria no computador local (`%TEMP%\gestao-novos-desenvolvimentos\apresentacao`), recriada a cada entrada, e abre um **roteiro guiado de 18 passos** com destaque
   na tela, navegação automática e preenchimento ao vivo do parecer da SD. Setas ← → avançam, Esc pausa.
   "Sair da apresentação" reinicia com os dados reais, que nunca são abertos nesse modo.
 
