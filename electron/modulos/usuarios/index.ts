@@ -51,7 +51,7 @@ export interface ModuloUsuarios {
     /** Nome de quem está logado agora; `null` sem sessão. */
     nomeDoUsuarioAtual(): string | null;
     /** Quem está logado agora, com o perfil global; `null` sem sessão. */
-    usuarioAtual(): { id: string; nome: string; perfil: Perfil } | null;
+    usuarioAtual(): { id: string; nome: string; perfil: Perfil; departamento: string | null } | null;
     listarAtivos(): Promise<{ id: string; nome: string }[]>;
     obterPerfilGlobal(id: string): Promise<Perfil | null>;
   };
@@ -117,7 +117,9 @@ export function montarModuloUsuarios(deps: DependenciasModuloUsuarios): ModuloUs
       nomeDoUsuarioAtual: () => sessao.usuarioAtual?.nome ?? null,
       usuarioAtual: () => {
         const usuario = sessao.usuarioAtual;
-        return usuario ? { id: usuario.id, nome: usuario.nome, perfil: usuario.perfil } : null;
+        return usuario
+          ? { id: usuario.id, nome: usuario.nome, perfil: usuario.perfil, departamento: usuario.departamento }
+          : null;
       },
       listarAtivos: async () =>
         (await repositorio.listar())

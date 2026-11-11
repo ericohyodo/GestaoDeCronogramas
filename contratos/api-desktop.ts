@@ -52,16 +52,19 @@ import type {
   CronogramaDTO,
 } from './cronogramas.contrato';
 import type {
-  AnaliseAvsDTO,
   AnaliseArquivadaDTO,
+  AnaliseAvsDTO,
   AnaliseCronogramaDTO,
   AnalisePortfolioDTO,
   ConfigurarIaEntrada,
+  ConversaDTO,
   ConversarComIaEntrada,
+  EscopoIaDTO,
   EstadoIaDTO,
   InstrucoesIaDTO,
   RespostaDoChatDTO,
   ResumoDeAnaliseDTO,
+  ResumoDeConversaDTO,
   SalvarInstrucoesIaEntrada,
   UltimaAnaliseEntrada,
 } from './ia.contrato';
@@ -272,6 +275,10 @@ export interface ApiDesktop {
     /** A análise de AVs mais recente; `null` se ainda não houver. */
     ultimaAnaliseAvs(): Promise<Resultado<AnaliseAvsDTO | null>>;
     conversarAvs(entrada: ConversarComIaEntrada): Promise<Resultado<RespostaDoChatDTO>>;
+    /** Histórico do chat do usuário logado, por escopo (mais recentes primeiro). */
+    listarConversas(escopo: EscopoIaDTO): Promise<Resultado<ResumoDeConversaDTO[]>>;
+    obterConversa(id: string): Promise<Resultado<ConversaDTO>>;
+    excluirConversa(id: string): Promise<Resultado<null>>;
     obterInstrucoesAvs(): Promise<Resultado<InstrucoesIaDTO>>;
     salvarInstrucoesAvs(entrada: SalvarInstrucoesIaEntrada): Promise<Resultado<InstrucoesIaDTO>>;
     restaurarChecklistAvs(): Promise<Resultado<InstrucoesIaDTO>>;

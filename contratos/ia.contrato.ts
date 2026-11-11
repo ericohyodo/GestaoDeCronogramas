@@ -91,16 +91,38 @@ export interface MensagemDoChatDTO {
   texto: string;
 }
 
-/** Histórico da conversa (a última mensagem é a pergunta atual). O app não guarda conversas. */
+/** Histórico da conversa (a última mensagem é a pergunta atual). */
 export interface ConversarComIaEntrada {
   mensagens: MensagemDoChatDTO[];
+  /** Conversa do histórico que está sendo continuada; ausente numa conversa nova. */
+  conversaId?: string | null;
 }
 
 export interface RespostaDoChatDTO {
   texto: string;
   /** Modelo que de fato respondeu (no fallback por recusa, pode ser outro). */
   modelo: string;
+  /** Conversa onde a pergunta e a resposta foram guardadas. */
+  conversaId: string | null;
 }
+
+/** Item da barra de histórico do chat. */
+export interface ResumoDeConversaDTO {
+  id: string;
+  titulo: string;
+  atualizadaEm: string;
+}
+
+/** Conversa guardada, para continuar de onde parou. */
+export interface ConversaDTO {
+  id: string;
+  titulo: string;
+  escopo: EscopoIaDTO;
+  mensagens: (MensagemDoChatDTO & { modelo: string | null })[];
+}
+
+/** Conversas sem uso há mais que isso são apagadas automaticamente. */
+export const DIAS_DE_GUARDA_DAS_CONVERSAS = 90;
 
 /** Limites do chat, iguais no app e no processo principal. */
 export const LIMITE_DE_MENSAGENS_DO_CHAT = 20;

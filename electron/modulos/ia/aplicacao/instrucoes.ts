@@ -111,3 +111,38 @@ Orientações da empresa (siga-as sem inventar dados):
 ${orientacoes.trim()}`
     : INSTRUCOES_FIXAS_DO_CHAT;
 }
+
+/** Perfil global por extenso, para a IA. */
+const ROTULO_DO_PERFIL: Record<string, string> = {
+  administrador: 'administrador',
+  gestor: 'gestor',
+  usuario: 'usuário',
+  visualizador: 'visualizador',
+};
+
+/**
+ * Bloco anexado às instruções do chat dizendo quem está perguntando, para a IA entender "eu", "meu" e
+ * "minhas tarefas". Sem perfil (sem sessão), não acrescenta nada.
+ * @param perfil quem está logado
+ * @returns texto a anexar às instruções (vazio quando não há perfil)
+ */
+export function montarApresentacaoDoUsuario(
+  perfil: { nome: string; departamento: string | null; perfil: string; papeis: string[]; nomeDoRecurso: string | null } | null,
+): string {
+  if (!perfil) return '';
+  const detalhes = [
+    perfil.departamento,
+    `perfil ${ROTULO_DO_PERFIL[perfil.perfil] ?? perfil.perfil}`,
+    ...perfil.papeis,
+  ].filter(Boolean);
+  const comoAparece = perfil.nomeDoRecurso ?? perfil.nome;
+  return [
+    `Quem está conversando com você: ${perfil.nome} (${detalhes.join('; ')}).`,
+    `Nos dados, as tarefas e AVs desta pessoa aparecem com o responsável "${comoAparece}". Quando ela disser "eu", "meu", "minha" ou "minhas tarefas", entenda que se refere a "${comoAparece}". Trate-a pelo primeiro nome.`,
+  ].join('\n');
+}
+
+/** Junta as instruções do chat com a apresentação de quem conversa. */
+export function comApresentacao(instrucoes: string, apresentacao: string): string {
+  return apresentacao ? `${instrucoes}\n\n${apresentacao}` : instrucoes;
+}

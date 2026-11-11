@@ -33,6 +33,8 @@ export interface ModuloResponsaveis {
     existe(id: string): Promise<boolean>;
     /** Usuário do sistema vinculado a cada responsável (só os que têm vínculo). */
     obterUsuarios(ids: string[]): Promise<Map<string, string>>;
+    /** Nome do recurso vinculado ao usuário (como ele aparece nas tarefas); `null` sem vínculo. */
+    obterNomeDoRecursoDoUsuario(usuarioId: string): Promise<string | null>;
   };
 }
 
@@ -70,6 +72,9 @@ export function montarModuloResponsaveis(
           }
         }
         return usuarios;
+      },
+      async obterNomeDoRecursoDoUsuario(usuarioId) {
+        return (await repositorio.obterPorUsuario(usuarioId))?.nome ?? null;
       },
       async existe(id) {
         return (await repositorio.obterPorId(id)) !== null;

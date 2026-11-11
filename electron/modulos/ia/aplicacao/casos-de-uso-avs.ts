@@ -5,7 +5,13 @@ import type {
 } from '@contratos/ia.contrato';
 import type { CasoDeUso } from '../../../nucleo/aplicacao/caso-de-uso';
 import { lerInstrucoes } from './casos-de-uso-instrucoes';
-import { type DependenciasDaAnalise, modeloEChave, validarHistorico } from './casos-de-uso';
+import {
+  type DependenciasDaAnalise,
+  dependenciasDasConversas,
+  modeloEChave,
+  quemPergunta,
+  validarHistorico,
+} from './casos-de-uso';
 import {
   LIMITE_DE_CARACTERES_DO_CONTEXTO_DAS_AVS,
   montarContextoDasAvs,
@@ -14,6 +20,8 @@ import {
 } from './contexto-das-avs';
 import { ErroNaIa } from './erro-na-ia';
 import { montarInstrucoesDaAnaliseAvs, montarInstrucoesDoChatAvs } from './instrucoes-avs';
+import { conferirConversa, guardarNaConversa } from './conversas';
+import { comApresentacao } from './instrucoes';
 
 export const TITULO_DA_ANALISE_DE_AVS = 'AVs';
 
@@ -90,17 +98,22 @@ export class ConversarSobreAvs implements CasoDeUso<ConversarComIaEntrada, Respo
   async executar(entrada: ConversarComIaEntrada): Promise<RespostaDoChatDTO> {
     const mensagens = validarHistorico(entrada.mensagens);
     const { modelo, chave } = await modeloEChave(this.deps, 'avs');
+    const { apresentacao, usuarioId } = await quemPergunta(this.deps);
+    const historico = dependenciasDasConversas(this.deps);
+    const conversaId = await conferirConversa(historico, usuarioId, 'avs', entrada.conversaId);
     const { contexto } = await contextoDasAvs(this.deps);
     const { orientacoes } = await lerInstrucoes(this.deps.instrucoes, 'avs');
 
     const resultado = await this.deps.modelo.conversar({
       chave,
       modelo,
-      instrucoes: montarInstrucoesDoChatAvs(orientacoes),
+      instrucoes: comApresentacao(montarInstrucoesDoChatAvs(orientacoes), apresentacao),
       contexto,
       rotuloDosDados: ROTULO_DOS_DADOS,
       mensagens,
     });
-    return { texto: resultado.texto, modelo: resultado.modelo };
+    const pergunta = mensagens.at(-1)!.texto;
+    const guardadaEm = await guardarNaConversa(historico, usuarioId, 'avs', conversaId, pergunta, resultado);
+    return { texto: resultado.texto, modelo: resultado.modelo, conversaId: guardadaEm };
   }
 }

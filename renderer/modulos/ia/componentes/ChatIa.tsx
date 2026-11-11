@@ -1,12 +1,13 @@
 'use client';
 
 import clsx from 'clsx';
-import { Eraser, Loader2, MessageSquareText, SendHorizonal } from 'lucide-react';
-import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { Loader2, MessageSquareText, SendHorizonal } from 'lucide-react';
+import { type FormEvent, type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
   LIMITE_DE_CARACTERES_DA_PERGUNTA,
   LIMITE_DE_MENSAGENS_DO_CHAT,
   type MensagemDoChatDTO,
+  type ResumoDeConversaDTO,
 } from '@contratos/ia.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { Botao } from '@/compartilhado/ui/Botao';
@@ -16,6 +17,7 @@ import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { usarStoreIa } from '../store/use-ia-store';
 import { DESTINO_DOS_DADOS, IaNaoConfigurada, nomeDoModelo } from './comum';
+import { HistoricoDoChat } from './HistoricoDoChat';
 
 const SUGESTOES = [
   'Quais tarefas estão atrasadas, por projeto?',
@@ -54,8 +56,8 @@ const TEXTOS = {
 type Fala = MensagemDoChatDTO & { modelo?: string };
 
 /**
- * Chat de perguntas e respostas sobre todos os cronogramas em andamento. Só consulta: não altera
- * nada. A conversa fica só na tela (não é gravada) e some ao sair ou ao iniciar uma nova.
+ * Chat de perguntas e respostas (Projetos ou AVs). Só consulta: não altera nada. Cada conversa fica
+ * guardada para o próprio usuário (barra à esquerda) e pode ser retomada ou excluída.
  */
 export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' }) {
   const usarStore = usarStoreIa(escopo);
@@ -70,6 +72,49 @@ export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' })
   const [erro, setErro] = useState<string | null>(null);
   const [erroDeCarga, setErroDeCarga] = useState<string | null>(null);
   const fim = useRef<HTMLDivElement>(null);
+  // Histórico: a conversa aberta (`null` = nova) e a lista do usuário neste escopo.
+  const [conversaId, setConversaId] = useState<string | null>(null);
+  const [conversas, setConversas] = useState<ResumoDeConversaDTO[]>([]);
+
+  const recarregarConversas = useCallback(
+    () =>
+      clienteDesktop.ia
+        .listarConversas(escopo)
+        .then(setConversas)
+        .catch(() => undefined), // sem lista: o chat continua funcionando
+    [escopo],
+  );
+
+  useEffect(() => {
+    clienteDesktop.ia
+      .listarConversas(escopo)
+      .then(setConversas)
+      .catch(() => undefined);
+  }, [escopo]);
+
+  const novaConversa = () => {
+    setFalas([]);
+    setConversaId(null);
+    setErro(null);
+  };
+
+  const abrirConversa = async (id: string) => {
+    setErro(null);
+    try {
+      const conversa = await clienteDesktop.ia.obterConversa(id);
+      setFalas(conversa.mensagens.map(({ papel, texto: conteudo, modelo }) => ({ papel, texto: conteudo, modelo: modelo ?? undefined })));
+      setConversaId(conversa.id);
+    } catch (falha) {
+      setErro(mensagemDeErro(falha));
+      void recarregarConversas();
+    }
+  };
+
+  const excluirConversa = async (id: string) => {
+    await clienteDesktop.ia.excluirConversa(id);
+    if (id === conversaId) novaConversa();
+    await recarregarConversas();
+  };
 
   useEffect(() => {
     carregar().catch((falha: unknown) => setErroDeCarga(mensagemDeErro(falha)));
@@ -93,10 +138,13 @@ export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' })
         mensagens: historico
           .slice(-LIMITE_DE_MENSAGENS_DO_CHAT)
           .map(({ papel, texto: conteudo }) => ({ papel, texto: conteudo })),
+        conversaId,
       };
       const resposta =
         escopo === 'avs' ? await clienteDesktop.ia.conversarAvs(entrada) : await clienteDesktop.ia.conversar(entrada);
       setFalas([...historico, { papel: 'ia', texto: resposta.texto, modelo: resposta.modelo }]);
+      if (resposta.conversaId) setConversaId(resposta.conversaId);
+      void recarregarConversas();
     } catch (falha) {
       setErro(mensagemDeErro(falha));
       // A pergunta volta para a caixa, para tentar de novo sem digitar tudo outra vez.
@@ -123,22 +171,7 @@ export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' })
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5 p-6">
-      <CabecalhoPagina
-        titulo="Chat com IA"
-        descricao={textos.descricao}
-        acoes={
-          <Botao
-            icone={Eraser}
-            onClick={() => {
-              setFalas([]);
-              setErro(null);
-            }}
-            disabled={falas.length === 0 || enviando}
-          >
-            Nova conversa
-          </Botao>
-        }
-      />
+      <CabecalhoPagina titulo="Chat com IA" descricao={textos.descricao} />
 
       {erroDeCarga && <MensagemErro mensagem={erroDeCarga} aoFechar={() => setErroDeCarga(null)} />}
 
@@ -147,6 +180,15 @@ export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' })
           <IaNaoConfigurada />
         </PainelVidro>
       ) : (
+        <div className="flex min-h-0 flex-1 gap-4">
+        <HistoricoDoChat
+          conversas={conversas}
+          atual={conversaId}
+          bloqueado={enviando}
+          aoNova={novaConversa}
+          aoAbrir={(id) => void abrirConversa(id)}
+          aoExcluir={excluirConversa}
+        />
         <PainelVidro className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5" aria-live="polite">
             {falas.length === 0 ? (
@@ -228,6 +270,7 @@ export function ChatIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' })
             )}
           </form>
         </PainelVidro>
+        </div>
       )}
     </div>
   );

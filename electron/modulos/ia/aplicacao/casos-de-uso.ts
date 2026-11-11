@@ -29,7 +29,14 @@ import {
   serializarContextoDoChat,
 } from './contexto-do-chat';
 import { montarContextoDoPortfolio } from './contexto-do-portfolio';
-import { montarInstrucoes, montarInstrucoesDoChat, montarInstrucoesDoPortfolio } from './instrucoes';
+import {
+  comApresentacao,
+  montarApresentacaoDoUsuario,
+  montarInstrucoes,
+  montarInstrucoesDoChat,
+  montarInstrucoesDoPortfolio,
+} from './instrucoes';
+import { conferirConversa, type DependenciasDasConversas, guardarNaConversa } from './conversas';
 import type {
   CofreDeChave,
   ConsultaDeAvs,
@@ -39,6 +46,7 @@ import type {
   QuemEstaUsando,
   RepositorioDeAnalises,
   RepositorioDeConfiguracaoIa,
+  RepositorioDeConversas,
   RepositorioDeInstrucoesIa,
 } from './portas';
 
@@ -133,6 +141,21 @@ export interface DependenciasDaAnalise {
   quemEstaUsando: QuemEstaUsando;
   geradorDeId: GeradorDeId;
   relogio: Relogio;
+  /** Histórico do chat; sem ele, as conversas não são guardadas (testes). */
+  conversas?: RepositorioDeConversas;
+}
+
+/** Dependências do histórico a partir das da análise (`null` sem repositório de conversas). */
+export function dependenciasDasConversas(deps: DependenciasDaAnalise): DependenciasDasConversas | null {
+  return deps.conversas
+    ? { conversas: deps.conversas, quemEstaUsando: deps.quemEstaUsando, geradorDeId: deps.geradorDeId, relogio: deps.relogio }
+    : null;
+}
+
+/** Quem está conversando (para a IA entender "eu" e "minhas tarefas") e o id dele para o histórico. */
+export async function quemPergunta(deps: DependenciasDaAnalise): Promise<{ apresentacao: string; usuarioId: string | null }> {
+  const perfil = (await deps.quemEstaUsando.perfilDoUsuarioAtual?.()) ?? null;
+  return { apresentacao: montarApresentacaoDoUsuario(perfil), usuarioId: perfil?.id ?? null };
 }
 
 export const TITULO_DO_PORTFOLIO = 'Portfólio';
@@ -246,6 +269,9 @@ export class ConversarComIa implements CasoDeUso<ConversarComIaEntrada, Resposta
   async executar(entrada: ConversarComIaEntrada): Promise<RespostaDoChatDTO> {
     const mensagens = validarHistorico(entrada.mensagens);
     const { modelo, chave } = await modeloEChave(this.deps);
+    const { apresentacao, usuarioId } = await quemPergunta(this.deps);
+    const historico = dependenciasDasConversas(this.deps);
+    const conversaId = await conferirConversa(historico, usuarioId, 'projetos', entrada.conversaId);
 
     const itens = [];
     for (const id of await this.deps.consultaDeCronograma.listarIdsAtivos()) {
@@ -270,11 +296,13 @@ export class ConversarComIa implements CasoDeUso<ConversarComIaEntrada, Resposta
     const resultado = await this.deps.modelo.conversar({
       chave,
       modelo,
-      instrucoes: montarInstrucoesDoChat(orientacoes),
+      instrucoes: comApresentacao(montarInstrucoesDoChat(orientacoes), apresentacao),
       contexto,
       mensagens,
     });
-    return { texto: resultado.texto, modelo: resultado.modelo };
+    const pergunta = mensagens.at(-1)!.texto;
+    const guardadaEm = await guardarNaConversa(historico, usuarioId, 'projetos', conversaId, pergunta, resultado);
+    return { texto: resultado.texto, modelo: resultado.modelo, conversaId: guardadaEm };
   }
 }
 

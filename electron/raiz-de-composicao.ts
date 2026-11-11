@@ -184,7 +184,22 @@ ${pasta}`,
     },
     consultaDeEstrutura: { obterEstrutura: (id) => tarefas.consultas.obterEstrutura(id) },
     consultaDeAvs: { relatorio: () => avs.consultas.relatorio() },
-    quemEstaUsando: { nomeDoUsuarioAtual: () => usuarios.consultas.nomeDoUsuarioAtual() },
+    quemEstaUsando: {
+      nomeDoUsuarioAtual: () => usuarios.consultas.nomeDoUsuarioAtual(),
+      // Quem conversa com a IA: nome, departamento, papéis e o recurso vinculado (como aparece nas tarefas).
+      async perfilDoUsuarioAtual() {
+        const usuario = usuarios.consultas.usuarioAtual();
+        if (!usuario) return null;
+        return {
+          id: usuario.id,
+          nome: usuario.nome,
+          departamento: usuario.departamento,
+          perfil: usuario.perfil,
+          papeis: await avs.consultas.descreverPapeis(usuario.id),
+          nomeDoRecurso: await responsaveis.consultas.obterNomeDoRecursoDoUsuario(usuario.id),
+        };
+      },
+    },
   });
 
   montarModuloImpressao({
@@ -216,6 +231,8 @@ ${pasta}`,
     try {
       const tarefasAvisadas = await tarefas.rotinas.verificarPrazos();
       const avsAvisadas = await avs.rotinas.verificarPrazosDoCliente();
+      const conversasApagadas = await ia.rotinas.limparConversasAntigas();
+      if (conversasApagadas > 0) console.info(`[chat] conversas sem uso há 90 dias apagadas: ${conversasApagadas}`);
       if (tarefasAvisadas + avsAvisadas > 0) console.info(`[prazos] avisos verificados: ${tarefasAvisadas} tarefa(s), ${avsAvisadas} AV(s)`);
     } catch (erro) {
       console.error('[prazos] falha na verificação de prazos:', erro);

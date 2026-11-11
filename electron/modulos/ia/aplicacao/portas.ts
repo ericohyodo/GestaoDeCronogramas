@@ -138,9 +138,54 @@ export interface RepositorioDeAnalises {
   excluir(id: string): Promise<boolean>;
 }
 
-/** Porta para o módulo Usuários: registra quem gerou cada análise. */
+/** Quem está conversando com a IA (montado na raiz a partir dos módulos de usuários, AVs e recursos). */
+export interface PerfilDeQuemConversa {
+  id: string;
+  nome: string;
+  departamento: string | null;
+  perfil: string;
+  /** Papéis e competências no fluxo AV/SD, já por extenso (ex.: "Gestor de Programa", "competência Comercial"). */
+  papeis: string[];
+  /** Nome do recurso vinculado: é como a pessoa aparece como responsável nas tarefas. */
+  nomeDoRecurso: string | null;
+}
+
+/** Porta para o módulo Usuários: registra quem gerou cada análise e identifica quem conversa no chat. */
 export interface QuemEstaUsando {
   nomeDoUsuarioAtual(): string | null;
+  /** Perfil completo de quem está logado; `null` sem sessão. */
+  perfilDoUsuarioAtual?(): Promise<PerfilDeQuemConversa | null>;
+}
+
+/** Conversa guardada do Chat com IA. */
+export interface ConversaGuardada {
+  id: string;
+  usuarioId: string;
+  escopo: 'projetos' | 'avs';
+  titulo: string;
+  criadaEm: Date;
+  atualizadaEm: Date;
+}
+
+export interface MensagemGuardada {
+  papel: 'usuario' | 'ia';
+  texto: string;
+  modelo: string | null;
+}
+
+/** Histórico do chat: cada usuário só enxerga as próprias conversas. */
+export interface RepositorioDeConversas {
+  criar(conversa: ConversaGuardada): Promise<void>;
+  /** Acrescenta as falas ao fim da conversa e atualiza a data de uso. */
+  acrescentar(conversaId: string, mensagens: MensagemGuardada[], agora: Date): Promise<void>;
+  /** Mais recentes primeiro. */
+  listar(usuarioId: string, escopo: 'projetos' | 'avs'): Promise<ConversaGuardada[]>;
+  /** `null` se não existe ou é de outro usuário. */
+  obter(id: string, usuarioId: string): Promise<(ConversaGuardada & { mensagens: MensagemGuardada[] }) | null>;
+  /** `false` se não existia ou é de outro usuário. */
+  excluir(id: string, usuarioId: string): Promise<boolean>;
+  /** Apaga as conversas sem uso desde a data; devolve quantas. */
+  apagarSemUsoDesde(limite: Date): Promise<number>;
 }
 
 /** Porta para o módulo AVs: uma linha por AV, com etapa, prazo, atraso e valores consolidados. */

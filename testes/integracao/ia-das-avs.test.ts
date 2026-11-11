@@ -20,6 +20,9 @@ import {
 import { ObterEstadoIa, type DependenciasDaAnalise } from '../../electron/modulos/ia/aplicacao/casos-de-uso';
 import type { ModeloDeAnalise, PedidoDeConversa } from '../../electron/modulos/ia/aplicacao/portas';
 import { ConfiguracaoIaSqlite } from '../../electron/modulos/ia/infraestrutura/configuracao-ia-sqlite';
+import { ExcluirConversa, limparConversasAntigas, ListarConversas, ObterConversa } from '../../electron/modulos/ia/aplicacao/conversas';
+import type { PerfilDeQuemConversa } from '../../electron/modulos/ia/aplicacao/portas';
+import { RepositorioDeConversasSqlite } from '../../electron/modulos/ia/infraestrutura/repositorio-de-conversas-sqlite';
 import { Usuario } from '../../electron/modulos/usuarios/dominio/usuario';
 import { RepositorioUsuariosSqlite } from '../../electron/modulos/usuarios/infraestrutura/repositorio-usuarios-sqlite';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
@@ -150,6 +153,73 @@ describe('Relatório e IA das AVs', () => {
     expect(resposta.texto).toContain('RESUMO');
     expect(pedidos[0]!.instrucoes).toContain('assistente da área de viabilidade');
     await expect(new ConversarSobreAvs(deps).executar({ mensagens: [{ papel: 'ia', texto: 'oi' }] })).rejects.toThrow();
+  });
+
+  it('o chat sabe quem pergunta e guarda a conversa só para essa pessoa', async () => {
+    const erico: PerfilDeQuemConversa = {
+      id: 'u1',
+      nome: 'Erico',
+      departamento: 'Gestão de Projetos',
+      perfil: 'administrador',
+      papeis: ['Gestor de Programa'],
+      nomeDoRecurso: 'Érico Hyodo',
+    };
+    await new RepositorioUsuariosSqlite(db).salvar(
+      Usuario.criar({ id: 'u2', nome: 'Luciana', login: 'luciana', senhaHash: 'h', perfil: 'usuario', agora: new Date() }),
+    );
+    let logado: PerfilDeQuemConversa | null = erico;
+    const conversas = new RepositorioDeConversasSqlite(db);
+    deps.quemEstaUsando = { nomeDoUsuarioAtual: () => logado?.nome ?? null, perfilDoUsuarioAtual: async () => logado };
+    deps.conversas = conversas;
+    const historico = { conversas, quemEstaUsando: deps.quemEstaUsando, geradorDeId: deps.geradorDeId, relogio: deps.relogio };
+    const chat = new ConversarSobreAvs(deps);
+
+    const primeira = await chat.executar({ mensagens: [{ papel: 'usuario', texto: 'Quais AVs estão comigo?' }] });
+    expect(primeira.conversaId).toBeTruthy();
+    expect(pedidos[0]!.instrucoes).toContain('Quem está conversando com você: Erico (Gestão de Projetos; perfil administrador; Gestor de Programa)');
+    expect(pedidos[0]!.instrucoes).toContain('responsável "Érico Hyodo"');
+
+    const segunda = await chat.executar({
+      conversaId: primeira.conversaId,
+      mensagens: [
+        { papel: 'usuario', texto: 'Quais AVs estão comigo?' },
+        { papel: 'ia', texto: primeira.texto },
+        { papel: 'usuario', texto: 'E qual está mais atrasada?' },
+      ],
+    });
+    expect(segunda.conversaId).toBe(primeira.conversaId);
+    const lista = await new ListarConversas(historico).executar('avs');
+    expect(lista).toEqual([expect.objectContaining({ id: primeira.conversaId, titulo: 'Quais AVs estão comigo?' })]);
+    expect((await new ObterConversa(historico).executar(primeira.conversaId!)).mensagens.map((m) => m.papel)).toEqual([
+      'usuario',
+      'ia',
+      'usuario',
+      'ia',
+    ]);
+    expect(await new ListarConversas(historico).executar('projetos')).toEqual([]);
+
+    // Outra pessoa não vê, não continua e não exclui a conversa do Erico.
+    logado = { ...erico, id: 'u2', nome: 'Luciana', papeis: [], nomeDoRecurso: null };
+    expect(await new ListarConversas(historico).executar('avs')).toEqual([]);
+    await expect(new ObterConversa(historico).executar(primeira.conversaId!)).rejects.toThrow(/não existe/);
+    await expect(
+      chat.executar({ conversaId: primeira.conversaId, mensagens: [{ papel: 'usuario', texto: 'oi' }] }),
+    ).rejects.toThrow(/não existe/);
+    await expect(new ExcluirConversa(historico).executar(primeira.conversaId!)).rejects.toThrow(/não existe/);
+
+    logado = erico;
+    await new ExcluirConversa(historico).executar(primeira.conversaId!);
+    expect(await new ListarConversas(historico).executar('avs')).toEqual([]);
+  });
+
+  it('apaga só as conversas sem uso há mais de 90 dias', async () => {
+    const conversas = new RepositorioDeConversasSqlite(db);
+    const agora = new Date('2026-11-11T12:00:00Z');
+    const dias = (n: number) => new Date(agora.getTime() - n * 86_400_000);
+    await conversas.criar({ id: 'velha', usuarioId: 'u1', escopo: 'avs', titulo: 'a', criadaEm: dias(120), atualizadaEm: dias(91) });
+    await conversas.criar({ id: 'recente', usuarioId: 'u1', escopo: 'avs', titulo: 'b', criadaEm: dias(120), atualizadaEm: dias(89) });
+    expect(await limparConversasAntigas(conversas, agora)).toBe(1);
+    expect((await conversas.listar('u1', 'avs')).map((c) => c.id)).toEqual(['recente']);
   });
 
   it('sem chave configurada a análise explica o que fazer, e sem AVs não há o que analisar', async () => {

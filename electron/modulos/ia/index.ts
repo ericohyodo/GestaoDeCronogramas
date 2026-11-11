@@ -31,14 +31,17 @@ import type {
   ConsultaDeAvs,
   ConsultaDeCronograma,
   ConsultaDeEstrutura,
+  PerfilDeQuemConversa,
   QuemEstaUsando,
 } from './aplicacao/portas';
+import { ExcluirConversa, limparConversasAntigas, ListarConversas, ObterConversa } from './aplicacao/conversas';
 import { registrarIpcIa } from './apresentacao/controlador-ipc-ia';
 import { ConfiguracaoIaSqlite } from './infraestrutura/configuracao-ia-sqlite';
 import { ModeloClaude } from './infraestrutura/modelo-claude';
 import { RepositorioDeAnalisesSqlite } from './infraestrutura/repositorio-de-analises-sqlite';
+import { RepositorioDeConversasSqlite } from './infraestrutura/repositorio-de-conversas-sqlite';
 
-export type { ConsultaDeAvs, ConsultaDeCronograma, ConsultaDeEstrutura, QuemEstaUsando };
+export type { ConsultaDeAvs, ConsultaDeCronograma, ConsultaDeEstrutura, PerfilDeQuemConversa, QuemEstaUsando };
 
 export interface DependenciasModuloIa {
   db: BancoDeDados;
@@ -52,6 +55,9 @@ export interface DependenciasModuloIa {
 }
 
 export interface ModuloIa {
+  rotinas: {
+    limparConversasAntigas(): Promise<number>;
+  };
   /** Consultas que o módulo oferece aos demais módulos. */
   consultas: {
     /** Dados para nomear o PDF da análise; `null` se ela não existe. */
@@ -63,6 +69,7 @@ export function montarModuloIa(deps: DependenciasModuloIa): ModuloIa {
   const configuracao = new ConfiguracaoIaSqlite(deps.db);
   const arquivo = new RepositorioDeAnalisesSqlite(deps.db);
   const modelo = new ModeloClaude();
+  const conversas = new RepositorioDeConversasSqlite(deps.db);
 
   const dependenciasDaAnalise: DependenciasDaAnalise = {
     cofre: configuracao,
@@ -73,6 +80,13 @@ export function montarModuloIa(deps: DependenciasModuloIa): ModuloIa {
     consultaDeAvs: deps.consultaDeAvs,
     instrucoes: configuracao,
     arquivo,
+    quemEstaUsando: deps.quemEstaUsando,
+    geradorDeId: deps.geradorDeId,
+    relogio: deps.relogio,
+    conversas,
+  };
+  const dependenciasDasConversas = {
+    conversas,
     quemEstaUsando: deps.quemEstaUsando,
     geradorDeId: deps.geradorDeId,
     relogio: deps.relogio,
@@ -101,9 +115,16 @@ export function montarModuloIa(deps: DependenciasModuloIa): ModuloIa {
     obterAnalise: new ObterAnalise(arquivo),
     ultimaAnalise: new UltimaAnalise(arquivo),
     excluirAnalise: new ExcluirAnalise(arquivo),
+    listarConversas: new ListarConversas(dependenciasDasConversas),
+    obterConversa: new ObterConversa(dependenciasDasConversas),
+    excluirConversa: new ExcluirConversa(dependenciasDasConversas),
   });
 
   return {
+    rotinas: {
+      /** Apaga as conversas do chat sem uso há mais de 90 dias; devolve quantas. */
+      limparConversasAntigas: () => limparConversasAntigas(conversas, deps.relogio.agora()),
+    },
     consultas: {
       obterResumoDaAnalise: async (id) => {
         const analise = await arquivo.obter(id);

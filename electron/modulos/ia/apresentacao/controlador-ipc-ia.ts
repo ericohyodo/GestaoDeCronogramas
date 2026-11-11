@@ -4,6 +4,7 @@ import { LIMITE_DE_MENSAGENS_DO_CHAT, MODELOS_IA } from '@contratos/ia.contrato'
 import { esquemaId, esquemaSemEntrada } from '../../../nucleo/infraestrutura/ipc/esquemas';
 import type { RegistradorIpc } from '../../../nucleo/infraestrutura/ipc/registrador-ipc';
 import type { AnalisarAvs, ConversarSobreAvs, UltimaAnaliseAvs } from '../aplicacao/casos-de-uso-avs';
+import type { ExcluirConversa, ListarConversas, ObterConversa } from '../aplicacao/conversas';
 import type {
   AnalisarCronograma,
   AnalisarPortfolio,
@@ -41,6 +42,9 @@ export interface CasosDeUsoIa {
   analisarAvs: AnalisarAvs;
   ultimaAnaliseAvs: UltimaAnaliseAvs;
   conversarAvs: ConversarSobreAvs;
+  listarConversas: ListarConversas;
+  obterConversa: ObterConversa;
+  excluirConversa: ExcluirConversa;
   obterInstrucoesAvs: ObterInstrucoesIa;
   salvarInstrucoesAvs: SalvarInstrucoesIa;
   restaurarChecklistAvs: RestaurarChecklistIa;
@@ -63,6 +67,7 @@ const esquemaConversar = z.object({
     .array(z.object({ papel: z.enum(['usuario', 'ia']), texto: z.string().max(50000) }))
     .min(1)
     .max(LIMITE_DE_MENSAGENS_DO_CHAT * 2),
+  conversaId: esquemaId.nullish(),
 });
 
 // Limites de tamanho reais ficam no caso de uso; aqui só se barra lixo grosseiro.
@@ -136,4 +141,10 @@ export function registrarIpcIa(ipc: RegistradorIpc, casos: CasosDeUsoIa): void {
   ipc.registrar(CANAIS.ia.restaurarChecklistAvs, 'planejamento', esquemaSemEntrada, () =>
     casos.restaurarChecklistAvs.executar(),
   );
+  // Histórico do chat: cada usuário só lista, abre e exclui as próprias conversas (checado no caso de uso).
+  ipc.registrar(CANAIS.ia.listarConversas, 'leitura', z.enum(['projetos', 'avs']), (escopo) =>
+    casos.listarConversas.executar(escopo),
+  );
+  ipc.registrar(CANAIS.ia.obterConversa, 'leitura', esquemaId, (id) => casos.obterConversa.executar(id));
+  ipc.registrar(CANAIS.ia.excluirConversa, 'leitura', esquemaId, (id) => casos.excluirConversa.executar(id));
 }

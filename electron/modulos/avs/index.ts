@@ -42,6 +42,7 @@ import { ListarPerfisAv, ObterMeuPerfilAv, SalvarPerfilAv } from './aplicacao/ca
 import { ConcluirAvComProjeto, type ConcluirComProjetoEntrada } from './aplicacao/casos-de-uso/concluir-com-projeto';
 import { VerificarPrazosDoCliente } from './aplicacao/casos-de-uso/verificar-prazos-do-cliente';
 import { podeDarAceiteDaSd } from './dominio/papel-av';
+import { ROTULO_DA_AREA } from './aplicacao/notificacoes-av';
 import { SalvarSecaoCusto } from './aplicacao/casos-de-uso/salvar-secao-custo';
 import { SalvarSecaoProcesso } from './aplicacao/casos-de-uso/salvar-secao-processo';
 import { SalvarSecaoProduto } from './aplicacao/casos-de-uso/salvar-secao-produto';
@@ -104,6 +105,8 @@ export interface ModuloAvs {
     podeDarAceite(usuarioId: string): Promise<boolean>;
     /** Usuários com papel de aceite da SD (Gerente de Engenharia / Gestor de Programa). */
     listarAprovadores(): Promise<string[]>;
+    /** Papéis e competências do usuário no fluxo AV/SD, por extenso (para o chat com IA). */
+    descreverPapeis(usuarioId: string): Promise<string[]>;
     listarIdsAtivos(): Promise<string[]>;
     /** Uma linha por AV (etapa, prazo, valores consolidados): o módulo de IA usa isto para analisar as AVs. */
     relatorio(): Promise<LinhasDoRelatorio>;
@@ -302,6 +305,13 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     comandos: { concluirComProjeto: (entrada) => concluirComProjeto.executar(entrada) },
     consultas: {
       podeDarAceite: async (usuarioId) => podeDarAceiteDaSd(await autorizacao.obterPerfilAv(usuarioId)),
+      descreverPapeis: async (usuarioId) => {
+        const perfil = await autorizacao.obterPerfilAv(usuarioId);
+        return [
+          ...perfil.papeisEspeciais.map((papel) => (papel === 'gerente_engenharia' ? 'Gerente de Engenharia' : 'Gestor de Programa')),
+          ...perfil.competencias.map((area) => `competência ${ROTULO_DA_AREA[area]}`),
+        ];
+      },
       listarAprovadores: async () =>
         (await repositorioPerfis.listarPerfis()).filter(podeDarAceiteDaSd).map((perfil) => perfil.usuarioId),
       async listarIdsAtivos() {

@@ -1,5 +1,23 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.2.1 — 11/11/2026
+
+### Novidades
+- **Chat com IA reconhece quem está perguntando:** a IA recebe o nome, o departamento, o perfil, os papéis
+  (Gerente de Engenharia, Gestor de Programa, competências) e o recurso vinculado do usuário logado. Assim,
+  perguntas como "quais são as minhas tarefas?" ou "que AVs estão comigo?" passam a ser respondidas.
+- **Histórico de conversas do chat:** barra à esquerda com "Nova conversa" e as conversas anteriores do
+  usuário, separadas por escopo (Projetos e AVs). Dá para retomar ou excluir uma conversa. Cada pessoa só vê
+  as próprias conversas; as que ficam 90 dias sem uso são apagadas automaticamente.
+
+### Técnico
+- Migração 0041 (`ia_conversas` e `ia_conversa_mensagens`), aplicada sozinha na primeira abertura, com backup
+  antes.
+- Novos canais IPC `ia:listar-conversas`, `ia:obter-conversa` e `ia:excluir-conversa`. A posse da conversa é
+  conferida no servidor.
+- **Atenção (privacidade):** nome, departamento e papéis do usuário passam a ser enviados à Anthropic junto com a
+  pergunta. Os nomes dos responsáveis já eram enviados nos dados.
+
 ## 0.2.0 — 12/11/2026
 
 ### Novidades
