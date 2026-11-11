@@ -16,7 +16,7 @@ import {
 } from '@contratos/avs.contrato';
 import type { SdDTO } from '@contratos/sds.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
-import { formatarData, formatarMoeda } from '@/compartilhado/formatacao';
+import { formatarMoeda, formatarDataLocal } from '@/compartilhado/formatacao';
 import { Botao, classeBotao } from '@/compartilhado/ui/Botao';
 import { DialogoConfirmacao } from '@/compartilhado/ui/DialogoConfirmacao';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
@@ -113,7 +113,7 @@ export function AbaResumo({ av }: { av: AvDetalheDTO }) {
                 </span>
                 <span className="text-xs text-texto-secundario">
                   {liberada
-                    ? `Liberada em ${formatarData(liberada.data.slice(0, 10))}${liberada.usuarioNome ? ` por ${liberada.usuarioNome}` : ''}`
+                    ? `Liberada em ${formatarDataLocal(liberada.data)}${liberada.usuarioNome ? ` por ${liberada.usuarioNome}` : ''}`
                     : emAndamento
                       ? 'Em andamento'
                       : 'Pendente'}

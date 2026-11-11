@@ -11,7 +11,7 @@ export const ROTULO_PERFIL: Record<PerfilDTO, string> = {
 
 export const DESCRICAO_PERFIL: Record<PerfilDTO, string> = {
   administrador: 'Tudo, incluindo gerenciar usuários',
-  gestor: 'Cria cronogramas, fases e responsáveis',
+  gestor: 'Cria projetos, fases e responsáveis',
   usuario: 'Edita tarefas e progresso',
   visualizador: 'Somente leitura',
 };

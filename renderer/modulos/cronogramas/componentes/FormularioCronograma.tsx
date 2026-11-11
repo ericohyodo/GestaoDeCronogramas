@@ -24,7 +24,7 @@ export function FormularioCronograma(props: PropsFormularioCronograma) {
     <Modal
       aberto={props.aberto}
       aoFechar={props.aoFechar}
-      titulo={edicao ? 'Editar cronograma' : 'Novo cronograma'}
+      titulo={edicao ? 'Editar projeto' : 'Novo projeto'}
       descricao={edicao ? undefined : 'Defina o nome e o período previsto. As tarefas vêm depois.'}
     >
       <ConteudoFormulario {...props} />
@@ -108,7 +108,7 @@ function ConteudoFormulario({ cronograma, aoFechar }: PropsFormularioCronograma)
           Cancelar
         </Botao>
         <Botao type="submit" variante="primario" disabled={salvando}>
-          {salvando ? 'Salvando…' : cronograma ? 'Salvar alterações' : 'Criar cronograma'}
+          {salvando ? 'Salvando…' : cronograma ? 'Salvar alterações' : 'Criar projeto'}
         </Botao>
       </RodapeModal>
     </form>

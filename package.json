@@ -1,8 +1,8 @@
 {
   "name": "gestao-cronogramas",
-  "productName": "Gestão de Cronogramas",
-  "version": "0.1.0",
-  "description": "Aplicativo desktop para gestão de cronogramas",
+  "productName": "Gestão de Novos Desenvolvimentos",
+  "version": "0.2.0",
+  "description": "Gestão de novos desenvolvimentos: AV → SD → Projeto (PRO)",
   "private": true,
   "main": "dist-electron/main.js",
   "scripts": {

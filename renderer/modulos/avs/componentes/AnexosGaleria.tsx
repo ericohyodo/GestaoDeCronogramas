@@ -1,5 +1,6 @@
 'use client';
 
+import { formatarDataHora } from '@/compartilhado/formatacao';
 import { Eye, FileText, Image as ImageIcon, Paperclip, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { AnexoAvDTO, AreaAvDTO, ConteudoAnexoDTO } from '@contratos/avs.contrato';
@@ -9,10 +10,6 @@ import { Botao, BotaoIcone } from '@/compartilhado/ui/Botao';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { Modal } from '@/compartilhado/ui/Modal';
 import { TituloSecao } from './SecaoAv';
-
-function formatarDataHora(iso: string): string {
-  return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-}
 
 function formatarTamanho(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

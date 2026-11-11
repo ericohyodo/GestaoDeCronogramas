@@ -1,5 +1,6 @@
 'use client';
 
+import { formatarDataHora } from '@/compartilhado/formatacao';
 import { History } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { HistoricoAvItemDTO } from '@contratos/avs.contrato';
@@ -8,10 +9,6 @@ import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { TituloSecao } from './SecaoAv';
-
-function formatarDataHora(iso: string): string {
-  return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-}
 
 export function HistoricoPanel({ avId }: { avId: string }) {
   const [itens, setItens] = useState<HistoricoAvItemDTO[] | null>(null);

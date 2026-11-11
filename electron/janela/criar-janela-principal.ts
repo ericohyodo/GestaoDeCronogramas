@@ -23,7 +23,7 @@ export function criarJanelaPrincipal(opcoes: OpcoesJanelaPrincipal): BrowserWind
   const corDeFundo = () => (opcoes.vidroNativo ? TRANSPARENTE : cores().fundo);
 
   const janela = new BrowserWindow({
-    title: 'Gestão de Cronogramas',
+    title: 'Gestão de Novos Desenvolvimentos (AV-SD-PRO)',
     width: 1280,
     height: 800,
     minWidth: 960,

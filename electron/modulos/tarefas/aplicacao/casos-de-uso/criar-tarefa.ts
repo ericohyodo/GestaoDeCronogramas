@@ -25,7 +25,7 @@ export class CriarTarefa implements CasoDeUso<CriarTarefaEntrada, TarefaDTO> {
 
   async executar(entrada: CriarTarefaEntrada): Promise<TarefaDTO> {
     if (!(await this.consultaDeCronogramas.existe(entrada.cronogramaId))) {
-      throw new ErroNaoEncontrado('Cronograma');
+      throw new ErroNaoEncontrado('Projeto');
     }
 
     // Inserção no meio (estilo Word): logo abaixo de uma tarefa, herdando a fase dela.

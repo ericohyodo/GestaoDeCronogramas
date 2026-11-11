@@ -33,7 +33,7 @@ export class CopiarEstrutura implements CasoDeUso<CopiarEstruturaEntrada, null> 
       throw new ErroNaoEncontrado('Cronograma modelo');
     }
     const periodoDestino = await this.consultaDeCronogramas.obterPeriodo(destinoId);
-    if (!periodoDestino) throw new ErroNaoEncontrado('Cronograma');
+    if (!periodoDestino) throw new ErroNaoEncontrado('Projeto');
 
     const [fasesDestino, tarefasDestino] = await Promise.all([
       this.repositorioFases.listarPorCronograma(destinoId),

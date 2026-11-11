@@ -105,7 +105,7 @@ function FolhaDashboard({ cronograma, estrutura, rotuloDaSituacao, hoje, emitido
           </p>
         </div>
         <p className="shrink-0 text-right text-[7.5pt] text-[#7a8699]">
-          Gestão de Cronogramas
+          Gestão de Novos Desenvolvimentos
           <br />
           Emitido em {emitidoEm}
         </p>
@@ -174,7 +174,7 @@ function FolhaDashboard({ cronograma, estrutura, rotuloDaSituacao, hoje, emitido
 
       <Secao titulo="Fases">
         {fases.length === 0 ? (
-          <p className="text-[8pt] text-[#7a8699]">Este cronograma ainda não tem fases.</p>
+          <p className="text-[8pt] text-[#7a8699]">Este projeto ainda não tem fases.</p>
         ) : (
           <table className="w-full border-collapse">
             <thead>
@@ -406,7 +406,7 @@ function FolhaAtividades({ cronograma, estrutura, hoje }: PropsRelatorio) {
         </tbody>
       </table>
       {estrutura.linhas.length === 0 && (
-        <p className="mt-3 text-[8pt] text-[#7a8699]">Este cronograma ainda não tem atividades.</p>
+        <p className="mt-3 text-[8pt] text-[#7a8699]">Este projeto ainda não tem atividades.</p>
       )}
     </section>
   );

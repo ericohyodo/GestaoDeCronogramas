@@ -3,7 +3,7 @@
 import { KeyRound, Pencil, Plus, Trash2, UserCog, UserRoundCheck, UserRoundX } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { UsuarioDTO } from '@contratos/sessao.contrato';
-import { formatarData } from '@/compartilhado/formatacao';
+import { formatarDataLocal } from '@/compartilhado/formatacao';
 import { Botao, BotaoIcone } from '@/compartilhado/ui/Botao';
 import { CabecalhoPagina } from '@/compartilhado/ui/CabecalhoPagina';
 import { DialogoConfirmacao } from '@/compartilhado/ui/DialogoConfirmacao';
@@ -83,7 +83,7 @@ export function PaginaUsuarios() {
                     </CelulaTabela>
                     <CelulaTabela className="tabular-nums text-texto-secundario">
                       {usuario.ultimoAcessoEm
-                        ? formatarData(usuario.ultimoAcessoEm.slice(0, 10))
+                        ? formatarDataLocal(usuario.ultimoAcessoEm)
                         : '—'}
                     </CelulaTabela>
                     <CelulaTabela className="pr-5">

@@ -9,20 +9,20 @@ const MODULOS = [
   {
     href: '/avs/',
     icone: ClipboardCheck,
-    titulo: 'Gestão de AVs',
+    titulo: 'Gestão AVs',
     descricao: 'Análises de viabilidade, do intake comercial até a proposta.',
   },
   {
     href: '/sds/',
     icone: FileText,
-    titulo: 'Gestão de SDs',
-    descricao: 'Solicitações de desenvolvimento geradas a partir das AVs finalizadas.',
+    titulo: 'Gestão SDs',
+    descricao: 'Passagem de bastão do Comercial para a Engenharia, com o aceite que cria o projeto.',
   },
   {
     href: '/projetos/',
     icone: CalendarRange,
     titulo: 'Gestão de Projetos',
-    descricao: 'Cronogramas, fases, tarefas e relatórios de andamento.',
+    descricao: 'Projetos com fases, tarefas, Gantt e relatórios de andamento.',
   },
 ] as const;
 
@@ -30,7 +30,8 @@ export default function Inicio() {
   return (
     <div className="flex min-h-full flex-col items-center justify-center gap-10 p-6">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Gestão de Cronogramas</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Gestão de Novos Desenvolvimentos</h1>
+        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-titulo-secao">AV · SD · PRO</p>
         <p className="mt-1 text-sm text-texto-secundario">Escolha uma área para continuar.</p>
       </div>
       <div className="grid w-full max-w-5xl grid-cols-1 gap-5 md:grid-cols-3">

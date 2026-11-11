@@ -16,7 +16,7 @@ export function BarraDeTitulo({ acoes }: { acoes?: ReactNode }) {
         <CalendarRange aria-hidden className="size-3.5" />
       </div>
       <span className="text-xs font-semibold tracking-wide text-texto-secundario">
-        Gestão de Cronogramas
+        Gestão de Novos Desenvolvimentos (AV-SD-PRO)
       </span>
       <div className="flex-1" />
       {acoes && <div className="sem-arrasto flex items-center gap-2">{acoes}</div>}

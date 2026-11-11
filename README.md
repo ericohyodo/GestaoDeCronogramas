@@ -1,7 +1,13 @@
-# Gestão de Cronogramas
+# Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
-Aplicativo desktop (Windows) para gestão de cronogramas, com estrutura analítica em fases, gráfico de
-Gantt, dependências, caminho crítico e controle de acesso por perfil.
+Aplicativo desktop (Windows) que acompanha um novo desenvolvimento de ponta a ponta, com um único código:
+**AV 26-001 → SD 26-001 → PRO 26-001**.
+
+- **Gestão AVs:** análises de viabilidade por área (Comercial, Eng. Produto, Eng. Processo, PCP, Mapa de Custo).
+- **Gestão SDs:** passagem de bastão do Comercial para a Engenharia (evidência do PO e aceite).
+- **Gestão de Projetos:** projetos com fases, Gantt, dependências, caminho crítico e relatórios.
+
+Histórico de versões em [CHANGELOG.md](CHANGELOG.md).
 
 ## O que o app faz
 

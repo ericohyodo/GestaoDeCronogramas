@@ -34,7 +34,7 @@ export class CriarFase implements CasoDeUso<CriarFaseEntrada, null> {
     }
 
     const periodo = await this.consultaDeCronogramas.obterPeriodo(entrada.cronogramaId);
-    if (!periodo) throw new ErroNaoEncontrado('Cronograma');
+    if (!periodo) throw new ErroNaoEncontrado('Projeto');
 
     const agora = this.relogio.agora();
     const fase = Fase.criar({

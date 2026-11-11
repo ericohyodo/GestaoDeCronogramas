@@ -1,6 +1,6 @@
-appId: com.gestaocronogramas.desktop
-productName: Gestão de Cronogramas
-executableName: GestaoDeCronogramas
+appId: com.ferkoda.novosdesenvolvimentos
+productName: Gestão de Novos Desenvolvimentos
+executableName: GestaoNovosDesenvolvimentos
 copyright: Copyright © 2026
 
 directories:
@@ -32,4 +32,4 @@ win:
       arch: [x64]
 
 portable:
-  artifactName: GestaoDeCronogramas-${version}-portatil.${ext}
+  artifactName: GestaoNovosDesenvolvimentos-${version}-portatil.${ext}

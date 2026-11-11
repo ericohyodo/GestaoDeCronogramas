@@ -37,9 +37,9 @@ export interface NavegacaoLateral {
 }
 
 export const NAV_PROJETOS: NavegacaoLateral = {
-  titulo: 'Planejamento',
+  titulo: 'Gestão de Projetos',
   itens: [
-    { rotulo: 'Cronogramas', icone: CalendarRange, href: '/projetos/', rotas: ['/projetos', '/cronograma'] },
+    { rotulo: 'Projetos', icone: CalendarRange, href: '/projetos/', rotas: ['/projetos', '/cronograma'] },
     { rotulo: 'Recursos', icone: Users, href: '/recursos/', rotas: ['/recursos'] },
     { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
     { rotulo: 'Relatórios', icone: BarChart3, href: '/relatorios/', rotas: ['/relatorios'] },
@@ -65,7 +65,7 @@ export const NAV_PROJETOS: NavegacaoLateral = {
 // Espelha NAV_PROJETOS, menos "Recursos": lá são as pessoas alocadas nas tarefas de um cronograma,
 // aqui todo mundo que participa de uma AV já é um usuário do sistema (ver equipe por área na AV).
 export const NAV_AVS: NavegacaoLateral = {
-  titulo: 'Análises de Viabilidade',
+  titulo: 'Gestão AVs',
   itens: [
     { rotulo: 'AVs', icone: ClipboardCheck, href: '/avs/', rotas: ['/avs'] },
     { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
@@ -92,7 +92,7 @@ export const NAV_AVS: NavegacaoLateral = {
 
 // Só o que é realmente compartilhado (usuários); relatórios, análises e IA de cada módulo são separados.
 export const NAV_SDS: NavegacaoLateral = {
-  titulo: 'Solicitações de Desenvolvimento',
+  titulo: 'Gestão SDs',
   itens: [
     { rotulo: 'SDs', icone: FileText, href: '/sds/', rotas: ['/sds'] },
     { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
@@ -183,7 +183,7 @@ export function BarraLateral({
       </ul>
 
       <div className="mt-auto rounded-xl border border-borda-vidro bg-texto/3 px-3 py-2.5 text-[11px] leading-relaxed text-texto-sutil">
-        Versão 0.1.0
+        Versão {process.env.NEXT_PUBLIC_VERSAO_DO_APP}
         <br />
         Dados salvos ao lado do executável.
       </div>

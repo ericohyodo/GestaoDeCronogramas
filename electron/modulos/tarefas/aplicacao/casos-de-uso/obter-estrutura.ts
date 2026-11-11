@@ -24,7 +24,7 @@ export class ObterEstrutura implements CasoDeUso<string, EstruturaCronogramaDTO>
 
   async executar(cronogramaId: string): Promise<EstruturaCronogramaDTO> {
     const periodoDoCronograma = await this.consultaDeCronogramas.obterPeriodo(cronogramaId);
-    if (!periodoDoCronograma) throw new ErroNaoEncontrado('Cronograma');
+    if (!periodoDoCronograma) throw new ErroNaoEncontrado('Projeto');
 
     const [fases, tarefas] = await Promise.all([
       this.repositorioFases.listarPorCronograma(cronogramaId),

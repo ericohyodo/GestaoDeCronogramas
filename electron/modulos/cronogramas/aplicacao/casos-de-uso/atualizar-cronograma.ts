@@ -16,7 +16,7 @@ export class AtualizarCronograma implements CasoDeUso<AtualizarCronogramaEntrada
 
   async executar(entrada: AtualizarCronogramaEntrada): Promise<CronogramaDTO> {
     const cronograma = await this.repositorio.obterPorId(entrada.id);
-    if (!cronograma) throw new ErroNaoEncontrado('Cronograma');
+    if (!cronograma) throw new ErroNaoEncontrado('Projeto');
 
     const agora = this.relogio.agora();
     if (entrada.nome !== undefined) cronograma.renomear(entrada.nome, agora);

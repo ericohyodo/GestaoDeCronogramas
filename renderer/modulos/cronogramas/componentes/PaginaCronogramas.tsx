@@ -39,7 +39,7 @@ export function PaginaCronogramas({
   return (
     <div className="flex flex-col gap-6 p-6">
       <CabecalhoPagina
-        titulo="Cronogramas"
+        titulo="Projetos"
         descricao="Planeje períodos, acompanhe a situação e organize as tarefas de cada cronograma."
         acoes={
           <>
@@ -76,8 +76,8 @@ export function PaginaCronogramas({
         <PainelVidro>
           <EstadoVazio
             icone={CalendarRange}
-            titulo="Nenhum cronograma ainda"
-            descricao="Crie o primeiro cronograma para começar a planejar as tarefas e prazos."
+            titulo="Nenhum projeto ainda"
+            descricao="Projetos nascem do aceite de uma SD (com código PRO) ou podem ser criados aqui."
             acao={
               podeEditar && (
                 <Botao variante="primario" icone={Plus} onClick={novo}>
@@ -108,7 +108,7 @@ export function PaginaCronogramas({
       />
       <DialogoConfirmacao
         aberto={paraExcluir !== null}
-        titulo="Excluir cronograma"
+        titulo="Excluir projeto"
         mensagem={`"${paraExcluir?.nome ?? ''}" e todas as suas tarefas serão excluídos definitivamente.`}
         aoConfirmar={() => excluir(paraExcluir!.id)}
         aoFechar={() => setParaExcluir(null)}

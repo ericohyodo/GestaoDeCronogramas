@@ -5,7 +5,7 @@ import { ClipboardList } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { AvResumoDTO } from '@contratos/avs.contrato';
-import { formatarData } from '@/compartilhado/formatacao';
+import { formatarDataLocal } from '@/compartilhado/formatacao';
 import { CampoTexto } from '@/compartilhado/ui/Campos';
 import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
 import { CelulaCabecalho, CelulaTabela, LinhaTabela, Tabela } from '@/compartilhado/ui/Tabela';
@@ -104,7 +104,7 @@ export function ListaAvs({ itens }: { itens: AvResumoDTO[] }) {
                   <EtapaBadge etapa={av.etapaAtual} />
                 </CelulaTabela>
                 <CelulaTabela className="pr-5 text-texto-secundario tabular-nums">
-                  {formatarData(av.criadoEm.slice(0, 10))}
+                  {formatarDataLocal(av.criadoEm)}
                 </CelulaTabela>
               </LinhaTabela>
             ))}

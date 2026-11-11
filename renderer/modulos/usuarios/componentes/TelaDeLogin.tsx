@@ -50,7 +50,8 @@ export function TelaDeLogin() {
           <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-linear-to-br from-primaria to-destaque text-sobre-primaria">
             <CalendarRange aria-hidden className="size-6" />
           </div>
-          <h1 className="text-lg font-semibold">Gestão de Cronogramas</h1>
+          <h1 className="text-lg font-semibold">Gestão de Novos Desenvolvimentos</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-titulo-secao">AV · SD · PRO</p>
           <p className="mt-1 text-sm text-texto-secundario">
             {configurando
               ? 'Primeiro acesso: crie o usuário administrador deste computador.'
@@ -64,7 +65,7 @@ export function TelaDeLogin() {
               rotulo="Seu nome"
               value={nome}
               onChange={(e) => setNome(e.target.value)}
-              placeholder="Ex.: Erico Hyodo"
+              placeholder="Ex.: Maria Silva"
               maxLength={120}
               required
             />
@@ -73,7 +74,7 @@ export function TelaDeLogin() {
             rotulo="Usuário"
             value={login}
             onChange={(e) => setLogin(e.target.value)}
-            placeholder="ex.: erico"
+            placeholder="ex.: maria.silva"
             autoComplete="username"
             required
           />

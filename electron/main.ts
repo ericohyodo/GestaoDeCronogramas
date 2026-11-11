@@ -65,7 +65,7 @@ async function iniciar(): Promise<void> {
 function falharAoIniciar(erro: unknown): void {
   console.error('[inicializacao]', erro);
   const mensagem = erro instanceof Error ? erro.message : String(erro);
-  dialog.showErrorBox('Gestão de Cronogramas — não foi possível iniciar', mensagem);
+  dialog.showErrorBox('Gestão de Novos Desenvolvimentos — não foi possível iniciar', mensagem);
   app.quit();
 }
 
