@@ -70,7 +70,8 @@ export function DetalheSd({
   const [aceiteAberto, setAceiteAberto] = useState(false);
   const [devolucaoAberta, setDevolucaoAberta] = useState(false);
   const [periodo, setPeriodo] = useState({ inicio: hojeIso(), fim: somarDias(hojeIso(), 180) });
-  const [motivo, setMotivo] = useState('');
+  // Parecer da Engenharia: observação no aceite ou motivo (obrigatório) da devolução ao Comercial.
+  const [parecer, setParecer] = useState('');
 
   useEffect(() => {
     clienteDesktop.sds
@@ -152,16 +153,24 @@ export function DetalheSd({
 
   const aceitar = () =>
     executar('aceitar', async () => {
-      aplicar(await clienteDesktop.sds.aceitar({ id: sd.id, dataInicio: periodo.inicio, dataFim: periodo.fim }));
+      aplicar(
+        await clienteDesktop.sds.aceitar({
+          id: sd.id,
+          dataInicio: periodo.inicio,
+          dataFim: periodo.fim,
+          parecer: parecer.trim() || null,
+        }),
+      );
+      setParecer('');
       setAceiteAberto(false);
       setAviso('Aceite registrado. O projeto foi criado em Gestão de Projetos.');
     });
 
   const devolver = () =>
     executar('devolver', async () => {
-      aplicar(await clienteDesktop.sds.devolver({ id: sd.id, motivo }));
+      aplicar(await clienteDesktop.sds.devolver({ id: sd.id, motivo: parecer }));
       setDevolucaoAberta(false);
-      setMotivo('');
+      setParecer('');
     });
 
   const status = STATUS_SD_VISUAL[sd.status];
@@ -349,6 +358,12 @@ export function DetalheSd({
               Aceite de <span className="font-medium">{sd.aceitePorNome ?? '—'}</span>
               {sd.aceiteEm && <> em {formatarDataHora(sd.aceiteEm)}</>}
             </p>
+            {sd.parecerAceite && (
+              <p className="basis-full whitespace-pre-line text-sm text-texto-secundario">
+                <span className="font-medium text-texto">Parecer: </span>
+                {sd.parecerAceite}
+              </p>
+            )}
             {sd.cronogramaId && (
               <Link href={`/cronograma/?id=${sd.cronogramaId}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-primaria">
                 <FolderKanban aria-hidden className="size-4" />
@@ -359,6 +374,19 @@ export function DetalheSd({
         ) : sd.status === 'aberta' ? (
           // Os botões ficam sempre à vista; só funcionam para quem tem o papel (o servidor confere de novo).
           <div className="flex flex-col gap-2">
+            <AreaTexto
+              rotulo="Parecer da Engenharia"
+              ajuda="Observações sobre a SD: inconsistências, evidência que não é de fato o PO, condições do aceite. Obrigatório para devolver ao Comercial; opcional no aceite."
+              placeholder={
+                permissoes.engenharia
+                  ? 'Ex.: o anexo é a cotação, não o pedido do cliente. Anexar o PO assinado.'
+                  : 'Preenchido pelo Gerente de Engenharia ou Gestor de Programa.'
+              }
+              value={parecer}
+              maxLength={2000}
+              disabled={!permissoes.engenharia}
+              onChange={(e) => setParecer(e.target.value)}
+            />
             {!permissoes.engenharia && (
               <p className="text-sm text-texto-secundario">
                 Aguardando o aceite do Gerente de Engenharia ou de um Gestor de Programa. Os papéis são atribuídos
@@ -370,8 +398,14 @@ export function DetalheSd({
                 variante="perigo"
                 icone={Undo2}
                 onClick={() => setDevolucaoAberta(true)}
-                disabled={ocupado || !permissoes.engenharia}
-                title={permissoes.engenharia ? undefined : 'Só o Gerente de Engenharia ou um Gestor de Programa'}
+                disabled={ocupado || !permissoes.engenharia || !parecer.trim()}
+                title={
+                  !permissoes.engenharia
+                    ? 'Só o Gerente de Engenharia ou um Gestor de Programa'
+                    : !parecer.trim()
+                      ? 'Escreva o parecer (motivo da devolução) antes de devolver'
+                      : undefined
+                }
               >
                 Devolver ao Comercial
               </Botao>
@@ -430,13 +464,13 @@ export function DetalheSd({
         aberto={devolucaoAberta}
         aoFechar={() => setDevolucaoAberta(false)}
         titulo={`Devolver a ${sd.numero} ao Comercial`}
-        descricao="Explique o que precisa ser corrigido. O Comercial verá o motivo no topo da SD."
+        descricao="O Comercial verá este parecer no topo da SD e poderá corrigir e abrir de novo."
         largura="sm"
       >
-        <AreaTexto rotulo="Motivo *" value={motivo} maxLength={500} onChange={(e) => setMotivo(e.target.value)} />
+        <p className="whitespace-pre-line rounded-lg border border-borda px-3 py-2 text-sm">{parecer}</p>
         <RodapeModal>
           <Botao onClick={() => setDevolucaoAberta(false)}>Cancelar</Botao>
-          <Botao variante="perigo" onClick={() => void devolver()} disabled={ocupado || !motivo.trim()}>
+          <Botao variante="perigo" onClick={() => void devolver()} disabled={ocupado || !parecer.trim()}>
             Devolver
           </Botao>
         </RodapeModal>

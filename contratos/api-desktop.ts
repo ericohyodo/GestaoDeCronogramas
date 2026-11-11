@@ -1,4 +1,5 @@
 import type { AparenciaDTO } from './aparencia.contrato';
+import type { CaixaDeNotificacoesDTO } from './notificacoes.contrato';
 import type {
   AceitarSdEntrada,
   AnexoSdDTO,
@@ -96,6 +97,12 @@ import type {
 
 /** Formato de `window.api`, exposto pelo preload via contextBridge. */
 export interface ApiDesktop {
+  /** Sino da barra superior: só as notificações do usuário logado. */
+  notificacoes: {
+    obterCaixa(): Promise<Resultado<CaixaDeNotificacoesDTO>>;
+    marcarLida(id: string): Promise<Resultado<CaixaDeNotificacoesDTO>>;
+    marcarTodasLidas(): Promise<Resultado<CaixaDeNotificacoesDTO>>;
+  };
   sessao: {
     obter(): Promise<Resultado<SessaoDTO>>;
     entrar(entrada: EntrarEntrada): Promise<Resultado<SessaoDTO>>;

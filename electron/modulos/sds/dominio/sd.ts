@@ -31,6 +31,8 @@ export interface Sd {
   abertaEm: Date | null;
   aceitePor: string | null;
   aceiteEm: Date | null;
+  /** Observações da Engenharia registradas no aceite. */
+  parecerAceite: string | null;
   devolucaoMotivo: string | null;
   devolucaoPor: string | null;
   devolucaoEm: Date | null;
@@ -71,6 +73,7 @@ export function novaPreSd(dados: { id: string; avId: string; avNumero: string; u
     abertaEm: null,
     aceitePor: null,
     aceiteEm: null,
+    parecerAceite: null,
     devolucaoMotivo: null,
     devolucaoPor: null,
     devolucaoEm: null,
@@ -141,9 +144,22 @@ export function abrirSd(sd: Sd, usuarioId: string, agora: Date, quantidadeDeEvid
 }
 
 /** Engenharia aceita: a SD fecha e passa a apontar para o projeto criado. */
-export function aceitarSd(sd: Sd, usuarioId: string, agora: Date, cronogramaId: string): Sd {
+export function aceitarSd(
+  sd: Sd,
+  usuarioId: string,
+  agora: Date,
+  cronogramaId: string,
+  parecer?: string | null,
+): Sd {
   exigirStatus(sd, 'aberta', 'dar o aceite');
-  return { ...sd, status: 'fechada', aceitePor: usuarioId, aceiteEm: agora, cronogramaId };
+  return {
+    ...sd,
+    status: 'fechada',
+    aceitePor: usuarioId,
+    aceiteEm: agora,
+    cronogramaId,
+    parecerAceite: limitar(parecer, TAMANHO_MAXIMO_OBSERVACOES, 'O parecer'),
+  };
 }
 
 /** Engenharia devolve ao Comercial com motivo obrigatório. */

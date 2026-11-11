@@ -1,5 +1,10 @@
 /** Nomes dos canais IPC. Usados em tempo de execução pelo main e pelo preload. */
 export const CANAIS = {
+  notificacoes: {
+    obterCaixa: 'notificacoes:obter-caixa',
+    marcarLida: 'notificacoes:marcar-lida',
+    marcarTodasLidas: 'notificacoes:marcar-todas-lidas',
+  },
   sessao: {
     obter: 'sessao:obter',
     entrar: 'sessao:entrar',

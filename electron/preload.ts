@@ -14,6 +14,11 @@ const invocar = <T>(canal: string, entrada?: unknown): Promise<T> =>
 const aparencia = ipcRenderer.sendSync(CANAIS.aparencia.obter) as AparenciaDTO;
 
 const api: ApiDesktop = {
+  notificacoes: {
+    obterCaixa: () => invocar(CANAIS.notificacoes.obterCaixa),
+    marcarLida: (id) => invocar(CANAIS.notificacoes.marcarLida, id),
+    marcarTodasLidas: () => invocar(CANAIS.notificacoes.marcarTodasLidas),
+  },
   sessao: {
     obter: () => invocar(CANAIS.sessao.obter),
     entrar: (entrada) => invocar(CANAIS.sessao.entrar, entrada),

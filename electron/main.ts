@@ -25,6 +25,9 @@ app.userAgentFallback = app.userAgentFallback.normalize('NFD').replace(/[^\x20-\
 registrarEsquemaApp();
 
 // Uma instância por vez: duas escrevendo no mesmo arquivo .db causariam conflitos.
+// Identidade do app no Windows: os avisos de notificação aparecem com o nome e o ícone dele.
+app.setAppUserModelId('com.ferkoda.novosdesenvolvimentos');
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {

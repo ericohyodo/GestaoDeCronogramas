@@ -22,6 +22,16 @@
 - **Checklist de entrada técnica (Eng. Produto) com N/A:** terceira opção por item, para registrar que foi visto
   mas não se aplica. O bloco mostra o que falta para ficar completo.
 - **Ícone do app** (conceito "Fluxo": três marcos em ascensão, AV → SD → PRO).
+- **Parecer da Engenharia na SD:** campo antes dos botões de aceite. É o motivo obrigatório para devolver ao
+  Comercial (ex.: anexo não é de fato o PO) e uma observação opcional no aceite, que fica registrada na SD.
+- **Notificações (sino na barra superior):** contador de não lidas, lista com as 50 mais recentes, "marcar todas
+  como lidas" e aviso nativo do Windows quando chega algo novo com o app aberto. Eventos:
+  - AV: designação como responsável de área, etapa liberada para a sua área, AV declinada, dados do grupo
+    aplicados, AV concluída com projeto criado;
+  - SD: Pré-SD criada (Comercial), SD aberta (Gerente de Engenharia e Gestores de Programa), SD aceita e SD
+    devolvida (Comercial, com o parecer);
+  - Sistema: novas permissões no fluxo AV/SD, falha no backup automático (administradores).
+- **E-mail no cadastro de usuários** (opcional), base do futuro status report por e-mail.
 
 ### Dados e multiusuário
 - **Backup automático** do banco em `backups/` (ao lado do .db): antes de toda atualização de estrutura e uma vez
@@ -51,3 +61,8 @@
 - Regra única de "tarefa atrasada" (hoje há três definições: tela, portfólio e IA).
 - Cifra das chaves de IA com `safeStorage` do Windows; versões de dependências fixadas.
 - Cancelamento de SD (status existe, sem fluxo na tela).
+- Notificações de Projetos (tarefa atribuída, vencendo, atrasada, liberada pela predecessora): dependem de
+  vincular cada Recurso a um usuário do sistema.
+- Aviso de prazo do cliente vencendo em AV parada (precisa de verificação agendada).
+- Status report automático por e-mail (notificações e próximas atividades): precisa de um serviço que rode sem o
+  app aberto (tarefa agendada do Windows, Power Automate ou serviço dedicado) e de conta SMTP/Microsoft 365.

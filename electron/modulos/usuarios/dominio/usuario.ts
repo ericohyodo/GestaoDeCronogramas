@@ -1,5 +1,5 @@
 import { ErroDeValidacao } from '../../../nucleo/dominio/erro-de-dominio';
-import { exigirTexto } from '../../../nucleo/dominio/texto';
+import { exigirTexto, normalizarTextoOpcional } from '../../../nucleo/dominio/texto';
 import { normalizarLogin } from './credenciais';
 import { type Perfil, type Permissao, permissoesDoPerfil, validarPerfil } from './perfil';
 
@@ -9,6 +9,8 @@ export interface PropsUsuario {
   id: string;
   nome: string;
   login: string;
+  /** E-mail para o futuro status report automático (opcional). */
+  email: string | null;
   senhaHash: string;
   perfil: Perfil;
   ativo: boolean;
@@ -21,6 +23,7 @@ export interface DadosNovoUsuario {
   id: string;
   nome: string;
   login: string;
+  email?: string | null;
   senhaHash: string;
   perfil: string;
   agora: Date;
@@ -34,6 +37,7 @@ export class Usuario {
       id: dados.id,
       nome: validarNome(dados.nome),
       login: normalizarLogin(dados.login),
+      email: validarEmail(dados.email),
       senhaHash: dados.senhaHash,
       perfil: validarPerfil(dados.perfil),
       ativo: true,
@@ -55,6 +59,9 @@ export class Usuario {
   }
   get login(): string {
     return this.props.login;
+  }
+  get email(): string | null {
+    return this.props.email;
   }
   get senhaHash(): string {
     return this.props.senhaHash;
@@ -88,6 +95,11 @@ export class Usuario {
     this.props.atualizadoEm = agora;
   }
 
+  alterarEmail(email: string | null, agora: Date): void {
+    this.props.email = validarEmail(email);
+    this.props.atualizadoEm = agora;
+  }
+
   alterarPerfil(perfil: string, agora: Date): void {
     this.props.perfil = validarPerfil(perfil);
     this.props.atualizadoEm = agora;
@@ -107,6 +119,15 @@ export class Usuario {
   registrarAcesso(agora: Date): void {
     this.props.ultimoAcessoEm = agora;
   }
+}
+
+/** E-mail opcional; quando informado, precisa ter formato válido (minúsculas, sem espaços). */
+function validarEmail(email: string | null | undefined): string | null {
+  const texto = normalizarTextoOpcional(email)?.toLowerCase() ?? null;
+  if (texto !== null && (texto.length > 254 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(texto))) {
+    throw new ErroDeValidacao('E-mail inválido.');
+  }
+  return texto;
 }
 
 function validarNome(nome: string): string {

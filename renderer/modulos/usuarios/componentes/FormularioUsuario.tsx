@@ -12,7 +12,7 @@ import { useUsuariosStore } from '../store/use-usuarios-store';
 
 interface PropsFormularioUsuario {
   aberto: boolean;
-  /** Ausente: novo usuário. Presente: edição de nome e perfil. */
+  /** Ausente: novo usuário. Presente: edição de nome, e-mail e perfil. */
   usuario?: UsuarioDTO;
   aoFechar: () => void;
 }
@@ -35,6 +35,7 @@ function ConteudoFormulario({ usuario, aoFechar }: PropsFormularioUsuario) {
 
   const [nome, setNome] = useState(usuario?.nome ?? '');
   const [login, setLogin] = useState(usuario?.login ?? '');
+  const [email, setEmail] = useState(usuario?.email ?? '');
   const [senha, setSenha] = useState('');
   const [perfil, setPerfil] = useState<PerfilDTO>(usuario?.perfil ?? 'usuario');
   const [salvando, setSalvando] = useState(false);
@@ -45,8 +46,9 @@ function ConteudoFormulario({ usuario, aoFechar }: PropsFormularioUsuario) {
     setSalvando(true);
     setErro(null);
     try {
-      if (usuario) await atualizar({ id: usuario.id, nome, perfil });
-      else await criar({ nome, login, senha, perfil });
+      const emailInformado = email.trim() || null;
+      if (usuario) await atualizar({ id: usuario.id, nome, email: emailInformado, perfil });
+      else await criar({ nome, login, email: emailInformado, senha, perfil });
       aoFechar();
     } catch (falha) {
       setErro(mensagemDeErro(falha));
@@ -63,6 +65,15 @@ function ConteudoFormulario({ usuario, aoFechar }: PropsFormularioUsuario) {
         onChange={(e) => setNome(e.target.value)}
         maxLength={120}
         required
+      />
+      <CampoTexto
+        rotulo="E-mail"
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        maxLength={254}
+        placeholder="nome@ferkoda.com.br"
+        dica="Opcional. Será usado no status report automático por e-mail."
       />
       {!usuario && (
         <>

@@ -7,6 +7,7 @@ import { montarModuloAvs } from './modulos/avs';
 import { montarModuloCronogramas } from './modulos/cronogramas';
 import { montarModuloIa } from './modulos/ia';
 import { montarModuloImpressao } from './modulos/impressao';
+import { montarModuloNotificacoes } from './modulos/notificacoes';
 import { montarModuloPreferencias } from './modulos/preferencias';
 import { montarModuloResponsaveis } from './modulos/responsaveis';
 import { montarModuloSds } from './modulos/sds';
@@ -50,11 +51,13 @@ export async function montarAplicacao(opcoes: {
   // Backup antes de mexer no esquema (sempre) ou, fora isso, um por dia. Uma falha no backup não
   // impede o uso do app, mas impede aplicar migrações sem cópia de segurança.
   const pendentes = haMigracoesPendentes(db, MIGRACOES);
+  let falhaNoBackup: string | null = null;
   try {
     const backup = await fazerBackup(db, pasta, new Date(), pendentes ? 'pre-migracao' : 'diario');
     if (backup) console.info(`[banco] backup: ${backup}`);
   } catch (erro) {
     console.error('[banco] falha ao fazer backup:', erro);
+    falhaNoBackup = erro instanceof Error ? erro.message : String(erro);
     if (pendentes) {
       db.close();
       throw new Error(
@@ -88,6 +91,27 @@ ${pasta}`,
   const usuarios = montarModuloUsuarios({ db, ipc, relogio, geradorDeId });
   controleDeAcesso = usuarios.controleDeAcesso;
 
+  const notificacoes = montarModuloNotificacoes({
+    db,
+    ipc,
+    relogio,
+    geradorDeId,
+    logado: { usuarioAtualId: () => usuarios.consultas.usuarioAtual()?.id ?? null },
+  });
+  const { notificador } = notificacoes;
+  if (falhaNoBackup) {
+    // Administradores ficam sabendo pelo sino: o app abriu, mas sem a cópia de segurança do dia.
+    const ativos = await usuarios.consultas.listarAtivos();
+    const perfis = await Promise.all(ativos.map((u) => usuarios.consultas.obterPerfilGlobal(u.id)));
+    await notificador.notificar({
+      usuarioIds: ativos.filter((_, i) => perfis[i] === 'administrador').map((u) => u.id),
+      tipo: 'sistema.backup_falhou',
+      titulo: 'Falha no backup automático do banco',
+      mensagem: `Verifique espaço e permissão na pasta do aplicativo. Detalhe: ${falhaNoBackup}`,
+      link: null,
+    });
+  }
+
   const responsaveis = montarModuloResponsaveis({ db, ipc, relogio, geradorDeId });
   const cronogramas = montarModuloCronogramas({ db, ipc, relogio, geradorDeId });
   const tarefas = montarModuloTarefas({
@@ -120,9 +144,11 @@ ${pasta}`,
       },
       podeDarAceite: (usuarioId) => avs.consultas.podeDarAceite(usuarioId),
       listarNomes: () => usuarios.consultas.listarAtivos(),
+      listarAprovadores: () => avs.consultas.listarAprovadores(),
     },
     avs: { concluirComProjeto: (entrada) => avs.comandos.concluirComProjeto(entrada) },
     projetos: { criar: (entrada) => cronogramas.comandos.criarProjeto(entrada) },
+    notificador,
   });
 
   const avs = montarModuloAvs({
@@ -136,6 +162,7 @@ ${pasta}`,
       obterPerfilGlobal: (id) => usuarios.consultas.obterPerfilGlobal(id),
     },
     criadorDePreSd: { criar: (entrada) => sds.comandos.criarPreSd(entrada) },
+    notificador,
     avancarSdDeExemplo: (avId, ate, usuarioId) => sds.comandos.avancarSdDeExemplo(avId, ate, usuarioId),
   });
 

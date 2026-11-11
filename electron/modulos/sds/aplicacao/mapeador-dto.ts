@@ -34,6 +34,7 @@ export function paraSdDTO(listada: SdListada, nomes: Map<string, string>, versao
     abertaEm: iso(sd.abertaEm),
     aceitePorNome: nomeDe(nomes, sd.aceitePor),
     aceiteEm: iso(sd.aceiteEm),
+    parecerAceite: sd.parecerAceite,
     devolucaoMotivo: sd.devolucaoMotivo,
     devolucaoPorNome: nomeDe(nomes, sd.devolucaoPor),
     devolucaoEm: iso(sd.devolucaoEm),

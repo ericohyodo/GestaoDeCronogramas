@@ -13,6 +13,8 @@ export interface AcessoDoFluxoSd {
   /** Gerente de Engenharia ou Gestor de Programa. */
   podeDarAceite(usuarioId: string): Promise<boolean>;
   listarNomes(): Promise<{ id: string; nome: string }[]>;
+  /** Quem dá o aceite (Gerente de Engenharia e Gestores de Programa): recebem o aviso de SD aberta. */
+  listarAprovadores(): Promise<string[]>;
 }
 
 /** Efeito do aceite na AV: vai para "Projeto Criado" apontando para o projeto. */

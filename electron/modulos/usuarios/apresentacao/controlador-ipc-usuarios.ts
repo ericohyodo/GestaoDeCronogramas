@@ -38,12 +38,14 @@ const esquemaPrimeiroAcesso = z.object({
 const esquemaCriar = z.object({
   nome: z.string(),
   login: z.string(),
+  email: z.string().max(254).nullish(),
   senha: z.string(),
   perfil: z.enum(PERFIS),
 });
 const esquemaAtualizar = z.object({
   id: esquemaId,
   nome: z.string().optional(),
+  email: z.string().max(254).nullish(),
   perfil: z.enum(PERFIS).optional(),
   ativo: z.boolean().optional(),
 });

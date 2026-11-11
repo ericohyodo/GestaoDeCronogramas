@@ -20,6 +20,8 @@ import type { AutorizacaoAv } from '../autorizacao';
 import type { CriarAv } from './criar-av';
 import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
 import { chaveDaSecao } from '../versoes';
+import { type Notificador, semNotificacao } from '../../../../nucleo/aplicacao/portas/notificador';
+import { linkDaAv } from '../notificacoes-av';
 
 function paraGrupoDTO(grupo: GrupoAv, avs: Av[]): GrupoAvDTO {
   return {
@@ -129,13 +131,14 @@ export class AplicarAoGrupo implements CasoDeUso<AplicarAoGrupoEntrada, AplicarA
     private readonly contatos: RepositorioContatosAv,
     private readonly geradorDeId: GeradorDeId,
     private readonly versoes: ControleDeVersao = versaoSemControle,
+    private readonly notificador: Notificador = semNotificacao,
   ) {}
 
   async executar(entrada: AplicarAoGrupoEntrada): Promise<AplicarAoGrupoSaida> {
     const origem = await this.avs.obterPorId(entrada.avId);
     if (!origem) throw new ErroNaoEncontrado('AV');
     if (!origem.grupoId) throw new ErroDeDominio('AV_SEM_GRUPO', 'Esta AV não pertence a nenhum grupo.');
-    await this.autorizacao.exigirEdicaoDaArea(origem, 'comercial');
+    const autor = await this.autorizacao.exigirEdicaoDaArea(origem, 'comercial');
 
     const destinos = (await this.avs.listar()).filter(
       (av) => av.grupoId === origem.grupoId && av.id !== origem.id,
@@ -178,6 +181,17 @@ export class AplicarAoGrupo implements CasoDeUso<AplicarAoGrupoEntrada, AplicarA
       // Quem estiver com o Comercial do destino aberto será avisado ao salvar (a versão mudou).
       if (entrada.secao === 'comercial') this.versoes.confirmar(chaveDaSecao(destino.id, 'comercial'));
       await this.avs.salvar(destino);
+      await this.notificador.notificar({
+        usuarioIds: [destino.membros.comercial],
+        excetoUsuarioId: autor.id,
+        tipo: 'av.dados_do_grupo',
+        titulo: `${destino.numero} recebeu dados da ${origem.numero} (grupo)`,
+        mensagem:
+          entrada.secao === 'comercial'
+            ? 'Dados comerciais aplicados. Confira os campos do produto marcados em vermelho.'
+            : 'Equipe aplicada a partir da AV de origem do grupo.',
+        link: linkDaAv(destino.id),
+      });
       saida.aplicadas += 1;
     }
     return saida;

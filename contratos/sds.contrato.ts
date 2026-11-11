@@ -24,6 +24,8 @@ export interface SdDTO {
   abertaEm: string | null;
   aceitePorNome: string | null;
   aceiteEm: string | null;
+  /** Observações da Engenharia registradas no aceite. */
+  parecerAceite: string | null;
   devolucaoMotivo: string | null;
   devolucaoPorNome: string | null;
   devolucaoEm: string | null;
@@ -46,6 +48,8 @@ export interface AceitarSdEntrada {
   /** Período previsto do projeto que nasce no aceite (AAAA-MM-DD). */
   dataInicio: string;
   dataFim: string;
+  /** Parecer da Engenharia (observações, inconsistências). Opcional no aceite. */
+  parecer?: string | null;
 }
 
 export interface DevolverSdEntrada {

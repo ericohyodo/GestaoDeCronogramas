@@ -9,6 +9,7 @@ import type { CasoDeUso } from '../../../../nucleo/aplicacao/caso-de-uso';
 import { ErroNaoEncontrado } from '../../../../nucleo/aplicacao/erros';
 import type { ControleDeVersao } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
 import type { GeradorDeId } from '../../../../nucleo/aplicacao/portas/gerador-de-id';
+import type { Notificador } from '../../../../nucleo/aplicacao/portas/notificador';
 import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
 import { ErroDeDominio } from '../../../../nucleo/dominio/erro-de-dominio';
 import type { RepositorioAnexosSd, RepositorioSds } from '../../dominio/repositorio-sds';
@@ -44,6 +45,7 @@ export interface DependenciasFluxoSd {
   versoes: ControleDeVersao;
   relogio: Relogio;
   geradorDeId: GeradorDeId;
+  notificador: Notificador;
 }
 
 abstract class CasoDoFluxo {
@@ -84,6 +86,14 @@ abstract class CasoDoFluxo {
     return usuario;
   }
 
+  protected link(sdId: string): string {
+    return `/sds/detalhe/?id=${sdId}`;
+  }
+
+  protected resumo(sd: SdListada): string {
+    return [sd.cliente, sd.descricao].filter(Boolean).join(' · ');
+  }
+
   /** Relê a SD gravada e monta o DTO (com nomes e versão atual). */
   protected async dto(id: string): Promise<SdDTO> {
     const sd = await this.obter(id);
@@ -111,6 +121,14 @@ export class AbrirSd extends CasoDoFluxo implements CasoDeUso<string, SdDTO> {
     const aberta = abrirSd(atual.sd, usuario.id, this.deps.relogio.agora(), await this.deps.anexos.contar(id));
     this.deps.versoes.confirmar(chaveDaSd(id));
     await this.deps.repositorio.salvar(aberta);
+    await this.deps.notificador.notificar({
+      usuarioIds: await this.deps.acesso.listarAprovadores(),
+      excetoUsuarioId: usuario.id,
+      tipo: 'sd.aberta',
+      titulo: `${atual.sd.numero} aguarda o aceite da Engenharia`,
+      mensagem: `${this.resumo(atual)}. Aberta por ${usuario.nome}.`,
+      link: this.link(id),
+    });
     return this.dto(id);
   }
 }
@@ -123,6 +141,14 @@ export class DevolverSd extends CasoDoFluxo implements CasoDeUso<DevolverSdEntra
     const devolvida = devolverSd(atual.sd, usuario.id, this.deps.relogio.agora(), entrada.motivo);
     this.deps.versoes.confirmar(chaveDaSd(entrada.id));
     await this.deps.repositorio.salvar(devolvida);
+    await this.deps.notificador.notificar({
+      usuarioIds: [atual.responsavelComercialId],
+      excetoUsuarioId: usuario.id,
+      tipo: 'sd.devolvida',
+      titulo: `${atual.sd.numero} devolvida ao Comercial`,
+      mensagem: `${usuario.nome}: ${devolvida.devolucaoMotivo ?? ''}`,
+      link: this.link(entrada.id),
+    });
     return this.dto(entrada.id);
   }
 }
@@ -161,12 +187,22 @@ export class AceitarSd extends CasoDoFluxo implements CasoDeUso<AceitarSdEntrada
     });
     const agora = this.deps.relogio.agora();
     this.deps.versoes.confirmar(chaveDaSd(entrada.id));
-    await this.deps.repositorio.salvar(aceitarSd(atual.sd, usuario.id, agora, projeto.id));
+    await this.deps.repositorio.salvar(aceitarSd(atual.sd, usuario.id, agora, projeto.id, entrada.parecer));
     await this.avs.concluirComProjeto({
       avId: atual.sd.avId,
       cronogramaId: projeto.id,
       usuarioId: usuario.id,
       comentario: `Aceite da ${atual.sd.numero} pela Engenharia; projeto ${codigo} criado.`,
+    });
+    await this.deps.notificador.notificar({
+      usuarioIds: [atual.responsavelComercialId],
+      excetoUsuarioId: usuario.id,
+      tipo: 'sd.aceita',
+      titulo: `${atual.sd.numero} aceita: projeto ${codigo} criado`,
+      mensagem: entrada.parecer?.trim()
+        ? `Parecer de ${usuario.nome}: ${entrada.parecer.trim()}`
+        : `Aceite de ${usuario.nome}. ${this.resumo(atual)}.`,
+      link: this.link(entrada.id),
     });
     return this.dto(entrada.id);
   }

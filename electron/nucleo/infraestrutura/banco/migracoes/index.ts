@@ -33,6 +33,9 @@ import { migracao0031 } from './0031-numeracao-unificada';
 import { migracao0032 } from './0032-papeis-especiais';
 import { migracao0033 } from './0033-sd-formulario';
 import { migracao0034 } from './0034-avs-checklist-nao-aplica';
+import { migracao0035 } from './0035-sd-parecer-do-aceite';
+import { migracao0036 } from './0036-notificacoes';
+import { migracao0037 } from './0037-usuarios-email';
 
 export const MIGRACOES: readonly Migracao[] = [
   migracao0001,
@@ -69,4 +72,7 @@ export const MIGRACOES: readonly Migracao[] = [
   migracao0032,
   migracao0033,
   migracao0034,
+  migracao0035,
+  migracao0036,
+  migracao0037,
 ];

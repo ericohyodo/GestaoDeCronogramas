@@ -51,7 +51,7 @@ export function registrarIpcSds(ipc: RegistradorIpc, casos: CasosDeUsoSds): void
   ipc.registrar(
     CANAIS.sds.aceitar,
     'tarefas',
-    z.object({ id: esquemaId, dataInicio: esquemaData, dataFim: esquemaData }),
+    z.object({ id: esquemaId, dataInicio: esquemaData, dataFim: esquemaData, parecer: z.string().max(2000).nullish() }),
     (entrada) => casos.aceitar.executar(entrada),
   );
   ipc.registrar(

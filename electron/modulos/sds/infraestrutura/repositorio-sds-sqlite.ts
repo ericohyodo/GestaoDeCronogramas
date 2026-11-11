@@ -16,6 +16,7 @@ interface LinhaSd {
   aberta_em: string | null;
   aceite_por: string | null;
   aceite_em: string | null;
+  parecer_aceite: string | null;
   devolucao_motivo: string | null;
   devolucao_por: string | null;
   devolucao_em: string | null;
@@ -53,11 +54,12 @@ export class RepositorioSdsSqlite implements RepositorioSds {
       salvar: db.prepare<[LinhaSd]>(`
         INSERT INTO sd (
           id, av_id, numero, status, criado_por, criado_em, data_envio_cotacao, numero_po, observacoes,
-          aberta_por, aberta_em, aceite_por, aceite_em, devolucao_motivo, devolucao_por, devolucao_em, cronograma_id
+          aberta_por, aberta_em, aceite_por, aceite_em, devolucao_motivo, devolucao_por, devolucao_em, cronograma_id,
+          parecer_aceite
         ) VALUES (
           @id, @av_id, @numero, @status, @criado_por, @criado_em, @data_envio_cotacao, @numero_po, @observacoes,
           @aberta_por, @aberta_em, @aceite_por, @aceite_em, @devolucao_motivo, @devolucao_por, @devolucao_em,
-          @cronograma_id
+          @cronograma_id, @parecer_aceite
         )
         ON CONFLICT (id) DO UPDATE SET
           status             = excluded.status,
@@ -68,6 +70,7 @@ export class RepositorioSdsSqlite implements RepositorioSds {
           aberta_em          = excluded.aberta_em,
           aceite_por         = excluded.aceite_por,
           aceite_em          = excluded.aceite_em,
+          parecer_aceite     = excluded.parecer_aceite,
           devolucao_motivo   = excluded.devolucao_motivo,
           devolucao_por      = excluded.devolucao_por,
           devolucao_em       = excluded.devolucao_em,
@@ -91,6 +94,7 @@ export class RepositorioSdsSqlite implements RepositorioSds {
       aberta_em: data(sd.abertaEm),
       aceite_por: sd.aceitePor,
       aceite_em: data(sd.aceiteEm),
+      parecer_aceite: sd.parecerAceite,
       devolucao_motivo: sd.devolucaoMotivo,
       devolucao_por: sd.devolucaoPor,
       devolucao_em: data(sd.devolucaoEm),
@@ -129,6 +133,7 @@ function paraListada(linha: LinhaSdListada): SdListada {
       abertaEm: dataOuNull(linha.aberta_em),
       aceitePor: linha.aceite_por,
       aceiteEm: dataOuNull(linha.aceite_em),
+      parecerAceite: linha.parecer_aceite,
       devolucaoMotivo: linha.devolucao_motivo,
       devolucaoPor: linha.devolucao_por,
       devolucaoEm: dataOuNull(linha.devolucao_em),

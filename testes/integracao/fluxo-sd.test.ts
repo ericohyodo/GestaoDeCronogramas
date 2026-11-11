@@ -24,6 +24,8 @@ import {
   RepositorioAnexosSdSqlite,
   RepositorioSdsSqlite,
 } from '../../electron/modulos/sds/infraestrutura/repositorio-sds-sqlite';
+import { NotificadorInterno } from '../../electron/modulos/notificacoes/aplicacao/casos-de-uso';
+import { RepositorioNotificacoesSqlite } from '../../electron/modulos/notificacoes/infraestrutura/repositorio-notificacoes-sqlite';
 import { Usuario } from '../../electron/modulos/usuarios/dominio/usuario';
 import { RepositorioUsuariosSqlite } from '../../electron/modulos/usuarios/infraestrutura/repositorio-usuarios-sqlite';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
@@ -101,7 +103,9 @@ describe('fluxo da SD', () => {
         usuarioAtual: () => ({ id: logado.id, nome: logado.nome, administrador: logado.perfil === 'administrador' }),
         podeDarAceite: async (id) => ((await perfis.obterPerfil(id))?.papeisEspeciais.length ?? 0) > 0,
         listarNomes: consulta.listarAtivos,
+        listarAprovadores: async () => ['eng'],
       },
+      notificador: new NotificadorInterno(new RepositorioNotificacoesSqlite(db), relogio, ids),
       versoes: new ControleDeVersaoSqlite(db),
       relogio,
       geradorDeId: ids,
@@ -116,6 +120,10 @@ describe('fluxo da SD', () => {
   });
 
   afterEach(() => db.close());
+
+  /** Tipos das notificações recebidas por um usuário. */
+  const tiposDe = (usuarioId: string) =>
+    db.prepare('SELECT tipo FROM notificacoes WHERE usuario_id = ? ORDER BY criada_em').pluck().all(usuarioId);
 
   const anexarPo = () =>
     deps.anexos.inserir({
@@ -146,6 +154,7 @@ describe('fluxo da SD', () => {
     await expect(abrir.executar(sdId)).rejects.toThrow(/evidência/);
     await anexarPo();
     expect((await abrir.executar(sdId)).status).toBe('aberta');
+    expect(tiposDe('eng')).toEqual(['sd.aberta']);
 
     // Comercial não dá aceite; Engenharia sim.
     const periodo = { id: sdId, dataInicio: '2026-11-15', dataFim: '2027-05-15' };
@@ -155,6 +164,7 @@ describe('fluxo da SD', () => {
     expect(aceita.status).toBe('fechada');
     expect(aceita.aceitePorNome).toBe('Leandro');
     expect(aceita.numeroProjeto).toMatch(/^PRO \d{2}-001$/);
+    expect(tiposDe('com')).toContain('sd.aceita');
 
     const projeto = db
       .prepare('SELECT codigo, nome, sd_id FROM cronogramas WHERE id = ?')
@@ -178,6 +188,7 @@ describe('fluxo da SD', () => {
     logado = engenharia;
     await expect(new DevolverSd(deps).executar({ id: sdId, motivo: '  ' })).rejects.toThrow(/motivo/);
     const devolvida = await new DevolverSd(deps).executar({ id: sdId, motivo: 'PO sem assinatura' });
+    expect(tiposDe('com')).toEqual(['sd.devolvida']);
     expect(devolvida).toMatchObject({
       status: 'pre_sd',
       devolucaoMotivo: 'PO sem assinatura',

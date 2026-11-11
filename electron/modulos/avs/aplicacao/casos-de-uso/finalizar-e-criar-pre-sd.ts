@@ -9,6 +9,8 @@ import type { RepositorioHistoricoAv } from '../../dominio/historico-av';
 import type { RepositorioAvs } from '../../dominio/repositorio-avs';
 import type { AutorizacaoAv } from '../autorizacao';
 import type { CriadorDePreSd } from '../portas';
+import { type Notificador, semNotificacao } from '../../../../nucleo/aplicacao/portas/notificador';
+import { resumoDaAv } from '../notificacoes-av';
 
 /**
  * Encerra a análise: cria a Pré-SD com o mesmo número da AV e move a AV para "SD Aberta".
@@ -23,6 +25,7 @@ export class FinalizarECriarPreSd implements CasoDeUso<string, SdDTO> {
     private readonly criador: CriadorDePreSd,
     private readonly relogio: Relogio,
     private readonly geradorDeId: GeradorDeId,
+    private readonly notificador: Notificador = semNotificacao,
   ) {}
 
   async executar(avId: string): Promise<SdDTO> {
@@ -54,6 +57,14 @@ export class FinalizarECriarPreSd implements CasoDeUso<string, SdDTO> {
       usuarioId: usuario.id,
       comentario: `AV finalizada; Pré-SD ${sd.numero} criada.`,
       data: agora,
+    });
+    await this.notificador.notificar({
+      usuarioIds: [av.membros.comercial],
+      excetoUsuarioId: usuario.id,
+      tipo: 'sd.pre_sd',
+      titulo: `${sd.numero} criada: preencha e abra a SD`,
+      mensagem: `${resumoDaAv(av)}. Informe a data de envio da cotação e anexe o PO do cliente.`,
+      link: `/sds/detalhe/?id=${sd.id}`,
     });
     return sd;
   }

@@ -12,6 +12,8 @@ import { construirMapaDeNomes, paraAvDetalheDTO } from '../mapeador-dto';
 import type { ConsultaDeUsuarios } from '../portas';
 import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
 import { chaveDaSecao } from '../versoes';
+import { type Notificador, semNotificacao } from '../../../../nucleo/aplicacao/portas/notificador';
+import { linkDaAv, resumoDaAv, ROTULO_DA_AREA } from '../notificacoes-av';
 
 /**
  * Avança a AV exatamente uma etapa, na ordem do catálogo — não existe "liberar fora de ordem"
@@ -26,6 +28,7 @@ export class AvancarEtapa implements CasoDeUso<AvancarEtapaEntrada, AvDetalheDTO
     private readonly geradorDeId: GeradorDeId,
     private readonly usuarios: ConsultaDeUsuarios,
     private readonly versoes: ControleDeVersao = versaoSemControle,
+    private readonly notificador: Notificador = semNotificacao,
   ) {}
 
   async executar(entrada: AvancarEtapaEntrada): Promise<AvDetalheDTO> {
@@ -69,6 +72,16 @@ export class AvancarEtapa implements CasoDeUso<AvancarEtapaEntrada, AvDetalheDTO
       comentario: entrada.comentario ?? null,
       data: agora,
     });
+    if (proxima.area) {
+      await this.notificador.notificar({
+        usuarioIds: [av.membros[proxima.area]],
+        excetoUsuarioId: usuario.id,
+        tipo: 'av.etapa_liberada',
+        titulo: `${av.numero} chegou à sua área: ${ROTULO_DA_AREA[proxima.area]}`,
+        mensagem: `${resumoDaAv(av)}. Etapa atual: ${proxima.nome}.`,
+        link: linkDaAv(av.id),
+      });
+    }
 
     return paraAvDetalheDTO(av, construirMapaDeNomes(await this.usuarios.listarAtivos()), this.versoes.obter(chaveDaSecao(av.id, 'comercial')));
   }

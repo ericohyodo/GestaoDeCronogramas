@@ -4,6 +4,7 @@
  */
 import { transacional } from '../../nucleo/aplicacao/caso-de-uso';
 import type { GeradorDeId } from '../../nucleo/aplicacao/portas/gerador-de-id';
+import type { Notificador } from '../../nucleo/aplicacao/portas/notificador';
 import type { Relogio } from '../../nucleo/aplicacao/portas/relogio';
 import type { BancoDeDados } from '../../nucleo/infraestrutura/banco/conexao-sqlite';
 import { ControleDeVersaoSqlite } from '../../nucleo/infraestrutura/banco/controle-de-versao-sqlite';
@@ -38,6 +39,7 @@ export interface DependenciasModuloSds {
   acesso: AcessoDoFluxoSd;
   avs: AvsDoFluxoSd;
   projetos: CriadorDeProjeto;
+  notificador: Notificador;
 }
 
 type SdCriada = Awaited<ReturnType<CriarPreSd['executar']>>;
@@ -65,6 +67,7 @@ export function montarModuloSds(deps: DependenciasModuloSds): ModuloSds {
     versoes,
     relogio: deps.relogio,
     geradorDeId: deps.geradorDeId,
+    notificador: deps.notificador,
   };
   const armazenamento = new ArmazenamentoDeEvidenciasFs();
   const obterPorAv = new ObterSdPorAv(repositorio, deps.acesso, versoes);

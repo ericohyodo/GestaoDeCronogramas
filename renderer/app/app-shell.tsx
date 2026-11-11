@@ -10,6 +10,8 @@ import { BarraDeTitulo } from '@/compartilhado/layout/BarraDeTitulo';
 import { BarraLateral, NAV_AVS, NAV_PROJETOS, NAV_SDS } from '@/compartilhado/layout/BarraLateral';
 import { FundoDecorativo } from '@/compartilhado/layout/FundoDecorativo';
 import { SeletorTema } from '@/modulos/preferencias/componentes/SeletorTema';
+import { SinoDeNotificacoes } from '@/modulos/notificacoes/componentes/SinoDeNotificacoes';
+import { useNotificacoesStore } from '@/modulos/notificacoes/store/use-notificacoes-store';
 import { MenuDoUsuario } from '@/modulos/usuarios/componentes/MenuDoUsuario';
 import { useSessaoStore } from '@/modulos/usuarios/store/use-sessao-store';
 
@@ -65,6 +67,12 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => clearInterval(temporizador);
   }, [autenticado]);
 
+  // Ao sair da conta, a caixa do sino do usuário anterior é descartada.
+  const limparNotificacoes = useNotificacoesStore((estado) => estado.limpar);
+  useEffect(() => {
+    if (!autenticado) limparNotificacoes();
+  }, [autenticado, limparNotificacoes]);
+
   const permissoes = sessao?.permissoes ?? [];
 
   const moduloAtual = moduloDaRota(rota, ultimoModulo);
@@ -91,6 +99,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <BarraDeTitulo
           acoes={
             <>
+              {autenticado && <SinoDeNotificacoes />}
               {autenticado && <MenuDoUsuario />}
               <SeletorTema />
             </>

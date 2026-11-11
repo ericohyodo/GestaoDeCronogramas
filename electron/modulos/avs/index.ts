@@ -6,6 +6,7 @@ import type { GeradorDeId } from '../../nucleo/aplicacao/portas/gerador-de-id';
 import type { Relogio } from '../../nucleo/aplicacao/portas/relogio';
 import type { BancoDeDados } from '../../nucleo/infraestrutura/banco/conexao-sqlite';
 import { transacional } from '../../nucleo/aplicacao/caso-de-uso';
+import { type Notificador, semNotificacao } from '../../nucleo/aplicacao/portas/notificador';
 import { ControleDeVersaoSqlite } from '../../nucleo/infraestrutura/banco/controle-de-versao-sqlite';
 import { UnidadeDeTrabalhoSqlite } from '../../nucleo/infraestrutura/banco/unidade-de-trabalho-sqlite';
 import type { RegistradorIpc } from '../../nucleo/infraestrutura/ipc/registrador-ipc';
@@ -72,6 +73,8 @@ export interface DependenciasModuloAvs {
   geradorDeId: GeradorDeId;
   consultaDeUsuarios: ConsultaDeUsuarios;
   criadorDePreSd: CriadorDePreSd;
+  /** Sino da barra superior (módulo de notificações). */
+  notificador?: Notificador;
   /** Dados de exemplo: leva a SD da AV até aberta/fechada (módulo de SDs). */
   avancarSdDeExemplo?: (avId: string, ate: 'aberta' | 'fechada', usuarioId: string) => Promise<void>;
 }
@@ -86,6 +89,8 @@ export interface ModuloAvs {
   consultas: {
     /** Gerente de Engenharia ou Gestor de Programa (aceite da SD). */
     podeDarAceite(usuarioId: string): Promise<boolean>;
+    /** Usuários com papel de aceite da SD (Gerente de Engenharia / Gestor de Programa). */
+    listarAprovadores(): Promise<string[]>;
     listarIdsAtivos(): Promise<string[]>;
     /** Uma linha por AV (etapa, prazo, valores consolidados): o módulo de IA usa isto para analisar as AVs. */
     relatorio(): Promise<LinhasDoRelatorio>;
@@ -110,9 +115,10 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
   const seletorDeArquivos = new SeletorDeArquivosElectron();
   const armazenamentoDeArquivos = new ArmazenamentoDeArquivosFs();
   const versoes = new ControleDeVersaoSqlite(deps.db);
+  const notificador = deps.notificador ?? semNotificacao;
   const transacao = new UnidadeDeTrabalhoSqlite(deps.db);
 
-  const criarAv = new CriarAv(repositorio, deps.relogio, deps.geradorDeId, deps.consultaDeUsuarios, autorizacao, versoes);
+  const criarAv = new CriarAv(repositorio, deps.relogio, deps.geradorDeId, deps.consultaDeUsuarios, autorizacao, versoes, notificador);
   const atualizarComercial = new AtualizarComercial(repositorio, autorizacao, deps.consultaDeUsuarios, versoes);
   const salvarSecaoCusto = new SalvarSecaoCusto(
     repositorio,
@@ -146,6 +152,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     deps.geradorDeId,
     deps.consultaDeUsuarios,
     versoes,
+    notificador,
   );
   const declinarAv = new DeclinarAv(
     repositorio,
@@ -155,6 +162,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     deps.geradorDeId,
     deps.consultaDeUsuarios,
     versoes,
+    notificador,
   );
   const relatorio = new ObterRelatorioAvs(
     repositorio,
@@ -172,8 +180,15 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     deps.criadorDePreSd,
     deps.relogio,
     deps.geradorDeId,
+    notificador,
   );
-  const concluirComProjeto = new ConcluirAvComProjeto(repositorio, repositorioHistorico, deps.relogio, deps.geradorDeId);
+  const concluirComProjeto = new ConcluirAvComProjeto(
+    repositorio,
+    repositorioHistorico,
+    deps.relogio,
+    deps.geradorDeId,
+    notificador,
+  );
   const gerarExemplos = new GerarAvsExemplo(
     repositorio,
     repositorioHistorico,
@@ -197,7 +212,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     obter: new ObterAv(repositorio, deps.consultaDeUsuarios, versoes),
     criar: criarAv,
     atualizarComercial: atualizarComercial,
-    atualizarEquipe: new AtualizarEquipe(repositorio, autorizacao, deps.consultaDeUsuarios, versoes),
+    atualizarEquipe: new AtualizarEquipe(repositorio, autorizacao, deps.consultaDeUsuarios, versoes, notificador),
     listarMembros: new ListarMembros(deps.consultaDeUsuarios),
     obterDashboard: new ObterDashboard(repositorio),
     avancarEtapa: transacional(avancarEtapa, transacao),
@@ -231,7 +246,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
       new CriarGrupoDeAvs(repositorioGrupos, repositorio, criarAv, autorizacao, deps.relogio, deps.geradorDeId),
       transacao,
     ),
-    aplicarAoGrupo: new AplicarAoGrupo(repositorio, autorizacao, repositorioContatos, deps.geradorDeId, versoes),
+    aplicarAoGrupo: new AplicarAoGrupo(repositorio, autorizacao, repositorioContatos, deps.geradorDeId, versoes, notificador),
     relatorio,
     obterSecaoPcp: new ObterSecaoPcp(repositorioSecaoPcp, versoes),
     salvarSecaoPcp: new SalvarSecaoPcp(repositorio, repositorioSecaoPcp, autorizacao, deps.relogio, deps.geradorDeId, versoes),
@@ -242,7 +257,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     salvarTemplate: new SalvarTemplateAv(repositorioTemplates, autorizacao, deps.relogio, deps.geradorDeId),
     excluirTemplate: new ExcluirTemplateAv(repositorioTemplates, autorizacao),
     listarPerfis: new ListarPerfisAv(repositorioPerfis, autorizacao, deps.consultaDeUsuarios),
-    salvarPerfil: new SalvarPerfilAv(repositorioPerfis, autorizacao, deps.consultaDeUsuarios),
+    salvarPerfil: new SalvarPerfilAv(repositorioPerfis, autorizacao, deps.consultaDeUsuarios, notificador),
     obterMeuPerfil: new ObterMeuPerfilAv(autorizacao),
   });
 
@@ -250,6 +265,8 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     comandos: { concluirComProjeto: (entrada) => concluirComProjeto.executar(entrada) },
     consultas: {
       podeDarAceite: async (usuarioId) => podeDarAceiteDaSd(await autorizacao.obterPerfilAv(usuarioId)),
+      listarAprovadores: async () =>
+        (await repositorioPerfis.listarPerfis()).filter(podeDarAceiteDaSd).map((perfil) => perfil.usuarioId),
       async listarIdsAtivos() {
         return (await repositorio.listar()).map((av) => av.id);
       },

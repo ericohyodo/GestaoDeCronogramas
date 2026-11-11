@@ -12,6 +12,7 @@ export interface UsuarioDTO {
   id: string;
   nome: string;
   login: string;
+  email: string | null;
   perfil: PerfilDTO;
   ativo: boolean;
   criadoEm: string;
