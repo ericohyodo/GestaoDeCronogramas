@@ -8,18 +8,25 @@ interface LinhaSecaoProduto {
   av_id: string;
   descritivo_tecnico_existente: number | null;
   descritivo_tecnico_disponivel: number | null;
+  descritivo_tecnico_nao_aplica: number | null;
   desenho_2d_existente: number | null;
   desenho_2d_disponivel: number | null;
+  desenho_2d_nao_aplica: number | null;
   desenho_3d_existente: number | null;
   desenho_3d_disponivel: number | null;
+  desenho_3d_nao_aplica: number | null;
   desenho_interfaces_existente: number | null;
   desenho_interfaces_disponivel: number | null;
+  desenho_interfaces_nao_aplica: number | null;
   normas_tecnicas_existente: number | null;
   normas_tecnicas_disponivel: number | null;
+  normas_tecnicas_nao_aplica: number | null;
   requisitos_cliente_existente: number | null;
   requisitos_cliente_disponivel: number | null;
+  requisitos_cliente_nao_aplica: number | null;
   requisitos_garantia_existente: number | null;
   requisitos_garantia_disponivel: number | null;
+  requisitos_garantia_nao_aplica: number | null;
   descritivo_tecnico_link: string | null;
   desenho_2d_link: string | null;
   desenho_3d_link: string | null;
@@ -89,6 +96,7 @@ export class RepositorioSecaoProdutoSqlite implements RepositorioSecaoProduto {
           desenho_interfaces_existente, desenho_interfaces_disponivel, normas_tecnicas_existente,
           normas_tecnicas_disponivel, requisitos_cliente_existente, requisitos_cliente_disponivel,
           requisitos_garantia_existente, requisitos_garantia_disponivel,
+          descritivo_tecnico_nao_aplica, desenho_2d_nao_aplica, desenho_3d_nao_aplica, desenho_interfaces_nao_aplica, normas_tecnicas_nao_aplica, requisitos_cliente_nao_aplica, requisitos_garantia_nao_aplica,
           descritivo_tecnico_link, desenho_2d_link, desenho_3d_link, desenho_interfaces_link,
           normas_tecnicas_link, requisitos_cliente_link, requisitos_garantia_link, escopo_tecnico,
           riscos_projeto, premissas_projeto, recursos_projeto, restricoes_projeto,
@@ -99,6 +107,7 @@ export class RepositorioSecaoProdutoSqlite implements RepositorioSecaoProduto {
           @desenho_interfaces_existente, @desenho_interfaces_disponivel, @normas_tecnicas_existente,
           @normas_tecnicas_disponivel, @requisitos_cliente_existente, @requisitos_cliente_disponivel,
           @requisitos_garantia_existente, @requisitos_garantia_disponivel,
+          @descritivo_tecnico_nao_aplica, @desenho_2d_nao_aplica, @desenho_3d_nao_aplica, @desenho_interfaces_nao_aplica, @normas_tecnicas_nao_aplica, @requisitos_cliente_nao_aplica, @requisitos_garantia_nao_aplica,
           @descritivo_tecnico_link, @desenho_2d_link, @desenho_3d_link, @desenho_interfaces_link,
           @normas_tecnicas_link, @requisitos_cliente_link, @requisitos_garantia_link, @escopo_tecnico,
           @riscos_projeto, @premissas_projeto, @recursos_projeto, @restricoes_projeto,
@@ -119,6 +128,13 @@ export class RepositorioSecaoProdutoSqlite implements RepositorioSecaoProduto {
           requisitos_cliente_disponivel = excluded.requisitos_cliente_disponivel,
           requisitos_garantia_existente = excluded.requisitos_garantia_existente,
           requisitos_garantia_disponivel = excluded.requisitos_garantia_disponivel,
+          descritivo_tecnico_nao_aplica = excluded.descritivo_tecnico_nao_aplica,
+          desenho_2d_nao_aplica = excluded.desenho_2d_nao_aplica,
+          desenho_3d_nao_aplica = excluded.desenho_3d_nao_aplica,
+          desenho_interfaces_nao_aplica = excluded.desenho_interfaces_nao_aplica,
+          normas_tecnicas_nao_aplica = excluded.normas_tecnicas_nao_aplica,
+          requisitos_cliente_nao_aplica = excluded.requisitos_cliente_nao_aplica,
+          requisitos_garantia_nao_aplica = excluded.requisitos_garantia_nao_aplica,
           descritivo_tecnico_link  = excluded.descritivo_tecnico_link,
           desenho_2d_link          = excluded.desenho_2d_link,
           desenho_3d_link          = excluded.desenho_3d_link,
@@ -212,18 +228,25 @@ function paraSecaoEntidade(linha: LinhaSecaoProduto): SecaoProduto {
     avId: linha.av_id,
     descritivoTecnicoExistente: paraBool(linha.descritivo_tecnico_existente),
     descritivoTecnicoDisponivel: paraBool(linha.descritivo_tecnico_disponivel),
+    descritivoTecnicoNaoAplica: paraBool(linha.descritivo_tecnico_nao_aplica),
     desenho2dExistente: paraBool(linha.desenho_2d_existente),
     desenho2dDisponivel: paraBool(linha.desenho_2d_disponivel),
+    desenho2dNaoAplica: paraBool(linha.desenho_2d_nao_aplica),
     desenho3dExistente: paraBool(linha.desenho_3d_existente),
     desenho3dDisponivel: paraBool(linha.desenho_3d_disponivel),
+    desenho3dNaoAplica: paraBool(linha.desenho_3d_nao_aplica),
     desenhoInterfacesExistente: paraBool(linha.desenho_interfaces_existente),
     desenhoInterfacesDisponivel: paraBool(linha.desenho_interfaces_disponivel),
+    desenhoInterfacesNaoAplica: paraBool(linha.desenho_interfaces_nao_aplica),
     normasTecnicasExistente: paraBool(linha.normas_tecnicas_existente),
     normasTecnicasDisponivel: paraBool(linha.normas_tecnicas_disponivel),
+    normasTecnicasNaoAplica: paraBool(linha.normas_tecnicas_nao_aplica),
     requisitosClienteExistente: paraBool(linha.requisitos_cliente_existente),
     requisitosClienteDisponivel: paraBool(linha.requisitos_cliente_disponivel),
+    requisitosClienteNaoAplica: paraBool(linha.requisitos_cliente_nao_aplica),
     requisitosGarantiaExistente: paraBool(linha.requisitos_garantia_existente),
     requisitosGarantiaDisponivel: paraBool(linha.requisitos_garantia_disponivel),
+    requisitosGarantiaNaoAplica: paraBool(linha.requisitos_garantia_nao_aplica),
     descritivoTecnicoLink: linha.descritivo_tecnico_link,
     desenho2dLink: linha.desenho_2d_link,
     desenho3dLink: linha.desenho_3d_link,
@@ -249,18 +272,25 @@ function paraSecaoLinha(secao: SecaoProduto): LinhaSecaoProduto {
     av_id: secao.avId,
     descritivo_tecnico_existente: paraBoolLinha(secao.descritivoTecnicoExistente),
     descritivo_tecnico_disponivel: paraBoolLinha(secao.descritivoTecnicoDisponivel),
+    descritivo_tecnico_nao_aplica: paraBoolLinha(secao.descritivoTecnicoNaoAplica),
     desenho_2d_existente: paraBoolLinha(secao.desenho2dExistente),
     desenho_2d_disponivel: paraBoolLinha(secao.desenho2dDisponivel),
+    desenho_2d_nao_aplica: paraBoolLinha(secao.desenho2dNaoAplica),
     desenho_3d_existente: paraBoolLinha(secao.desenho3dExistente),
     desenho_3d_disponivel: paraBoolLinha(secao.desenho3dDisponivel),
+    desenho_3d_nao_aplica: paraBoolLinha(secao.desenho3dNaoAplica),
     desenho_interfaces_existente: paraBoolLinha(secao.desenhoInterfacesExistente),
     desenho_interfaces_disponivel: paraBoolLinha(secao.desenhoInterfacesDisponivel),
+    desenho_interfaces_nao_aplica: paraBoolLinha(secao.desenhoInterfacesNaoAplica),
     normas_tecnicas_existente: paraBoolLinha(secao.normasTecnicasExistente),
     normas_tecnicas_disponivel: paraBoolLinha(secao.normasTecnicasDisponivel),
+    normas_tecnicas_nao_aplica: paraBoolLinha(secao.normasTecnicasNaoAplica),
     requisitos_cliente_existente: paraBoolLinha(secao.requisitosClienteExistente),
     requisitos_cliente_disponivel: paraBoolLinha(secao.requisitosClienteDisponivel),
+    requisitos_cliente_nao_aplica: paraBoolLinha(secao.requisitosClienteNaoAplica),
     requisitos_garantia_existente: paraBoolLinha(secao.requisitosGarantiaExistente),
     requisitos_garantia_disponivel: paraBoolLinha(secao.requisitosGarantiaDisponivel),
+    requisitos_garantia_nao_aplica: paraBoolLinha(secao.requisitosGarantiaNaoAplica),
     descritivo_tecnico_link: secao.descritivoTecnicoLink,
     desenho_2d_link: secao.desenho2dLink,
     desenho_3d_link: secao.desenho3dLink,

@@ -19,6 +19,9 @@
   e os seguintes ficam esmaecidos até o anterior ser preenchido (continuam editáveis). Indicador
   "N de M blocos" no topo da aba.
 - **Inserir linha no cronograma, estilo Word:** alça ⊕ na borda esquerda entre as linhas.
+- **Checklist de entrada técnica (Eng. Produto) com N/A:** terceira opção por item, para registrar que foi visto
+  mas não se aplica. O bloco mostra o que falta para ficar completo.
+- **Ícone do app** (conceito "Fluxo": três marcos em ascensão, AV → SD → PRO).
 
 ### Dados e multiusuário
 - **Backup automático** do banco em `backups/` (ao lado do .db): antes de toda atualização de estrutura e uma vez

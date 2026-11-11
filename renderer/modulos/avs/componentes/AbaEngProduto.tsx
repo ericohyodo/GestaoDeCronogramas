@@ -37,7 +37,10 @@ let contador = 0;
 const chaveLocal = () => `local-${Date.now()}-${contador++}`;
 
 type ChaveChecklist = (typeof ITENS_CHECKLIST_PRODUTO)[number]['chave'];
-type Checklist = Record<`${ChaveChecklist}Existente` | `${ChaveChecklist}Disponivel`, boolean>;
+type Checklist = Record<
+  `${ChaveChecklist}Existente` | `${ChaveChecklist}Disponivel` | `${ChaveChecklist}NaoAplica`,
+  boolean
+>;
 type Links = Record<`${ChaveChecklist}Link`, string>;
 
 const CATALOGO_PADRAO: { descricao: string; classificacao: ClassificacaoInvestimentoDTO }[] = [
@@ -63,6 +66,7 @@ function checklistInicial(secao: SecaoProdutoDTO | null): Checklist {
   for (const { chave } of ITENS_CHECKLIST_PRODUTO) {
     resultado[`${chave}Existente`] = secao?.[`${chave}Existente` as keyof SecaoProdutoDTO] === true;
     resultado[`${chave}Disponivel`] = secao?.[`${chave}Disponivel` as keyof SecaoProdutoDTO] === true;
+    resultado[`${chave}NaoAplica`] = secao?.[`${chave}NaoAplica` as keyof SecaoProdutoDTO] === true;
   }
   return resultado;
 }
@@ -206,11 +210,18 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
   if (erroCarregamento) return <MensagemErro mensagem={erroCarregamento} />;
 
   // Liberação fracionada: Dados de entrada → Anexos → Estrutura → Riscos e premissas → Investimentos.
+  // Dados de entrada: cada item precisa ser "visto" (Existente, Disponível ou N/A); Disponível pede o link.
+  const pendenciasDadosDeEntrada = [
+    ...ITENS_CHECKLIST_PRODUTO.flatMap(({ chave, rotulo }) => {
+      if (checklist[`${chave}NaoAplica`]) return [];
+      if (!checklist[`${chave}Existente`] && !checklist[`${chave}Disponivel`]) return [`marcar ${rotulo}`];
+      if (checklist[`${chave}Disponivel`] && !preenchido(links[`${chave}Link`])) return [`link de ${rotulo}`];
+      return [];
+    }),
+    ...(preenchido(escopoTecnico) ? [] : ['escopo técnico']),
+  ];
   const estadosBlocos = estadosDosBlocos([
-    preenchido(escopoTecnico) &&
-      ITENS_CHECKLIST_PRODUTO.every(
-        ({ chave }) => !checklist[`${chave}Disponivel`] || preenchido(links[`${chave}Link`]),
-      ),
+    pendenciasDadosDeEntrada.length === 0,
     qtdAnexos > 0,
     estrutura.length > 0,
     todosPreenchidos(riscosProjeto, premissasProjeto, recursosProjeto, restricoesProjeto, prazoPrototipoDias, complexidade),
@@ -236,13 +247,21 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
           }}
         />
         {erroLink && <MensagemErro mensagem={erroLink} aoFechar={() => setErroLink(null)} />}
+        {pendenciasDadosDeEntrada.length > 0 && (
+          <p className="text-xs text-texto-secundario">
+            Para completar este bloco, falta: {pendenciasDadosDeEntrada.join('; ')}. Marque N/A nos itens que não se
+            aplicam.
+          </p>
+        )}
         <div className="flex flex-col gap-2">
           {ITENS_CHECKLIST_PRODUTO.map(({ chave, rotulo, ajuda }) => (
             <div
               key={chave}
               className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-borda/60 px-3 py-2"
             >
-              <span className="flex items-center gap-1.5 text-sm">
+              <span
+                className={`flex items-center gap-1.5 text-sm ${checklist[`${chave}NaoAplica`] ? 'text-texto-sutil line-through' : ''}`}
+              >
                 {rotulo}
                 <Ajuda texto={ajuda} />
               </span>
@@ -254,7 +273,11 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
                       className="size-4 accent-primaria"
                       checked={checklist[`${chave}Existente`]}
                       onChange={(e) =>
-                        setChecklist((atual) => ({ ...atual, [`${chave}Existente`]: e.target.checked }))
+                        setChecklist((atual) => ({
+                          ...atual,
+                          [`${chave}Existente`]: e.target.checked,
+                          ...(e.target.checked ? { [`${chave}NaoAplica`]: false } : {}),
+                        }))
                       }
                     />
                     Existente
@@ -265,10 +288,29 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
                       className="size-4 accent-primaria"
                       checked={checklist[`${chave}Disponivel`]}
                       onChange={(e) =>
-                        setChecklist((atual) => ({ ...atual, [`${chave}Disponivel`]: e.target.checked }))
+                        setChecklist((atual) => ({
+                          ...atual,
+                          [`${chave}Disponivel`]: e.target.checked,
+                          ...(e.target.checked ? { [`${chave}NaoAplica`]: false } : {}),
+                        }))
                       }
                     />
                     Disponível
+                  </label>
+                  <label className="flex items-center gap-1.5" title="Item visto, mas não se aplica a esta AV">
+                    <input
+                      type="checkbox"
+                      className="size-4 accent-primaria"
+                      checked={checklist[`${chave}NaoAplica`]}
+                      onChange={(e) =>
+                        setChecklist((atual) => ({
+                          ...atual,
+                          [`${chave}NaoAplica`]: e.target.checked,
+                          ...(e.target.checked ? { [`${chave}Existente`]: false, [`${chave}Disponivel`]: false } : {}),
+                        }))
+                      }
+                    />
+                    N/A
                   </label>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -276,7 +318,8 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
                     className={`${CLASSE_CELULA_EDITAVEL} w-56`}
                     value={links[`${chave}Link`]}
                     onChange={(e) => setLinks((atual) => ({ ...atual, [`${chave}Link`]: e.target.value }))}
-                    placeholder="Pasta de evidências ou link"
+                    placeholder={checklist[`${chave}NaoAplica`] ? 'Não se aplica' : 'Pasta de evidências ou link'}
+                    disabled={checklist[`${chave}NaoAplica`]}
                   />
                   <BotaoIcone
                     icone={Search}

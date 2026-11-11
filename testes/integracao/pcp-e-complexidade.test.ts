@@ -129,4 +129,18 @@ describe('PCP e complexidade', () => {
     await salvar([]);
     expect((await obterProduto.executar(avId)).estrutura).toEqual([]);
   });
+
+  it('grava a opção N/A dos itens do checklist de entrada técnica', async () => {
+    await salvarProduto.executar({
+      avId,
+      desenho3dNaoAplica: true,
+      normasTecnicasExistente: true,
+      estrutura: [],
+      investimentos: [],
+    });
+    const lida = await obterProduto.executar(avId);
+    expect(lida.desenho3dNaoAplica).toBe(true);
+    expect(lida.normasTecnicasNaoAplica).toBeNull();
+    expect(lida.normasTecnicasExistente).toBe(true);
+  });
 });
