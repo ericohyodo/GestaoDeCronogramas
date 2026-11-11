@@ -19,7 +19,7 @@ const STATUS: Record<StatusSdDTO, { rotulo: string; tom: Tom }> = {
   cancelada: { rotulo: 'Cancelada', tom: 'perigo' },
 };
 
-/** Cada SD nasce de uma AV e herda o número dela (AV 0007-26 → SD 0007-26 → PRO 0007-26). */
+/** Cada SD nasce de uma AV e herda o número dela (AV 26-007 → SD 26-007 → PRO 26-007). */
 export function PaginaSds() {
   const { itens, erro, carregar, limparErro } = useSdsStore();
 

@@ -25,9 +25,14 @@ export function CardCronograma({
   return (
     <PainelVidro className="group flex flex-col p-5 transition-shadow hover:shadow-[0_12px_40px_rgb(15_27_45/0.14)]">
       <div className="flex items-start justify-between gap-3">
-        <Etiqueta tom={TOM_SITUACAO[cronograma.situacao]}>
-          {ROTULO_SITUACAO[cronograma.situacao]}
-        </Etiqueta>
+        <div className="flex flex-wrap items-center gap-2">
+          <Etiqueta tom={TOM_SITUACAO[cronograma.situacao]}>
+            {ROTULO_SITUACAO[cronograma.situacao]}
+          </Etiqueta>
+          {cronograma.codigo && (
+            <span className="text-xs font-semibold tabular-nums text-titulo-secao">{cronograma.codigo}</span>
+          )}
+        </div>
         {podeEditar && (
           <div className="-mr-2 -mt-1.5 flex opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100">
             <BotaoIcone icone={Pencil} rotulo={`Editar ${cronograma.nome}`} onClick={aoEditar} />

@@ -40,7 +40,7 @@ export function CabecalhoCronograma({ cronograma, podeEditar, acoesExtras }: Pro
             Cronogramas
           </Link>
         }
-        titulo={cronograma.nome}
+        titulo={cronograma.codigo ? `${cronograma.codigo} · ${cronograma.nome}` : cronograma.nome}
         descricao={
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <Etiqueta tom={TOM_SITUACAO[cronograma.situacao]}>

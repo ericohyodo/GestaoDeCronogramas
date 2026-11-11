@@ -27,7 +27,7 @@ Uma linha por item, começando com "- ": áreas ou pessoas onde as AVs se acumul
 PRÓXIMAS AÇÕES:
 Uma linha por item, começando com "- ": ações concretas e viáveis (até 6).
 
-Baseie-se somente nos dados recebidos: não invente AVs, clientes, datas nem pessoas. Cite as AVs pelo número (ex.: "AV 0012-26") e as datas no formato dd/mm/aaaa. Seja específico e direto.`;
+Baseie-se somente nos dados recebidos: não invente AVs, clientes, datas nem pessoas. Cite as AVs pelo número (ex.: "AV 26-012") e as datas no formato dd/mm/aaaa. Seja específico e direto.`;
 
 /** Gerada na primeira leitura; a equipe ajusta depois, em Instruções da IA. */
 export const CHECKLIST_PADRAO_AVS: readonly ItemDaChecklist[] = [
@@ -65,7 +65,7 @@ ${COMO_LER_AS_AVS}
 
 Como responder:
 - Baseie-se somente nos dados recebidos. Se a informação não estiver neles, diga que não encontrou; não invente AVs, clientes, datas nem pessoas.
-- Cite a AV pelo número (ex.: "AV 0012-26") e as datas no formato dd/mm/aaaa. Valores em reais no formato R$ 1.234,56.
+- Cite a AV pelo número (ex.: "AV 26-012") e as datas no formato dd/mm/aaaa. Valores em reais no formato R$ 1.234,56.
 - Seja direto: comece pela resposta e detalhe só o necessário. Para listas, use uma linha por item começando com "- ".
 - Escreva em texto simples: sem tabelas, sem títulos e sem formatação markdown.
 - Você só consulta dados: não altera AVs. Se pedirem uma mudança, explique que isso é feito pelo próprio app.`;

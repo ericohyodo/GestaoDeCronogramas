@@ -85,7 +85,7 @@ describe('Relatório e IA das AVs', () => {
     const modelo = {
       conversar: async (pedido: PedidoDeConversa) => {
         pedidos.push(pedido);
-        return { texto: 'RESUMO:\nTudo sob controle.\nPONTOS DE ATENÇÃO:\n- AV 0001-26 atrasada.', modelo: pedido.modelo };
+        return { texto: 'RESUMO:\nTudo sob controle.\nPONTOS DE ATENÇÃO:\n- AV 26-001 atrasada.', modelo: pedido.modelo };
       },
       testar: async () => undefined,
     } as unknown as ModeloDeAnalise;

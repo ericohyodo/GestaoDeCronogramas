@@ -9,7 +9,7 @@ export interface Sd {
   criadoEm: Date;
 }
 
-/** A SD e o projeto herdam o sequencial/ano da AV: só o prefixo muda (`AV 0007-26` → `SD 0007-26`). */
+/** A SD e o projeto herdam o sequencial/ano da AV: só o prefixo muda (`AV 26-007` → `SD 26-007`). */
 export function trocarPrefixoDoNumero(numeroAv: string, prefixo: 'SD' | 'PRO'): string {
   return numeroAv.replace(/^\S+/, prefixo);
 }

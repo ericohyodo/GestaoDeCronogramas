@@ -360,9 +360,13 @@ function validarEmailOpcional(email: string | null | undefined): string | null {
   return texto;
 }
 
-/** Ex.: `AV 0007-26`. */
+/**
+ * Número da AV no formato unificado `AV AA-SSS` (ex.: `AV 26-001`). O mesmo sufixo acompanha a SD
+ * (`SD 26-001`) e o projeto (`PRO 26-001`). Acima de 999 AVs no ano o sequencial cresce para 4 dígitos.
+ * @param sequencial sequencial da AV dentro do ano (recomeça a cada ano)
+ * @param ano ano de abertura com 4 dígitos
+ */
 export function gerarNumeroAv(sequencial: number, ano: number): string {
-  const seq = String(sequencial).padStart(4, '0');
-  const anoCurto = String(ano).slice(-2);
-  return `AV ${seq}-${anoCurto}`;
+  const anoCurto = String(ano % 100).padStart(2, '0');
+  return `AV ${anoCurto}-${String(sequencial).padStart(3, '0')}`;
 }

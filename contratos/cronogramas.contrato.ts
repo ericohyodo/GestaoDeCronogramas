@@ -11,6 +11,8 @@ export interface CronogramaDTO {
   dataFim: string;
   duracaoEmDias: number;
   situacao: SituacaoCronogramaDTO;
+  /** Código do projeto (`PRO 26-001`) quando nasceu do aceite de uma SD; `null` nos criados à mão. */
+  codigo: string | null;
   criadoEm: string;
   atualizadoEm: string;
 }
