@@ -9,9 +9,5 @@ export const migracao0038: Migracao = {
   sql: `
     ALTER TABLE responsaveis ADD COLUMN usuario_id TEXT REFERENCES usuarios(id) ON DELETE SET NULL;
     CREATE UNIQUE INDEX idx_responsaveis_usuario ON responsaveis (usuario_id) WHERE usuario_id IS NOT NULL;
-
-    -- Avisos de rotina (prazo vencendo/atrasado) saem uma vez só por chave (ex.: tarefa + término).
-    ALTER TABLE notificacoes ADD COLUMN chave TEXT;
-    CREATE INDEX idx_notificacoes_chave ON notificacoes (usuario_id, tipo, chave) WHERE chave IS NOT NULL;
   `,
 };

@@ -37,6 +37,7 @@ import { migracao0035 } from './0035-sd-parecer-do-aceite';
 import { migracao0036 } from './0036-notificacoes';
 import { migracao0037 } from './0037-usuarios-email';
 import { migracao0038 } from './0038-responsaveis-usuario';
+import { migracao0039 } from './0039-notificacoes-chave';
 
 export const MIGRACOES: readonly Migracao[] = [
   migracao0001,
@@ -77,4 +78,5 @@ export const MIGRACOES: readonly Migracao[] = [
   migracao0036,
   migracao0037,
   migracao0038,
+  migracao0039,
 ];
