@@ -1,8 +1,11 @@
-import { BrowserWindow, nativeTheme, shell } from 'electron';
+import path from 'node:path';
+import { app, BrowserWindow, nativeTheme, shell } from 'electron';
 
 /** Precisa coincidir com a altura da BarraDeTitulo do renderer (h-10). */
 const ALTURA_BARRA_DE_TITULO = 40;
 const TRANSPARENTE = '#00000000';
+/** Ícone da janela/barra de tarefas (gerado por recursos/gerar-icone.mjs; empacotado junto do app). */
+const CAMINHO_DO_ICONE = path.join(app.getAppPath(), 'recursos', 'icon.png');
 
 // Mesmos valores dos tokens `--fundo-inicio` e `--texto` do renderer (globals.css).
 const CORES = {
@@ -24,6 +27,7 @@ export function criarJanelaPrincipal(opcoes: OpcoesJanelaPrincipal): BrowserWind
 
   const janela = new BrowserWindow({
     title: 'Gestão de Novos Desenvolvimentos (AV-SD-PRO)',
+    icon: CAMINHO_DO_ICONE,
     width: 1280,
     height: 800,
     minWidth: 960,
