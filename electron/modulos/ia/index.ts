@@ -1,6 +1,5 @@
 /**
- * API pública do módulo IA: análise de cronogramas pela Claude API (Anthropic) ou pela API Gemini
- * (Google). A chamada sai daqui, do processo principal; as chaves nunca chegam ao renderer.
+ * API pública do módulo IA: análise de cronogramas pela Claude API (Anthropic). A chamada sai daqui, do processo principal; as chaves nunca chegam ao renderer.
  * Toda análise gerada fica no arquivo de análises.
  */
 import type { GeradorDeId } from '../../nucleo/aplicacao/portas/gerador-de-id';
@@ -37,9 +36,6 @@ import type {
 import { registrarIpcIa } from './apresentacao/controlador-ipc-ia';
 import { ConfiguracaoIaSqlite } from './infraestrutura/configuracao-ia-sqlite';
 import { ModeloClaude } from './infraestrutura/modelo-claude';
-import { ModeloGemini } from './infraestrutura/modelo-gemini';
-import { ModeloOpenRouter } from './infraestrutura/modelo-openrouter';
-import { ModeloPorProvedor } from './infraestrutura/modelo-por-provedor';
 import { RepositorioDeAnalisesSqlite } from './infraestrutura/repositorio-de-analises-sqlite';
 
 export type { ConsultaDeAvs, ConsultaDeCronograma, ConsultaDeEstrutura, QuemEstaUsando };
@@ -66,11 +62,7 @@ export interface ModuloIa {
 export function montarModuloIa(deps: DependenciasModuloIa): ModuloIa {
   const configuracao = new ConfiguracaoIaSqlite(deps.db);
   const arquivo = new RepositorioDeAnalisesSqlite(deps.db);
-  const modelo = new ModeloPorProvedor({
-    anthropic: new ModeloClaude(),
-    google: new ModeloGemini(),
-    openrouter: new ModeloOpenRouter(),
-  });
+  const modelo = new ModeloClaude();
 
   const dependenciasDaAnalise: DependenciasDaAnalise = {
     cofre: configuracao,

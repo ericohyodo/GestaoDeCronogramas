@@ -21,6 +21,8 @@ import {
   sistemaDoChat,
 } from './instrucoes-da-analise';
 
+const MODELOS_COM_FALLBACK: ModeloIaDTO[] = ['claude-opus-5-5', 'claude-sonnet-5-5', 'claude-opus-5'];
+
 /** Erros esperados da API viram mensagens para a pessoa; o resto segue como erro interno. */
 function traduzirErro(erro: unknown, modelo: string): never {
   if (erro instanceof Anthropic.APIError) {
@@ -123,8 +125,8 @@ export class ModeloClaude implements ModeloDeAnalise {
     mensagem: string,
   ): Promise<{ dados: T; modelo: string }> {
     const cliente = new Anthropic({ apiKey: chave, timeout: 180_000 });
-    // No Opus 5, uma recusa dos classificadores de segurança é refeita no modelo recomendado.
-    const comFallback = modelo === 'claude-opus-5';
+    // Uma recusa dos classificadores de segurança é refeita no modelo recomendado (o Haiku não tem fallback).
+    const comFallback = (MODELOS_COM_FALLBACK as readonly string[]).includes(modelo);
 
     let resposta;
     try {

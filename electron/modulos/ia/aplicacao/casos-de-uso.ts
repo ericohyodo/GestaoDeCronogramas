@@ -9,6 +9,7 @@ import {
   type RespostaDoChatDTO,
   type EstadoIaDTO,
   type ModeloIaDTO,
+  MODELO_PADRAO,
   PROVEDORES_IA,
   type ProvedorIaDTO,
   provedorDoModelo,
@@ -41,22 +42,11 @@ import type {
   RepositorioDeInstrucoesIa,
 } from './portas';
 
-export const MODELO_PADRAO: ModeloIaDTO = 'claude-opus-5';
-
 /** Formato esperado de cada chave, só para barrar colagens incompletas antes de chamar a API. */
 const FORMATO_DA_CHAVE: Record<ProvedorIaDTO, { regra: RegExp; dica: string }> = {
   anthropic: {
     regra: /^sk-ant-[A-Za-z0-9_-]{20,}$/,
     dica: 'A chave da Anthropic começa com "sk-ant-". Copie-a inteira do Console da Anthropic.',
-  },
-  // Chaves antigas começam com "AIza"; as novas do AI Studio têm pontos (ex.: "AQ.…").
-  google: {
-    regra: /^[A-Za-z0-9._-]{30,}$/,
-    dica: 'Chave do Google incompleta. Copie-a inteira do Google AI Studio.',
-  },
-  openrouter: {
-    regra: /^sk-or-[A-Za-z0-9_-]{20,}$/,
-    dica: 'A chave do OpenRouter começa com "sk-or-". Copie-a inteira da página Keys do OpenRouter.',
   },
 };
 

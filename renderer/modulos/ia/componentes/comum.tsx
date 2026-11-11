@@ -21,21 +21,15 @@ export const GRAVIDADE: Record<GravidadeDTO, { rotulo: string; tom: Tom }> = {
 };
 
 const NOME_DO_MODELO: Record<string, string> = {
+  'claude-opus-5-5': 'Claude Opus 5.5',
+  'claude-sonnet-5-5': 'Claude Sonnet 5.5',
+  'claude-haiku-5-5': 'Claude Haiku 5.5',
   'claude-opus-5': 'Claude Opus 5',
   'claude-sonnet-5': 'Claude Sonnet 5',
-  'gemini-3.8-flash': 'Gemini 3.8 Flash',
-  'gemini-3.5-flash-lite': 'Gemini 3.5 Flash-Lite',
-  'openrouter/free': 'OpenRouter (roteador gratuito)',
-  'nvidia/nemotron-3-super-120b-a12b:free': 'Nemotron 3 Super 120B (OpenRouter)',
-  'qwen/qwen3.8-27b:free': 'Qwen 3.8 27B (OpenRouter)',
-  'nex-agi/nex-n2.5-pro:free': 'Nex N2.5 Pro (OpenRouter)',
-  'dots-studio/dots-3-note-preview:free': 'Dots3-Note Preview (OpenRouter)',
 };
 
 export const DESTINO_DOS_DADOS: Record<ProvedorIaDTO, string> = {
   anthropic: 'à Anthropic',
-  google: 'ao Google',
-  openrouter: 'ao OpenRouter e ao provedor do modelo gratuito',
 };
 
 export function nomeDoModelo(modelo: string): string {
@@ -49,7 +43,7 @@ export function dataEHora(iso: string): string {
   return `${dia} às ${hora}`;
 }
 
-/** "24/09/2026 às 10:56 · Gemini 3.5 Flash-Lite · por Érico" */
+/** "24/09/2026 às 10:56 · Claude Opus 5.5 · por Érico" */
 export function descricaoDaGeracao(analise: { geradaEm: string; modelo: string; geradaPor: string | null }): string {
   const partes = [dataEHora(analise.geradaEm), nomeDoModelo(analise.modelo)];
   if (analise.geradaPor) partes.push(`por ${analise.geradaPor}`);

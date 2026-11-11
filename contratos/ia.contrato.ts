@@ -1,25 +1,21 @@
+/** Lista única para todos os módulos: só modelos da Anthropic. O primeiro é o padrão. */
 export const MODELOS_IA = [
+  'claude-opus-5-5',
+  'claude-sonnet-5-5',
+  'claude-haiku-5-5',
   'claude-opus-5',
   'claude-sonnet-5',
-  'gemini-3.8-flash',
-  'gemini-3.5-flash-lite',
-  // OpenRouter: só o roteador automático e modelos gratuitos (":free") que aceitam saída estruturada.
-  'openrouter/free',
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  'qwen/qwen3.8-27b:free',
-  'nex-agi/nex-n2.5-pro:free',
-  'dots-studio/dots-3-note-preview:free',
 ] as const;
 export type ModeloIaDTO = (typeof MODELOS_IA)[number];
+export const MODELO_PADRAO: ModeloIaDTO = MODELOS_IA[0];
 
-export const PROVEDORES_IA = ['anthropic', 'google', 'openrouter'] as const;
+export const PROVEDORES_IA = ['anthropic'] as const;
 export type ProvedorIaDTO = (typeof PROVEDORES_IA)[number];
 
 /** Cada provedor tem a sua chave: o modelo escolhido define qual delas é usada. */
 export function provedorDoModelo(modelo: ModeloIaDTO): ProvedorIaDTO {
-  if (modelo.startsWith('gemini')) return 'google';
   if (modelo.startsWith('claude')) return 'anthropic';
-  return 'openrouter';
+  throw new Error(`Modelo de IA sem provedor: ${modelo}`);
 }
 
 export interface EstadoIaDTO {
@@ -102,7 +98,7 @@ export interface ConversarComIaEntrada {
 
 export interface RespostaDoChatDTO {
   texto: string;
-  /** Modelo que de fato respondeu (no roteador gratuito do OpenRouter, pode variar). */
+  /** Modelo que de fato respondeu (no fallback por recusa, pode ser outro). */
   modelo: string;
 }
 

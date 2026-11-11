@@ -30,7 +30,7 @@ import { ArquivoDeAnalisesEmMemoria, GeradorDeIdSequencial, RelogioFixo } from '
 const CHAVE_VALIDA = 'sk-ant-api03-abcdefghijklmnopqrstuvwxyz0123';
 
 class ArmazenamentoFalso implements CofreDeChave, RepositorioDeConfiguracaoIa {
-  chaves: Record<ProvedorIaDTO, string | null> = { anthropic: null, google: null, openrouter: null };
+  chaves: Record<ProvedorIaDTO, string | null> = { anthropic: null };
   modelo: ModeloIaDTO | null = null;
   async obter(provedor: ProvedorIaDTO) {
     return this.chaves[provedor];
@@ -169,12 +169,12 @@ describe('Análise com IA', () => {
 
   it('envia o cronograma resumido, com números WBS e sem a evidência nem IDs internos', async () => {
     armazenamento.chaves.anthropic = CHAVE_VALIDA;
-    armazenamento.modelo = 'claude-sonnet-5';
+    armazenamento.modelo = 'claude-sonnet-5-5';
 
     const analise = await analisar.executar('c1');
 
     const pedido = modelo.pedidos[0]!;
-    expect(pedido.modelo).toBe('claude-sonnet-5');
+    expect(pedido.modelo).toBe('claude-sonnet-5-5');
     expect(pedido.contexto.hoje).toBe('2026-09-24');
     expect(pedido.contexto.linhas[1]).toMatchObject({ n: '1.1', fase: 'Planejamento', responsavel: 'Allan', critico: true });
     const enviado = JSON.stringify(pedido.contexto);
@@ -196,7 +196,7 @@ describe('Análise com IA', () => {
         tipo: 'cronograma',
         cronogramaId: 'c1',
         titulo: 'S Riko',
-        modelo: 'claude-opus-5',
+        modelo: 'claude-opus-5-5',
         saude: 'atencao',
         geradaEm: analise.geradaEm,
         geradaPor: 'Érico',
@@ -214,10 +214,10 @@ describe('Análise com IA', () => {
     expect(arquivo.analises).toHaveLength(0);
   });
 
-  it('usa o Opus 5 quando nenhum modelo foi escolhido', async () => {
+  it('usa o Opus 5.5 quando nenhum modelo foi escolhido', async () => {
     armazenamento.chaves.anthropic = CHAVE_VALIDA;
     await analisar.executar('c1');
-    expect(modelo.pedidos[0]!.modelo).toBe('claude-opus-5');
+    expect(modelo.pedidos[0]!.modelo).toBe('claude-opus-5-5');
   });
 
   it('recusa cronograma inexistente', async () => {
@@ -228,29 +228,29 @@ describe('Análise com IA', () => {
   it('só salva uma chave nova depois de a API aceitá-la', async () => {
     const configurar = new ConfigurarIa(armazenamento, armazenamento, modelo);
 
-    await expect(configurar.executar({ chave: 'abc', modelo: 'claude-opus-5' })).rejects.toThrow(ErroDeValidacao);
+    await expect(configurar.executar({ chave: 'abc', modelo: 'claude-opus-5-5' })).rejects.toThrow(ErroDeValidacao);
 
     modelo.recusarChave = true;
-    await expect(configurar.executar({ chave: CHAVE_VALIDA, modelo: 'claude-opus-5' })).rejects.toThrow(ErroNaIa);
+    await expect(configurar.executar({ chave: CHAVE_VALIDA, modelo: 'claude-opus-5-5' })).rejects.toThrow(ErroNaIa);
     expect(armazenamento.chaves.anthropic).toBeNull();
 
     modelo.recusarChave = false;
-    const estado = await configurar.executar({ chave: `  ${CHAVE_VALIDA}  `, modelo: 'claude-sonnet-5' });
+    const estado = await configurar.executar({ chave: `  ${CHAVE_VALIDA}  `, modelo: 'claude-sonnet-5-5' });
     expect(armazenamento.chaves.anthropic).toBe(CHAVE_VALIDA);
     expect(estado).toEqual({
       configurada: true,
-      modelo: 'claude-sonnet-5',
+      modelo: 'claude-sonnet-5-5',
       provedor: 'anthropic',
-      chaves: { anthropic: '0123', google: null, openrouter: null },
+      chaves: { anthropic: '0123' },
     });
   });
 
   it('troca só o modelo mantendo a chave, e remove a chave', async () => {
     armazenamento.chaves.anthropic = CHAVE_VALIDA;
-    await new ConfigurarIa(armazenamento, armazenamento, modelo).executar({ modelo: 'claude-sonnet-5' });
+    await new ConfigurarIa(armazenamento, armazenamento, modelo).executar({ modelo: 'claude-sonnet-5-5' });
     expect(await new ObterEstadoIa(armazenamento, armazenamento).executar()).toMatchObject({
       configurada: true,
-      modelo: 'claude-sonnet-5',
+      modelo: 'claude-sonnet-5-5',
     });
 
     const estado = await new RemoverChaveIa(armazenamento, armazenamento).executar();
@@ -258,67 +258,6 @@ describe('Análise com IA', () => {
     expect(estado.chaves.anthropic).toBeNull();
   });
 
-  describe('com o Gemini', () => {
-    // Formato das chaves novas do Google AI Studio (com ponto); valor fictício.
-    const CHAVE_GOOGLE = 'AQ.chaveFicticiaDeTesteParaOGemini0000000000';
-
-    it('aceita a chave do AI Studio e a guarda separada da chave da Anthropic', async () => {
-      armazenamento.chaves.anthropic = CHAVE_VALIDA;
-      const estado = await new ConfigurarIa(armazenamento, armazenamento, modelo).executar({
-        chave: CHAVE_GOOGLE,
-        modelo: 'gemini-3.8-flash',
-      });
-
-      expect(armazenamento.chaves).toEqual({ anthropic: CHAVE_VALIDA, google: CHAVE_GOOGLE, openrouter: null });
-      expect(estado).toMatchObject({ configurada: true, provedor: 'google', chaves: { anthropic: '0123', google: '0000' } });
-    });
-
-    it('trocar para o Gemini sem chave do Google não usa a chave da Anthropic', async () => {
-      armazenamento.chaves.anthropic = CHAVE_VALIDA;
-      armazenamento.modelo = 'gemini-3.8-flash';
-
-      expect((await new ObterEstadoIa(armazenamento, armazenamento).executar()).configurada).toBe(false);
-      await expect(analisar.executar('c1')).rejects.toThrow(ErroNaIa);
-      expect(modelo.pedidos).toHaveLength(0);
-    });
-
-    it('analisa com a chave do Google quando o modelo é Gemini', async () => {
-      armazenamento.chaves = { anthropic: CHAVE_VALIDA, google: CHAVE_GOOGLE, openrouter: null };
-      armazenamento.modelo = 'gemini-3.5-flash-lite';
-
-      await analisar.executar('c1');
-
-      expect(modelo.pedidos[0]).toMatchObject({ chave: CHAVE_GOOGLE, modelo: 'gemini-3.5-flash-lite' });
-    });
-  });
-
-  describe('com o OpenRouter', () => {
-    // Formato das chaves do OpenRouter; valor fictício.
-    const CHAVE_OPENROUTER = 'sk-or-v1-chaveFicticiaDeTeste0000000000';
-
-    it('aceita a chave "sk-or-" e a guarda separada das demais', async () => {
-      armazenamento.chaves.anthropic = CHAVE_VALIDA;
-      const configurar = new ConfigurarIa(armazenamento, armazenamento, modelo);
-
-      await expect(configurar.executar({ chave: 'sk-ant-nao-e-do-openrouter', modelo: 'openrouter/free' })).rejects.toThrow(
-        ErroDeValidacao,
-      );
-      const estado = await configurar.executar({ chave: CHAVE_OPENROUTER, modelo: 'openrouter/free' });
-
-      expect(armazenamento.chaves.openrouter).toBe(CHAVE_OPENROUTER);
-      expect(armazenamento.chaves.anthropic).toBe(CHAVE_VALIDA);
-      expect(estado).toMatchObject({ configurada: true, provedor: 'openrouter', chaves: { openrouter: '0000' } });
-    });
-
-    it('analisa com a chave do OpenRouter quando o modelo é ":free"', async () => {
-      armazenamento.chaves.openrouter = CHAVE_OPENROUTER;
-      armazenamento.modelo = 'qwen/qwen3.8-27b:free';
-
-      await analisar.executar('c1');
-
-      expect(modelo.pedidos[0]).toMatchObject({ chave: CHAVE_OPENROUTER, modelo: 'qwen/qwen3.8-27b:free' });
-    });
-  });
   describe('chat', () => {
     const pergunta = (texto: string) => ({ papel: 'usuario' as const, texto });
     const resposta = (texto: string) => ({ papel: 'ia' as const, texto });
@@ -333,7 +272,7 @@ describe('Análise com IA', () => {
 
       const saida = await conversar.executar({ mensagens: [pergunta('Quem está atrasado?')] });
 
-      expect(saida).toEqual({ texto: 'resposta da IA', modelo: 'claude-opus-5' });
+      expect(saida).toEqual({ texto: 'resposta da IA', modelo: 'claude-opus-5-5' });
       const pedido = modelo.pedidosDeConversa[0]!;
       const contexto = pedido.contexto as ContextoDoChat;
       expect(contexto.hoje).toBe('2026-09-24');
@@ -384,16 +323,13 @@ describe('Análise com IA', () => {
       expect(modelo.pedidosDeConversa).toHaveLength(0);
     });
 
-    it('usa a chave do provedor do modelo escolhido', async () => {
-      armazenamento.chaves.openrouter = 'sk-or-v1-chaveFicticiaDeTeste0000000000';
-      armazenamento.modelo = 'openrouter/free';
+    it('usa o modelo escolhido com a chave da Anthropic', async () => {
+      armazenamento.chaves.anthropic = CHAVE_VALIDA;
+      armazenamento.modelo = 'claude-haiku-5-5';
 
       await conversar.executar({ mensagens: [pergunta('Resumo?')] });
 
-      expect(modelo.pedidosDeConversa[0]).toMatchObject({
-        chave: 'sk-or-v1-chaveFicticiaDeTeste0000000000',
-        modelo: 'openrouter/free',
-      });
+      expect(modelo.pedidosDeConversa[0]).toMatchObject({ chave: CHAVE_VALIDA, modelo: 'claude-haiku-5-5' });
     });
   });
 });

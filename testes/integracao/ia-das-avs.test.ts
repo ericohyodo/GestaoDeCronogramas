@@ -174,8 +174,9 @@ describe('Relatório e IA das AVs', () => {
     expect((await new ObterInstrucoesIa(configuracao, 'avs').executar()).orientacoes).toBe('Priorize a Whirlpool.');
     expect((await new ObterInstrucoesIa(configuracao, 'projetos').executar()).orientacoes).toBe('');
 
-    await configuracao.salvarModelo('gemini-3.8-flash', 'avs');
-    expect((await new ObterEstadoIa(configuracao, configuracao, 'avs').executar()).modelo).toBe('gemini-3.8-flash');
-    expect((await new ObterEstadoIa(configuracao, configuracao).executar()).modelo).toBe('claude-opus-5');
+    await configuracao.salvarModelo('claude-haiku-5-5', 'avs');
+    expect((await new ObterEstadoIa(configuracao, configuracao, 'avs').executar()).modelo).toBe('claude-haiku-5-5');
+    expect((await new ObterEstadoIa(configuracao, configuracao).executar()).modelo).toBe('claude-opus-5-5');
   });
+
 });

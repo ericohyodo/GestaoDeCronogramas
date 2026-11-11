@@ -149,19 +149,18 @@ describe('Banco SQLite', () => {
 
     expect(await configuracao.obter('anthropic')).toBeNull();
     await configuracao.salvar('anthropic', chave);
-    await configuracao.salvar('google', 'AQ.outra-chave-de-teste-google-0000000000');
-    await configuracao.salvarModelo('gemini-3.8-flash');
+    await configuracao.salvarModelo('claude-sonnet-5-5');
 
     const bruto = db.prepare('SELECT group_concat(valor) FROM ia_configuracao').pluck().get() as string;
     expect(bruto).not.toContain('segredo-de-teste');
-    expect(bruto).not.toContain('outra-chave');
     expect(await new ConfiguracaoIaSqlite(db).obter('anthropic')).toBe(chave);
-    expect(await configuracao.obter('google')).toBe('AQ.outra-chave-de-teste-google-0000000000');
-    expect(await configuracao.obterModelo()).toBe('gemini-3.8-flash');
+    expect(await configuracao.obterModelo()).toBe('claude-sonnet-5-5');
+    // Modelo que saiu da lista (ex.: um Gemini salvo antes) é ignorado: vale o padrão.
+    db.prepare("UPDATE ia_configuracao SET valor = 'gemini-3.8-flash' WHERE chave = 'modelo'").run();
+    expect(await configuracao.obterModelo()).toBeNull();
 
     await configuracao.remover('anthropic');
     expect(await configuracao.obter('anthropic')).toBeNull();
-    expect(await configuracao.obter('google')).not.toBeNull();
 
     expect(await configuracao.obterInstrucoes()).toBeNull();
     const checklist = [
@@ -179,7 +178,7 @@ describe('Banco SQLite', () => {
   it('arquiva as análises da IA e acha a mais recente de cada cronograma', async () => {
     const arquivo = new RepositorioDeAnalisesSqlite(db);
     const conteudo = {
-      modelo: 'gemini-3.5-flash-lite',
+      modelo: 'claude-haiku-5-5',
       saude: 'atencao' as const,
       resumo: 'ok',
       riscos: [],
