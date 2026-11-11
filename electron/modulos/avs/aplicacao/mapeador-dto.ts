@@ -33,7 +33,7 @@ export function paraAvResumoDTO(av: Av, nomesPorId: Map<string, string>): AvResu
   };
 }
 
-export function paraAvDetalheDTO(av: Av, nomesPorId: Map<string, string>): AvDetalheDTO {
+export function paraAvDetalheDTO(av: Av, nomesPorId: Map<string, string>, versaoComercial: number): AvDetalheDTO {
   return {
     ...paraAvResumoDTO(av, nomesPorId),
     camposPendentes: av.camposPendentes ?? [],
@@ -59,5 +59,6 @@ export function paraAvDetalheDTO(av: Av, nomesPorId: Map<string, string>): AvDet
     infoComplementarComercial: av.infoComplementarComercial,
     dataProposta: av.dataProposta ? av.dataProposta.toISOString() : null,
     cronogramaId: av.cronogramaId,
+    versaoComercial,
   };
 }

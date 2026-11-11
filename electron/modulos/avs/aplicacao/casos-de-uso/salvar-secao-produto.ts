@@ -13,6 +13,8 @@ import type {
 } from '../../dominio/repositorio-secao-produto';
 import type { AutorizacaoAv } from '../autorizacao';
 import { paraSecaoProdutoDTO } from '../mapeador-produto-processo-dto';
+import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
+import { chaveDaSecao } from '../versoes';
 
 export class SalvarSecaoProduto implements CasoDeUso<AtualizarSecaoProdutoEntrada, SecaoProdutoDTO> {
   constructor(
@@ -21,6 +23,7 @@ export class SalvarSecaoProduto implements CasoDeUso<AtualizarSecaoProdutoEntrad
     private readonly autorizacao: AutorizacaoAv,
     private readonly relogio: Relogio,
     private readonly geradorDeId: GeradorDeId,
+    private readonly versoes: ControleDeVersao = versaoSemControle,
   ) {}
 
   async executar(entrada: AtualizarSecaoProdutoEntrada): Promise<SecaoProdutoDTO> {
@@ -79,7 +82,8 @@ export class SalvarSecaoProduto implements CasoDeUso<AtualizarSecaoProdutoEntrad
       investimentos,
     };
 
+    const versao = this.versoes.confirmar(chaveDaSecao(av.id, 'produto'), entrada.versaoEsperada);
     await this.repositorio.salvar(dados);
-    return paraSecaoProdutoDTO(dados);
+    return paraSecaoProdutoDTO(dados, versao);
   }
 }

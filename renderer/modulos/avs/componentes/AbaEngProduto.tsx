@@ -28,7 +28,7 @@ import {
   type LinhaInvestimentoEditavel,
 } from './TabelaDeInvestimentos';
 import { CLASSE_CELULA_EDITAVEL } from './TabelaDeMateriais';
-import { useAlteracoes, useRegistrarAba } from './alteracoes-da-aba';
+import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
 import { Ajuda } from '@/compartilhado/ui/Ajuda';
 import { CabecalhoDaSecao, SecaoAv } from './SecaoAv';
 
@@ -113,12 +113,15 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
   const [investimentos, setInvestimentos] = useState<LinhaInvestimentoEditavel[]>([]);
   const [estrutura, setEstrutura] = useState<NoEditavel[]>([]);
 
-  const [erroSalvar, setErroSalvar] = useState<string | null>(null);
+  const [erroSalvar, setErroSalvar] = useState<unknown>(null);
+  // Versão lida ao abrir a aba (gravação otimista); avança a cada salvamento bem-sucedido.
+  const [versao, setVersao] = useState<number | null>(null);
 
   useEffect(() => {
     clienteDesktop.avs
       .obterSecaoProduto(av.id)
       .then((secao) => {
+        setVersao(secao.versao);
         setChecklist(checklistInicial(secao));
         setLinks(linksIniciais(secao));
         setEscopoTecnico(secao.escopoTecnico ?? '');
@@ -149,8 +152,9 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
           valor: paraNumeroOuNull(linha.valor),
         }));
 
-      await clienteDesktop.avs.salvarSecaoProduto({
+      const salva = await clienteDesktop.avs.salvarSecaoProduto({
         avId: av.id,
+        versaoEsperada: versao,
         ...checklist,
         ...links,
         escopoTecnico: escopoTecnico || null,
@@ -164,10 +168,11 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
         investimentos: itensInvestimento,
         estrutura: estruturaParaEnvio(estrutura),
       });
+      setVersao(salva.versao);
       marcarLimpo();
       return true;
     } catch (falha) {
-      setErroSalvar(mensagemDeErro(falha));
+      setErroSalvar(falha);
       return false;
     }
   };
@@ -394,7 +399,7 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      {erroSalvar && <MensagemErro mensagem={erroSalvar} />}
+      <ErroDaAba erro={erroSalvar} />
     </form>
   );
 }

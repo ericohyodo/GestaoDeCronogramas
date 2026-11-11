@@ -34,13 +34,14 @@ function paraItemProcessoDTO(item: ItemCustoProcesso): ItemCustoProcessoDTO {
   };
 }
 
-export function paraSecaoCustoDTO(dados: DadosSecaoCusto | null): SecaoCustoDTO {
-  if (!dados) return { incoterm: null, observacoes: null, materiais: [], processo: [], atualizadoEm: null };
+export function paraSecaoCustoDTO(dados: DadosSecaoCusto | null, versao: number): SecaoCustoDTO {
+  if (!dados) return { incoterm: null, observacoes: null, materiais: [], processo: [], atualizadoEm: null, versao };
   return {
     incoterm: dados.secao.incoterm,
     observacoes: dados.secao.observacoes,
     materiais: dados.materiais.map(paraItemMaterialDTO),
     processo: dados.processo.map(paraItemProcessoDTO),
     atualizadoEm: dados.secao.atualizadoEm ? dados.secao.atualizadoEm.toISOString() : null,
+    versao,
   };
 }

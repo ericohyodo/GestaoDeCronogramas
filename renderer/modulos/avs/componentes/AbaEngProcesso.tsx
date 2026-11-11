@@ -11,7 +11,7 @@ import type {
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { CampoTexto } from '@/compartilhado/ui/Campos';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
-import { useAlteracoes, useRegistrarAba } from './alteracoes-da-aba';
+import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
 import { CabecalhoDaSecao, SecaoAv } from './SecaoAv';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { BarraDeTemplates } from './BarraDeTemplates';
@@ -82,11 +82,14 @@ export function AbaEngProcesso({ av }: { av: AvDetalheDTO }) {
   const [sugestoesOperacao, setSugestoesOperacao] = useState<string[]>([]);
   const [sugestoesMaquina, setSugestoesMaquina] = useState<string[]>([]);
 
-  const [erroSalvar, setErroSalvar] = useState<string | null>(null);
+  const [erroSalvar, setErroSalvar] = useState<unknown>(null);
+  // Versão lida ao abrir a aba (gravação otimista); avança a cada salvamento bem-sucedido.
+  const [versao, setVersao] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([clienteDesktop.avs.obterSecaoProcesso(av.id), clienteDesktop.avs.obterCatalogoCusto()])
       .then(([secao, catalogo]) => {
+        setVersao(secao.versao);
         setPrazoProducaoDias(secao.prazoProducaoDias != null ? String(secao.prazoProducaoDias) : '');
         setInvestimentos(linhasIniciais(secao));
         setOperacoes(paraLinhasOperacao(secao.operacoes));
@@ -117,18 +120,20 @@ export function AbaEngProcesso({ av }: { av: AvDetalheDTO }) {
           a.localeCompare(b, 'pt-BR'),
         );
 
-      await clienteDesktop.avs.salvarSecaoProcesso({
+      const salva = await clienteDesktop.avs.salvarSecaoProcesso({
         avId: av.id,
+        versaoEsperada: versao,
         prazoProducaoDias: paraNumeroOuNull(prazoProducaoDias),
         operacoes: itensOperacao,
         investimentos: itensInvestimento,
       });
       setSugestoesOperacao((atuais) => novosNomes(itensOperacao.map((item) => item.descricao), atuais));
       setSugestoesMaquina((atuais) => novosNomes(itensOperacao.map((item) => item.maquina ?? ''), atuais));
+      setVersao(salva.versao);
       marcarLimpo();
       return true;
     } catch (falha) {
-      setErroSalvar(mensagemDeErro(falha));
+      setErroSalvar(falha);
       return false;
     }
   };
@@ -197,7 +202,7 @@ export function AbaEngProcesso({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      {erroSalvar && <MensagemErro mensagem={erroSalvar} />}
+      <ErroDaAba erro={erroSalvar} />
     </form>
   );
 }

@@ -58,6 +58,8 @@ export interface AvDetalheDTO extends AvResumoDTO {
   criadoPorNome: string | null;
   /** Campos (descricao, codigo, volumeAnual, linha, programa) a preencher à mão após herdar dados do grupo. */
   camposPendentes: string[];
+  /** Versão dos dados comerciais (gravação otimista). */
+  versaoComercial: number;
 }
 
 export interface CriarAvEntrada {
@@ -72,6 +74,8 @@ export interface CriarAvEntrada {
 
 export interface AtualizarComercialEntrada {
   avId: string;
+  /** Versão que a tela leu; se outro usuário gravou depois, o salvamento é recusado. */
+  versaoEsperada?: number | null;
   cliente?: string | null;
   codigo?: string | null;
   descricao?: string;
@@ -189,6 +193,8 @@ export interface SecaoCustoDTO {
   materiais: ItemCustoMaterialDTO[];
   processo: ItemCustoProcessoDTO[];
   atualizadoEm: string | null;
+  /** Versão lida (gravação otimista): devolvida em `versaoEsperada` ao salvar. */
+  versao: number;
 }
 
 export interface ItemCustoMaterialEntrada {
@@ -215,6 +221,8 @@ export interface ItemCustoProcessoEntrada {
 
 export interface AtualizarSecaoCustoEntrada {
   avId: string;
+  /** Versão que a tela leu; se outro usuário gravou depois, o salvamento é recusado. */
+  versaoEsperada?: number | null;
   incoterm?: IncotermDTO | null;
   observacoes?: string | null;
   materiais: ItemCustoMaterialEntrada[];
@@ -336,10 +344,14 @@ export interface SecaoProdutoDTO {
   estrutura: NoEstruturaDTO[];
   investimentos: InvestimentoDTO[];
   atualizadoEm: string | null;
+  /** Versão lida (gravação otimista): devolvida em `versaoEsperada` ao salvar. */
+  versao: number;
 }
 
 export interface AtualizarSecaoProdutoEntrada {
   avId: string;
+  /** Versão que a tela leu; se outro usuário gravou depois, o salvamento é recusado. */
+  versaoEsperada?: number | null;
   descritivoTecnicoExistente?: boolean | null;
   descritivoTecnicoDisponivel?: boolean | null;
   desenho2dExistente?: boolean | null;
@@ -394,10 +406,14 @@ export interface SecaoProcessoDTO {
   operacoes: OperacaoDTO[];
   investimentos: InvestimentoDTO[];
   atualizadoEm: string | null;
+  /** Versão lida (gravação otimista): devolvida em `versaoEsperada` ao salvar. */
+  versao: number;
 }
 
 export interface AtualizarSecaoProcessoEntrada {
   avId: string;
+  /** Versão que a tela leu; se outro usuário gravou depois, o salvamento é recusado. */
+  versaoEsperada?: number | null;
   prazoProducaoDias?: number | null;
   operacoes: OperacaoEntrada[];
   investimentos: InvestimentoEntrada[];
@@ -549,10 +565,14 @@ export interface SecaoPcpDTO {
   cargas: CargaMaquinaDTO[];
   custos: CustoLogisticoDTO[];
   atualizadoEm: string | null;
+  /** Versão lida (gravação otimista): devolvida em `versaoEsperada` ao salvar. */
+  versao: number;
 }
 
 export interface AtualizarSecaoPcpEntrada {
   avId: string;
+  /** Versão que a tela leu; se outro usuário gravou depois, o salvamento é recusado. */
+  versaoEsperada?: number | null;
   observacoes?: string | null;
   cargas: CargaMaquinaEntrada[];
   custos: CustoLogisticoEntrada[];

@@ -12,7 +12,7 @@ function paraOperacaoDTO(item: Operacao): OperacaoDTO {
   return { id: item.id, descricao: item.descricao, maquina: item.maquina, pecasHora: item.pecasHora };
 }
 
-export function paraSecaoProdutoDTO(dados: DadosSecaoProduto | null): SecaoProdutoDTO {
+export function paraSecaoProdutoDTO(dados: DadosSecaoProduto | null, versao: number): SecaoProdutoDTO {
   if (!dados) {
     return {
       descritivoTecnicoExistente: null,
@@ -47,6 +47,7 @@ export function paraSecaoProdutoDTO(dados: DadosSecaoProduto | null): SecaoProdu
       estrutura: [],
       investimentos: [],
       atualizadoEm: null,
+      versao,
     };
   }
 
@@ -92,15 +93,17 @@ export function paraSecaoProdutoDTO(dados: DadosSecaoProduto | null): SecaoProdu
     })),
     investimentos: dados.investimentos.map(paraInvestimentoDTO),
     atualizadoEm: secao.atualizadoEm ? secao.atualizadoEm.toISOString() : null,
+    versao,
   };
 }
 
-export function paraSecaoProcessoDTO(dados: DadosSecaoProcesso | null): SecaoProcessoDTO {
-  if (!dados) return { prazoProducaoDias: null, operacoes: [], investimentos: [], atualizadoEm: null };
+export function paraSecaoProcessoDTO(dados: DadosSecaoProcesso | null, versao: number): SecaoProcessoDTO {
+  if (!dados) return { prazoProducaoDias: null, operacoes: [], investimentos: [], atualizadoEm: null, versao };
   return {
     prazoProducaoDias: dados.secao.prazoProducaoDias,
     operacoes: dados.operacoes.map(paraOperacaoDTO),
     investimentos: dados.investimentos.map(paraInvestimentoDTO),
     atualizadoEm: dados.secao.atualizadoEm ? dados.secao.atualizadoEm.toISOString() : null,
+    versao,
   };
 }

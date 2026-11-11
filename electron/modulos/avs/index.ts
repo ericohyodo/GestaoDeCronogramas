@@ -5,6 +5,9 @@
 import type { GeradorDeId } from '../../nucleo/aplicacao/portas/gerador-de-id';
 import type { Relogio } from '../../nucleo/aplicacao/portas/relogio';
 import type { BancoDeDados } from '../../nucleo/infraestrutura/banco/conexao-sqlite';
+import { transacional } from '../../nucleo/aplicacao/caso-de-uso';
+import { ControleDeVersaoSqlite } from '../../nucleo/infraestrutura/banco/controle-de-versao-sqlite';
+import { UnidadeDeTrabalhoSqlite } from '../../nucleo/infraestrutura/banco/unidade-de-trabalho-sqlite';
 import type { RegistradorIpc } from '../../nucleo/infraestrutura/ipc/registrador-ipc';
 import { AbrirCaminho } from './aplicacao/casos-de-uso/abrir-caminho';
 import { AtualizarComercial } from './aplicacao/casos-de-uso/atualizar-comercial';
@@ -95,15 +98,18 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
   const abridorDeCaminho = new AbridorDeCaminhoElectron();
   const seletorDeArquivos = new SeletorDeArquivosElectron();
   const armazenamentoDeArquivos = new ArmazenamentoDeArquivosFs();
+  const versoes = new ControleDeVersaoSqlite(deps.db);
+  const transacao = new UnidadeDeTrabalhoSqlite(deps.db);
 
-  const criarAv = new CriarAv(repositorio, deps.relogio, deps.geradorDeId, deps.consultaDeUsuarios, autorizacao);
-  const atualizarComercial = new AtualizarComercial(repositorio, autorizacao, deps.consultaDeUsuarios);
+  const criarAv = new CriarAv(repositorio, deps.relogio, deps.geradorDeId, deps.consultaDeUsuarios, autorizacao, versoes);
+  const atualizarComercial = new AtualizarComercial(repositorio, autorizacao, deps.consultaDeUsuarios, versoes);
   const salvarSecaoCusto = new SalvarSecaoCusto(
     repositorio,
     repositorioSecaoCusto,
     autorizacao,
     deps.relogio,
     deps.geradorDeId,
+    versoes,
   );
   const salvarSecaoProduto = new SalvarSecaoProduto(
     repositorio,
@@ -111,6 +117,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     autorizacao,
     deps.relogio,
     deps.geradorDeId,
+    versoes,
   );
   const salvarSecaoProcesso = new SalvarSecaoProcesso(
     repositorio,
@@ -118,6 +125,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     autorizacao,
     deps.relogio,
     deps.geradorDeId,
+    versoes,
   );
   const avancarEtapa = new AvancarEtapa(
     repositorio,
@@ -126,6 +134,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     deps.relogio,
     deps.geradorDeId,
     deps.consultaDeUsuarios,
+    versoes,
   );
   const declinarAv = new DeclinarAv(
     repositorio,
@@ -134,6 +143,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     deps.relogio,
     deps.geradorDeId,
     deps.consultaDeUsuarios,
+    versoes,
   );
   const relatorio = new ObterRelatorioAvs(
     repositorio,
@@ -162,21 +172,21 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
 
   registrarIpcAvs(deps.ipc, {
     listar: new ListarAvs(repositorio, deps.consultaDeUsuarios),
-    obter: new ObterAv(repositorio, deps.consultaDeUsuarios),
+    obter: new ObterAv(repositorio, deps.consultaDeUsuarios, versoes),
     criar: criarAv,
     atualizarComercial: atualizarComercial,
-    atualizarEquipe: new AtualizarEquipe(repositorio, autorizacao, deps.consultaDeUsuarios),
+    atualizarEquipe: new AtualizarEquipe(repositorio, autorizacao, deps.consultaDeUsuarios, versoes),
     listarMembros: new ListarMembros(deps.consultaDeUsuarios),
     obterDashboard: new ObterDashboard(repositorio),
-    avancarEtapa: avancarEtapa,
+    avancarEtapa: transacional(avancarEtapa, transacao),
     declinar: declinarAv,
     listarHistorico: new ListarHistoricoAv(repositorioHistorico, deps.consultaDeUsuarios),
     obterCatalogoCusto: new ObterCatalogoCusto(repositorioCatalogoCusto),
-    obterSecaoCusto: new ObterSecaoCusto(repositorioSecaoCusto),
+    obterSecaoCusto: new ObterSecaoCusto(repositorioSecaoCusto, versoes),
     salvarSecaoCusto: salvarSecaoCusto,
-    obterSecaoProduto: new ObterSecaoProduto(repositorioSecaoProduto),
+    obterSecaoProduto: new ObterSecaoProduto(repositorioSecaoProduto, versoes),
     salvarSecaoProduto: salvarSecaoProduto,
-    obterSecaoProcesso: new ObterSecaoProcesso(repositorioSecaoProcesso),
+    obterSecaoProcesso: new ObterSecaoProcesso(repositorioSecaoProcesso, versoes),
     salvarSecaoProcesso: salvarSecaoProcesso,
     abrirCaminho: new AbrirCaminho(abridorDeCaminho),
     selecionarCaminho: new SelecionarCaminho(seletorDeArquivos),
@@ -195,27 +205,26 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     excluirAnexo: new ExcluirAnexo(repositorio, repositorioAnexos, autorizacao, armazenamentoDeArquivos),
     gerarExemplos,
     listarGrupos: new ListarGruposAv(repositorioGrupos, repositorio, autorizacao),
-    criarGrupo: new CriarGrupoDeAvs(
-      repositorioGrupos,
-      repositorio,
-      criarAv,
-      autorizacao,
-      deps.relogio,
-      deps.geradorDeId,
+    criarGrupo: transacional(
+      new CriarGrupoDeAvs(repositorioGrupos, repositorio, criarAv, autorizacao, deps.relogio, deps.geradorDeId),
+      transacao,
     ),
-    aplicarAoGrupo: new AplicarAoGrupo(repositorio, autorizacao, repositorioContatos, deps.geradorDeId),
+    aplicarAoGrupo: new AplicarAoGrupo(repositorio, autorizacao, repositorioContatos, deps.geradorDeId, versoes),
     relatorio,
-    obterSecaoPcp: new ObterSecaoPcp(repositorioSecaoPcp),
-    salvarSecaoPcp: new SalvarSecaoPcp(repositorio, repositorioSecaoPcp, autorizacao, deps.relogio, deps.geradorDeId),
+    obterSecaoPcp: new ObterSecaoPcp(repositorioSecaoPcp, versoes),
+    salvarSecaoPcp: new SalvarSecaoPcp(repositorio, repositorioSecaoPcp, autorizacao, deps.relogio, deps.geradorDeId, versoes),
     obterContatos: new ObterContatosAv(repositorioContatos, autorizacao),
     salvarContatos: new SalvarContatosAv(repositorio, repositorioContatos, autorizacao, deps.geradorDeId),
-    finalizarECriarPreSd: new FinalizarECriarPreSd(
-      repositorio,
-      repositorioHistorico,
-      autorizacao,
-      deps.criadorDePreSd,
-      deps.relogio,
-      deps.geradorDeId,
+    finalizarECriarPreSd: transacional(
+      new FinalizarECriarPreSd(
+        repositorio,
+        repositorioHistorico,
+        autorizacao,
+        deps.criadorDePreSd,
+        deps.relogio,
+        deps.geradorDeId,
+      ),
+      transacao,
     ),
     listarTemplates: new ListarTemplatesAv(repositorioTemplates, autorizacao),
     salvarTemplate: new SalvarTemplateAv(repositorioTemplates, autorizacao, deps.relogio, deps.geradorDeId),

@@ -35,7 +35,7 @@ export interface CasosDeUsoTarefas {
   excluirFase: ExcluirFase;
   reordenar: ReordenarTarefas;
   duplicar: DuplicarTarefa;
-  copiarEstrutura: CopiarEstrutura;
+  copiarEstrutura: Pick<CopiarEstrutura, 'executar'>;
   listarAgenda: ListarAgenda;
 }
 

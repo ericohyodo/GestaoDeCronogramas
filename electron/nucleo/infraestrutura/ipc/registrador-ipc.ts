@@ -6,6 +6,7 @@ import type {
   PermissaoIpc,
 } from '../../aplicacao/portas/controle-de-acesso';
 import { ErroDeDominio } from '../../dominio/erro-de-dominio';
+import { ehErroDeBancoOcupado } from '../banco/conexao-sqlite';
 
 export interface RegistradorIpc {
   /**
@@ -54,6 +55,12 @@ export function criarRegistradorIpc(opcoes: OpcoesRegistradorIpc): RegistradorIp
           return { ok: true, dados: await tratador(analise.data) };
         } catch (erro) {
           if (erro instanceof ErroDeDominio) return falha(erro.codigo, erro.message);
+          if (ehErroDeBancoOcupado(erro)) {
+            return falha(
+              'BANCO_OCUPADO',
+              'O banco está sendo usado por outro usuário neste momento. Aguarde alguns segundos e tente de novo.',
+            );
+          }
           console.error(`[ipc] erro inesperado em "${canal}":`, erro);
           return falha('ERRO_INTERNO', 'Ocorreu um erro inesperado. Tente novamente.');
         }

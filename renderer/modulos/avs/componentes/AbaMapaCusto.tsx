@@ -33,7 +33,7 @@ import {
   type LinhaProcessoEditavel,
 } from '../linha-de-processo';
 import { TabelaDeProcesso } from './TabelaDeProcesso';
-import { useAlteracoes, useRegistrarAba } from './alteracoes-da-aba';
+import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
 import { CabecalhoDaSecao, SecaoAv, type TomSecao } from './SecaoAv';
 
 const TOM_MATERIAL: Record<SecaoCustoMaterialDTO, TomSecao> = {
@@ -189,7 +189,9 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
   const [operacoesDaEngenharia, setOperacoesDaEngenharia] = useState<OperacaoDTO[]>([]);
   const [avisoImportacao, setAvisoImportacao] = useState<string | null>(null);
 
-  const [erroSalvar, setErroSalvar] = useState<string | null>(null);
+  const [erroSalvar, setErroSalvar] = useState<unknown>(null);
+  // Versão lida ao abrir a aba (gravação otimista); avança a cada salvamento bem-sucedido.
+  const [versao, setVersao] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -199,6 +201,7 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
       clienteDesktop.avs.obterSecaoProduto(av.id),
     ])
       .then(([secao, catalogo, secaoProcesso, secaoProduto]) => {
+        setVersao(secao.versao);
         setIncoterm(secao.incoterm ?? '');
         setObservacoes(secao.observacoes ?? '');
         const arvore = estruturaDeDto(secaoProduto.estrutura);
@@ -279,17 +282,19 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
 
       const itensProcesso = paraItensProcesso(processo);
 
-      await clienteDesktop.avs.salvarSecaoCusto({
+      const salva = await clienteDesktop.avs.salvarSecaoCusto({
         avId: av.id,
+        versaoEsperada: versao,
         incoterm: incoterm || null,
         observacoes: observacoes || null,
         materiais,
         processo: itensProcesso,
       });
+      setVersao(salva.versao);
       marcarLimpo();
       return true;
     } catch (falha) {
-      setErroSalvar(mensagemDeErro(falha));
+      setErroSalvar(falha);
       return false;
     }
   };
@@ -444,7 +449,7 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
         <p className="text-sm">
           Total geral: <span className="font-semibold">{formatarMoeda(totalGeral)}</span>
         </p>
-        {erroSalvar && <MensagemErro mensagem={erroSalvar} />}
+        <ErroDaAba erro={erroSalvar} />
       </div>
     </form>
   );

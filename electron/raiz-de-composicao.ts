@@ -19,7 +19,8 @@ import {
   resolverPastaDoBanco,
 } from './nucleo/infraestrutura/banco/caminho-do-banco';
 import { abrirConexao } from './nucleo/infraestrutura/banco/conexao-sqlite';
-import { executarMigracoes } from './nucleo/infraestrutura/banco/migrador';
+import { fazerBackup } from './nucleo/infraestrutura/banco/backup';
+import { executarMigracoes, haMigracoesPendentes } from './nucleo/infraestrutura/banco/migrador';
 import { MIGRACOES } from './nucleo/infraestrutura/banco/migracoes';
 import { GeradorUuid } from './nucleo/infraestrutura/gerador-uuid';
 import { criarRegistradorIpc } from './nucleo/infraestrutura/ipc/registrador-ipc';
@@ -46,6 +47,23 @@ export async function montarAplicacao(opcoes: {
   const caminhoDoBanco = path.join(pasta, NOME_ARQUIVO_BANCO);
 
   const db = abrirConexao(caminhoDoBanco);
+  // Backup antes de mexer no esquema (sempre) ou, fora isso, um por dia. Uma falha no backup não
+  // impede o uso do app, mas impede aplicar migrações sem cópia de segurança.
+  const pendentes = haMigracoesPendentes(db, MIGRACOES);
+  try {
+    const backup = await fazerBackup(db, pasta, new Date(), pendentes ? 'pre-migracao' : 'diario');
+    if (backup) console.info(`[banco] backup: ${backup}`);
+  } catch (erro) {
+    console.error('[banco] falha ao fazer backup:', erro);
+    if (pendentes) {
+      db.close();
+      throw new Error(
+        'Não foi possível fazer o backup do banco antes de atualizá-lo. Verifique o espaço e a permissão ' +
+          `de escrita na pasta:
+${pasta}`,
+      );
+    }
+  }
   const aplicadas = executarMigracoes(db, MIGRACOES);
   if (aplicadas.length > 0) console.info(`[banco] migrações aplicadas: ${aplicadas.join(', ')}`);
   console.info(`[banco] ${caminhoDoBanco}`);

@@ -18,6 +18,8 @@ import type { RepositorioAvs } from '../../dominio/repositorio-avs';
 import type { RepositorioContatosAv } from '../../dominio/contato-av';
 import type { AutorizacaoAv } from '../autorizacao';
 import type { CriarAv } from './criar-av';
+import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
+import { chaveDaSecao } from '../versoes';
 
 function paraGrupoDTO(grupo: GrupoAv, avs: Av[]): GrupoAvDTO {
   return {
@@ -126,6 +128,7 @@ export class AplicarAoGrupo implements CasoDeUso<AplicarAoGrupoEntrada, AplicarA
     private readonly autorizacao: AutorizacaoAv,
     private readonly contatos: RepositorioContatosAv,
     private readonly geradorDeId: GeradorDeId,
+    private readonly versoes: ControleDeVersao = versaoSemControle,
   ) {}
 
   async executar(entrada: AplicarAoGrupoEntrada): Promise<AplicarAoGrupoSaida> {
@@ -172,6 +175,8 @@ export class AplicarAoGrupo implements CasoDeUso<AplicarAoGrupoEntrada, AplicarA
       } else {
         destino.atualizarEquipe(origem.membros);
       }
+      // Quem estiver com o Comercial do destino aberto será avisado ao salvar (a versão mudou).
+      if (entrada.secao === 'comercial') this.versoes.confirmar(chaveDaSecao(destino.id, 'comercial'));
       await this.avs.salvar(destino);
       saida.aplicadas += 1;
     }

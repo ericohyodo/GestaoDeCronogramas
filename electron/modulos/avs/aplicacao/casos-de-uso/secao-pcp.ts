@@ -14,9 +14,11 @@ import {
   type RepositorioSecaoPcp,
 } from '../../dominio/secao-pcp';
 import type { AutorizacaoAv } from '../autorizacao';
+import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
+import { chaveDaSecao } from '../versoes';
 
-function paraSecaoPcpDTO(dados: DadosSecaoPcp | null): SecaoPcpDTO {
-  if (!dados) return { observacoes: null, cargas: [], custos: [], atualizadoEm: null };
+function paraSecaoPcpDTO(dados: DadosSecaoPcp | null, versao: number): SecaoPcpDTO {
+  if (!dados) return { observacoes: null, cargas: [], custos: [], atualizadoEm: null, versao };
   return {
     observacoes: dados.secao.observacoes,
     cargas: dados.cargas.map((carga) => ({
@@ -29,14 +31,18 @@ function paraSecaoPcpDTO(dados: DadosSecaoPcp | null): SecaoPcpDTO {
     })),
     custos: dados.custos.map((custo) => ({ id: custo.id, descricao: custo.descricao, valor: custo.valor })),
     atualizadoEm: dados.secao.atualizadoEm ? dados.secao.atualizadoEm.toISOString() : null,
+    versao,
   };
 }
 
 export class ObterSecaoPcp implements CasoDeUso<string, SecaoPcpDTO> {
-  constructor(private readonly repositorio: RepositorioSecaoPcp) {}
+  constructor(
+    private readonly repositorio: RepositorioSecaoPcp,
+    private readonly versoes: ControleDeVersao = versaoSemControle,
+  ) {}
 
   async executar(avId: string): Promise<SecaoPcpDTO> {
-    return paraSecaoPcpDTO(await this.repositorio.obter(avId));
+    return paraSecaoPcpDTO(await this.repositorio.obter(avId), this.versoes.obter(chaveDaSecao(avId, 'pcp')));
   }
 }
 
@@ -48,6 +54,7 @@ export class SalvarSecaoPcp implements CasoDeUso<AtualizarSecaoPcpEntrada, Secao
     private readonly autorizacao: AutorizacaoAv,
     private readonly relogio: Relogio,
     private readonly geradorDeId: GeradorDeId,
+    private readonly versoes: ControleDeVersao = versaoSemControle,
   ) {}
 
   async executar(entrada: AtualizarSecaoPcpEntrada): Promise<SecaoPcpDTO> {
@@ -80,7 +87,8 @@ export class SalvarSecaoPcp implements CasoDeUso<AtualizarSecaoPcpEntrada, Secao
         valor: custo.valor ?? null,
       })),
     };
+    const versao = this.versoes.confirmar(chaveDaSecao(av.id, 'pcp'), entrada.versaoEsperada);
     await this.repositorio.salvar(dados);
-    return paraSecaoPcpDTO(dados);
+    return paraSecaoPcpDTO(dados, versao);
   }
 }

@@ -16,6 +16,8 @@ import type {
 } from '../../dominio/repositorio-secao-processo';
 import type { AutorizacaoAv } from '../autorizacao';
 import { paraSecaoProcessoDTO } from '../mapeador-produto-processo-dto';
+import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
+import { chaveDaSecao } from '../versoes';
 
 export class SalvarSecaoProcesso implements CasoDeUso<AtualizarSecaoProcessoEntrada, SecaoProcessoDTO> {
   constructor(
@@ -24,6 +26,7 @@ export class SalvarSecaoProcesso implements CasoDeUso<AtualizarSecaoProcessoEntr
     private readonly autorizacao: AutorizacaoAv,
     private readonly relogio: Relogio,
     private readonly geradorDeId: GeradorDeId,
+    private readonly versoes: ControleDeVersao = versaoSemControle,
   ) {}
 
   async executar(entrada: AtualizarSecaoProcessoEntrada): Promise<SecaoProcessoDTO> {
@@ -63,7 +66,8 @@ export class SalvarSecaoProcesso implements CasoDeUso<AtualizarSecaoProcessoEntr
       investimentos,
     };
 
+    const versao = this.versoes.confirmar(chaveDaSecao(av.id, 'processo'), entrada.versaoEsperada);
     await this.repositorio.salvar(dados);
-    return paraSecaoProcessoDTO(dados);
+    return paraSecaoProcessoDTO(dados, versao);
   }
 }

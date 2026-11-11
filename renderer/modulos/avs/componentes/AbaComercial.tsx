@@ -6,7 +6,7 @@ import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desk
 import { AreaTexto, CampoData, CampoTexto, Selecao } from '@/compartilhado/ui/Campos';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { useAvsStore } from '../store/use-avs-store';
-import { useAlteracoes, useRegistrarAba } from './alteracoes-da-aba';
+import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
 import { CabecalhoDaSecao, SecaoAv, TituloSecao } from './SecaoAv';
 import { novaLinhaContato, TabelaDeContatos, type LinhaContatoEditavel } from './TabelaDeContatos';
 
@@ -74,6 +74,9 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
   // `null` enquanto carrega; os contatos vêm de uma chamada própria.
   const [contatos, setContatos] = useState<LinhaContatoEditavel[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+  const [erroSalvar, setErroSalvar] = useState<unknown>(null);
+  // Versão lida ao abrir a aba (gravação otimista); avança a cada salvamento bem-sucedido.
+  const [versao, setVersao] = useState(av.versaoComercial);
 
   useEffect(() => {
     let cancelado = false;
@@ -127,20 +130,22 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
   const { sujo, marcarLimpo } = useAlteracoes({ campos, contatos }, contatos !== null);
 
   const salvar = async (): Promise<boolean> => {
-    setErro(null);
+    setErroSalvar(null);
     try {
-      await atualizarComercial({
+      const atualizada = await atualizarComercial({
         avId: av.id,
+        versaoEsperada: versao,
         ...campos,
         volumeAnual: campos.volumeAnual.trim() ? Number(campos.volumeAnual) : null,
       });
       if (contatos !== null) {
         await clienteDesktop.avs.salvarContatos({ avId: av.id, contatos: contatosParaEnvio(contatos) });
       }
+      setVersao(atualizada.versaoComercial);
       marcarLimpo();
       return true;
     } catch (falha) {
-      setErro(mensagemDeErro(falha));
+      setErroSalvar(falha);
       return false;
     }
   };
@@ -305,6 +310,7 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
       </SecaoAv>
 
       {erro && <MensagemErro mensagem={erro} />}
+      <ErroDaAba erro={erroSalvar} />
     </form>
   );
 }

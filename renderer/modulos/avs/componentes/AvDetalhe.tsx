@@ -16,7 +16,7 @@ import { AbaMapaCusto } from './AbaMapaCusto';
 import { AbaPcp } from './AbaPcp';
 import { AbaResumo } from './AbaResumo';
 import { AbasDaAv, type AbaAv } from './AbasDaAv';
-import { RegistroDaAbaContexto, type RegistroDaAba } from './alteracoes-da-aba';
+import { RecarregarAbaContexto, RegistroDaAbaContexto, type RegistroDaAba } from './alteracoes-da-aba';
 import { DeclinarModal } from './DeclinarModal';
 import { EquipePanel } from './EquipePanel';
 import { EtapaBadge } from './EtapaBadge';
@@ -43,6 +43,9 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
     abreNoResumo(av) ? 'resumo' : (av.etapaAtual.area ?? 'resumo'),
   );
   const [abaPendente, setAbaPendente] = useState<AbaAv | null>(null);
+  // Incrementado para remontar a aba (reler o banco) depois de um conflito de edição.
+  const [recarga, setRecarga] = useState(0);
+  const recarregarAba = useCallback(() => setRecarga((n) => n + 1), []);
   // Quantas outras AVs abertas do grupo receberiam os dados; `null` = sem pergunta em andamento.
   const [perguntaGrupo, setPerguntaGrupo] = useState<number | null>(null);
 
@@ -227,7 +230,8 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
         <AbasDaAv abaAtiva={abaAtiva} aoSelecionar={selecionarAba} etapaAtual={etapa} />
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
           <RegistroDaAbaContexto.Provider value={registrar}>
-            <div className="flex flex-col gap-5">
+            <RecarregarAbaContexto.Provider value={recarregarAba}>
+            <div key={`${abaAtiva}-${recarga}`} className="flex flex-col gap-5">
               {abaAtiva === 'comercial' && <AbaComercial av={av} />}
               {abaAtiva === 'produto' && <AbaEngProduto av={av} />}
               {abaAtiva === 'processo' && <AbaEngProcesso av={av} />}
@@ -258,6 +262,7 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
                 </div>
               )}
             </div>
+            </RecarregarAbaContexto.Provider>
           </RegistroDaAbaContexto.Provider>
           <div className="flex flex-col gap-5">
             <EquipePanel av={av} />

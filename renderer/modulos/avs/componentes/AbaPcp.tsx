@@ -8,7 +8,7 @@ import { Botao } from '@/compartilhado/ui/Botao';
 import { AreaTexto } from '@/compartilhado/ui/Campos';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
-import { useAlteracoes, useRegistrarAba } from './alteracoes-da-aba';
+import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
 import { AnexosGaleria } from './AnexosGaleria';
 import { CabecalhoDaSecao, SecaoAv } from './SecaoAv';
 import { novaLinhaCarga, TabelaDeCargas, type LinhaCargaEditavel } from './TabelaDeCargas';
@@ -67,7 +67,9 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
   const [sugestoesOperacao, setSugestoesOperacao] = useState<string[]>([]);
   const [sugestoesMaquina, setSugestoesMaquina] = useState<string[]>([]);
   const [aviso, setAviso] = useState<string | null>(null);
-  const [erroSalvar, setErroSalvar] = useState<string | null>(null);
+  const [erroSalvar, setErroSalvar] = useState<unknown>(null);
+  // Versão lida ao abrir a aba (gravação otimista); avança a cada salvamento bem-sucedido.
+  const [versao, setVersao] = useState<number | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -76,6 +78,7 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
       clienteDesktop.avs.obterCatalogoCusto(),
     ])
       .then(([secao, processo, catalogo]) => {
+        setVersao(secao.versao);
         setObservacoes(secao.observacoes ?? '');
         setCustos(
           secao.custos.map((custo) => ({ chave: custo.id, descricao: custo.descricao, valor: textoDe(custo.valor) })),
@@ -103,16 +106,18 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
   const salvar = async (): Promise<boolean> => {
     setErroSalvar(null);
     try {
-      await clienteDesktop.avs.salvarSecaoPcp({
+      const salva = await clienteDesktop.avs.salvarSecaoPcp({
         avId: av.id,
+        versaoEsperada: versao,
         observacoes: observacoes || null,
         cargas: cargasParaEnvio(cargas),
         custos: custosParaEnvio(custos),
       });
+      setVersao(salva.versao);
       marcarLimpo();
       return true;
     } catch (falha) {
-      setErroSalvar(mensagemDeErro(falha));
+      setErroSalvar(falha);
       return false;
     }
   };
@@ -197,7 +202,7 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      {erroSalvar && <MensagemErro mensagem={erroSalvar} />}
+      <ErroDaAba erro={erroSalvar} />
     </form>
   );
 }

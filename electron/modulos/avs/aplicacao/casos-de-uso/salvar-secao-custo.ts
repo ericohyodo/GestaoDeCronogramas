@@ -13,6 +13,8 @@ import {
 } from '../../dominio/secao-custo';
 import type { AutorizacaoAv } from '../autorizacao';
 import { paraSecaoCustoDTO } from '../mapeador-custo-dto';
+import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
+import { chaveDaSecao } from '../versoes';
 
 /** Substitui a seção inteira (materiais + processo) a cada salvamento — mais simples do que diffar
  * linha a linha, e o comportamento esperado de uma tabela editável no formulário. */
@@ -23,6 +25,7 @@ export class SalvarSecaoCusto implements CasoDeUso<AtualizarSecaoCustoEntrada, S
     private readonly autorizacao: AutorizacaoAv,
     private readonly relogio: Relogio,
     private readonly geradorDeId: GeradorDeId,
+    private readonly versoes: ControleDeVersao = versaoSemControle,
   ) {}
 
   async executar(entrada: AtualizarSecaoCustoEntrada): Promise<SecaoCustoDTO> {
@@ -70,7 +73,8 @@ export class SalvarSecaoCusto implements CasoDeUso<AtualizarSecaoCustoEntrada, S
       processo,
     };
 
+    const versao = this.versoes.confirmar(chaveDaSecao(av.id, 'custo'), entrada.versaoEsperada);
     await this.repositorio.salvar(dados);
-    return paraSecaoCustoDTO(dados);
+    return paraSecaoCustoDTO(dados, versao);
   }
 }

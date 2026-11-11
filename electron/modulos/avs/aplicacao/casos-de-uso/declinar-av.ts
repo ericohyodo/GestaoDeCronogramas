@@ -10,6 +10,8 @@ import type { RepositorioAvs } from '../../dominio/repositorio-avs';
 import type { AutorizacaoAv } from '../autorizacao';
 import { construirMapaDeNomes, paraAvDetalheDTO } from '../mapeador-dto';
 import type { ConsultaDeUsuarios } from '../portas';
+import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
+import { chaveDaSecao } from '../versoes';
 
 /** Declinar é sempre uma decisão comercial: só o dono dessa área (ou administrador) pode encerrar a AV assim. */
 export class DeclinarAv implements CasoDeUso<DeclinarAvEntrada, AvDetalheDTO> {
@@ -20,6 +22,7 @@ export class DeclinarAv implements CasoDeUso<DeclinarAvEntrada, AvDetalheDTO> {
     private readonly relogio: Relogio,
     private readonly geradorDeId: GeradorDeId,
     private readonly usuarios: ConsultaDeUsuarios,
+    private readonly versoes: ControleDeVersao = versaoSemControle,
   ) {}
 
   async executar(entrada: DeclinarAvEntrada): Promise<AvDetalheDTO> {
@@ -51,6 +54,6 @@ export class DeclinarAv implements CasoDeUso<DeclinarAvEntrada, AvDetalheDTO> {
       data: agora,
     });
 
-    return paraAvDetalheDTO(av, construirMapaDeNomes(await this.usuarios.listarAtivos()));
+    return paraAvDetalheDTO(av, construirMapaDeNomes(await this.usuarios.listarAtivos()), this.versoes.obter(chaveDaSecao(av.id, 'comercial')));
   }
 }

@@ -8,6 +8,8 @@ import type { AutorizacaoAv } from '../autorizacao';
 import { construirMapaDeNomes, paraAvDetalheDTO } from '../mapeador-dto';
 import type { ConsultaDeUsuarios } from '../portas';
 import { validarMembros } from '../validar-membros';
+import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
+import { chaveDaSecao } from '../versoes';
 
 /** Abrir uma AV é uma ação da área Comercial: exige a competência 'comercial' (ou administrador). */
 export class CriarAv implements CasoDeUso<CriarAvEntrada, AvDetalheDTO> {
@@ -17,6 +19,7 @@ export class CriarAv implements CasoDeUso<CriarAvEntrada, AvDetalheDTO> {
     private readonly geradorDeId: GeradorDeId,
     private readonly usuarios: ConsultaDeUsuarios,
     private readonly autorizacao: AutorizacaoAv,
+    private readonly versoes: ControleDeVersao = versaoSemControle,
   ) {}
 
   async executar(entrada: CriarAvEntrada): Promise<AvDetalheDTO> {
@@ -45,6 +48,6 @@ export class CriarAv implements CasoDeUso<CriarAvEntrada, AvDetalheDTO> {
     });
     await this.repositorio.salvar(av);
 
-    return paraAvDetalheDTO(av, construirMapaDeNomes(ativos));
+    return paraAvDetalheDTO(av, construirMapaDeNomes(ativos), this.versoes.obter(chaveDaSecao(av.id, 'comercial')));
   }
 }

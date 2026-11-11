@@ -22,6 +22,8 @@ import type { ConsultaDeResponsaveis } from './aplicacao/portas/consulta-de-resp
 import { registrarIpcTarefas } from './apresentacao/controlador-ipc-tarefas';
 import { RepositorioFasesSqlite } from './infraestrutura/repositorio-fases-sqlite';
 import { RepositorioTarefasSqlite } from './infraestrutura/repositorio-tarefas-sqlite';
+import { transacional } from '../../nucleo/aplicacao/caso-de-uso';
+import { UnidadeDeTrabalhoSqlite } from '../../nucleo/infraestrutura/banco/unidade-de-trabalho-sqlite';
 
 export type { ConsultaDeCronogramas, ConsultaDeResponsaveis };
 
@@ -76,12 +78,9 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): ModuloTare
     excluirFase: new ExcluirFase(repositorioFases),
     reordenar: new ReordenarTarefas(repositorio),
     duplicar: new DuplicarTarefa(repositorio, repositorioFases, deps.relogio, deps.geradorDeId),
-    copiarEstrutura: new CopiarEstrutura(
-      repositorio,
-      repositorioFases,
-      deps.consultaDeCronogramas,
-      deps.relogio,
-      deps.geradorDeId,
+    copiarEstrutura: transacional(
+      new CopiarEstrutura(repositorio, repositorioFases, deps.consultaDeCronogramas, deps.relogio, deps.geradorDeId),
+      new UnidadeDeTrabalhoSqlite(deps.db),
     ),
     listarAgenda: new ListarAgenda(
       repositorio,

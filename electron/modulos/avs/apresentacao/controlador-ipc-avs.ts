@@ -59,7 +59,7 @@ export interface CasosDeUsoAvs {
   atualizarEquipe: AtualizarEquipe;
   listarMembros: ListarMembros;
   obterDashboard: ObterDashboard;
-  avancarEtapa: AvancarEtapa;
+  avancarEtapa: Pick<AvancarEtapa, 'executar'>;
   declinar: DeclinarAv;
   listarHistorico: ListarHistoricoAv;
   obterCatalogoCusto: ObterCatalogoCusto;
@@ -76,9 +76,9 @@ export interface CasosDeUsoAvs {
   obterConteudoAnexo: ObterConteudoAnexo;
   excluirAnexo: ExcluirAnexo;
   gerarExemplos: GerarAvsExemplo;
-  finalizarECriarPreSd: FinalizarECriarPreSd;
+  finalizarECriarPreSd: Pick<FinalizarECriarPreSd, 'executar'>;
   listarGrupos: ListarGruposAv;
-  criarGrupo: CriarGrupoDeAvs;
+  criarGrupo: Pick<CriarGrupoDeAvs, 'executar'>;
   aplicarAoGrupo: AplicarAoGrupo;
   relatorio: ObterRelatorioAvs;
   obterSecaoPcp: ObterSecaoPcp;
@@ -89,6 +89,8 @@ export interface CasosDeUsoAvs {
   salvarTemplate: SalvarTemplateAv;
   excluirTemplate: ExcluirTemplateAv;
 }
+
+const esquemaVersao = z.number().int().positive().nullish();
 
 const esquemaMembros = z.object(Object.fromEntries(AREAS_AV.map((area) => [area, z.string().nullish()])));
 
@@ -104,6 +106,7 @@ const esquemaCriar = z.object({
 
 const esquemaAtualizarComercial = z.object({
   avId: esquemaId,
+  versaoEsperada: esquemaVersao,
   cliente: z.string().nullish(),
   codigo: z.string().nullish(),
   descricao: z.string().optional(),
@@ -170,6 +173,7 @@ const esquemaItemProcesso = z.object({
 
 const esquemaSalvarSecaoCusto = z.object({
   avId: esquemaId,
+  versaoEsperada: esquemaVersao,
   incoterm: z.enum(INCOTERMS).nullish(),
   observacoes: z.string().nullish(),
   materiais: z.array(esquemaItemMaterial),
@@ -184,6 +188,7 @@ const esquemaInvestimento = z.object({
 
 const esquemaSalvarSecaoProduto = z.object({
   avId: esquemaId,
+  versaoEsperada: esquemaVersao,
   descritivoTecnicoExistente: z.boolean().nullish(),
   descritivoTecnicoDisponivel: z.boolean().nullish(),
   desenho2dExistente: z.boolean().nullish(),
@@ -242,6 +247,7 @@ const esquemaTemplate = z.discriminatedUnion('tipo', [
 
 const esquemaSalvarSecaoProcesso = z.object({
   avId: esquemaId,
+  versaoEsperada: esquemaVersao,
   prazoProducaoDias: z.number().nullish(),
   operacoes: z.array(esquemaOperacao),
   investimentos: z.array(esquemaInvestimento),
@@ -349,6 +355,7 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
     'leitura',
     z.object({
       avId: esquemaId,
+      versaoEsperada: esquemaVersao,
       observacoes: z.string().nullish(),
       cargas: z.array(
         z.object({

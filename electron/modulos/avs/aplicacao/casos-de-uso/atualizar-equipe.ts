@@ -6,6 +6,8 @@ import type { AutorizacaoAv } from '../autorizacao';
 import { construirMapaDeNomes, paraAvDetalheDTO } from '../mapeador-dto';
 import type { ConsultaDeUsuarios } from '../portas';
 import { validarMembros } from '../validar-membros';
+import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
+import { chaveDaSecao } from '../versoes';
 
 /** Só quem responde pela área Comercial (ou administrador) pode designar o time de uma AV. */
 export class AtualizarEquipe implements CasoDeUso<AtualizarEquipeEntrada, AvDetalheDTO> {
@@ -13,6 +15,7 @@ export class AtualizarEquipe implements CasoDeUso<AtualizarEquipeEntrada, AvDeta
     private readonly repositorio: RepositorioAvs,
     private readonly autorizacao: AutorizacaoAv,
     private readonly usuarios: ConsultaDeUsuarios,
+    private readonly versoes: ControleDeVersao = versaoSemControle,
   ) {}
 
   async executar(entrada: AtualizarEquipeEntrada): Promise<AvDetalheDTO> {
@@ -26,6 +29,6 @@ export class AtualizarEquipe implements CasoDeUso<AtualizarEquipeEntrada, AvDeta
     av.atualizarEquipe(entrada.membros);
     await this.repositorio.salvar(av);
 
-    return paraAvDetalheDTO(av, construirMapaDeNomes(ativos));
+    return paraAvDetalheDTO(av, construirMapaDeNomes(ativos), this.versoes.obter(chaveDaSecao(av.id, 'comercial')));
   }
 }

@@ -10,6 +10,8 @@ import type { RepositorioAvs } from '../../dominio/repositorio-avs';
 import type { AutorizacaoAv } from '../autorizacao';
 import { construirMapaDeNomes, paraAvDetalheDTO } from '../mapeador-dto';
 import type { ConsultaDeUsuarios } from '../portas';
+import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
+import { chaveDaSecao } from '../versoes';
 
 /**
  * Avança a AV exatamente uma etapa, na ordem do catálogo — não existe "liberar fora de ordem"
@@ -23,6 +25,7 @@ export class AvancarEtapa implements CasoDeUso<AvancarEtapaEntrada, AvDetalheDTO
     private readonly relogio: Relogio,
     private readonly geradorDeId: GeradorDeId,
     private readonly usuarios: ConsultaDeUsuarios,
+    private readonly versoes: ControleDeVersao = versaoSemControle,
   ) {}
 
   async executar(entrada: AvancarEtapaEntrada): Promise<AvDetalheDTO> {
@@ -61,6 +64,6 @@ export class AvancarEtapa implements CasoDeUso<AvancarEtapaEntrada, AvDetalheDTO
       data: agora,
     });
 
-    return paraAvDetalheDTO(av, construirMapaDeNomes(await this.usuarios.listarAtivos()));
+    return paraAvDetalheDTO(av, construirMapaDeNomes(await this.usuarios.listarAtivos()), this.versoes.obter(chaveDaSecao(av.id, 'comercial')));
   }
 }
