@@ -41,6 +41,16 @@
 - Os avisos de prazo são verificados na abertura do app e a cada hora, e cada um sai uma única vez por prazo, mesmo
   com vários computadores abertos.
 
+- **Equipe FERKODA cadastrada** com departamento (Comercial, Eng. Processo, Gestão de Projetos, Qualidade, PCP,
+  Financeiro), competências e papéis de aceite. Todos (menos o erico) entram pela primeira vez **sem senha**:
+  informam o usuário, cadastram o e-mail e criam a senha. Logins: primeiro nome ou nome.sobrenome
+  (ex.: `leandro.cruz`, `andre.pinto`). O administrador pode "Exigir novo primeiro acesso" (esqueci a senha).
+- **Menu Tutoriais** nos três módulos, com o passo a passo para a equipe.
+- **Modo Apresentação** (administrador, botão no painel inicial): o app reinicia com dados fictícios numa pasta
+  própria (`modo-apresentacao/`), recriada a cada entrada, e abre um **roteiro guiado de 18 passos** com destaque
+  na tela, navegação automática e preenchimento ao vivo do parecer da SD. Setas ← → avançam, Esc pausa.
+  "Sair da apresentação" reinicia com os dados reais, que nunca são abertos nesse modo.
+
 ### Dados e multiusuário
 - **Backup automático** do banco em `backups/` (ao lado do .db): antes de toda atualização de estrutura e uma vez
   por dia; mantém 7 dias, 4 semanas e as 3 últimas pré-atualização.

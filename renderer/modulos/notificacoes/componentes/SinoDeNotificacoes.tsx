@@ -82,7 +82,7 @@ export function SinoDeNotificacoes() {
   }, [aberto]);
 
   return (
-    <div ref={raiz} className="relative">
+    <div ref={raiz} data-tour="sino" className="relative">
       <button
         type="button"
         onClick={() => setAberto((atual) => !atual)}

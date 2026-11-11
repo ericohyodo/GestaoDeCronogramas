@@ -57,4 +57,6 @@ export interface ArmazenamentoDeEvidencias {
   /** Abre o arquivo no programa padrão do Windows (ex.: Outlook para .msg). */
   abrir(sdId: string, nomeArmazenado: string): Promise<void>;
   excluir(sdId: string, nomeArmazenado: string): Promise<void>;
+  /** Grava um arquivo gerado pelo app (dados de exemplo do modo apresentação). */
+  gravarTexto(sdId: string, nomeArquivo: string, conteudo: string): Promise<ArquivoGuardado>;
 }

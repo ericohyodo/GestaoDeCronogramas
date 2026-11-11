@@ -14,7 +14,7 @@ export function PaginaTutoriais() {
   const topico = TOPICOS.find((item) => item.id === ativo) ?? TOPICOS[0]!;
 
   return (
-    <div className="flex flex-col gap-6 p-6">
+    <div data-tour="tutoriais" className="flex flex-col gap-6 p-6">
       <CabecalhoPagina
         titulo="Tutoriais"
         descricao="Como o app funciona no dia a dia: primeiro acesso, AVs, SDs, projetos e avisos."

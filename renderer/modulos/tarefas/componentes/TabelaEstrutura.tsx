@@ -144,7 +144,7 @@ export function TabelaEstrutura({
   } as CSSProperties;
 
   return (
-    <table style={alturas} className="w-full table-fixed border-separate border-spacing-0 text-sm">
+    <table data-tour="tabela-tarefas" style={alturas} className="w-full table-fixed border-separate border-spacing-0 text-sm">
       <colgroup>
         {larguras.map((largura, indice) => (
           <col key={indice} className={largura || undefined} />

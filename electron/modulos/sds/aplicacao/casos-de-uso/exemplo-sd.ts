@@ -19,6 +19,8 @@ export class AvancarSdDeExemplo {
     private readonly versoes: ControleDeVersao,
     private readonly relogio: Relogio,
     private readonly aceitar: Pick<AceitarSd, 'executar'>,
+    /** Anexa uma evidência fictícia de PO (e-mail do cliente) à SD de exemplo. */
+    private readonly anexarEvidenciaDeExemplo?: (sd: { id: string; numero: string }, usuarioId: string) => Promise<void>,
   ) {}
 
   /**
@@ -35,11 +37,13 @@ export class AvancarSdDeExemplo {
       numeroPo: `PO-${atual.sd.numero.replace(/\D/g, '')}`,
       observacoes: 'Pedido confirmado pelo cliente por e-mail (exemplo).',
     });
+    await this.anexarEvidenciaDeExemplo?.({ id: atual.sd.id, numero: atual.sd.numero }, usuarioId);
     await this.repositorio.salvar(abrirSd(preenchida, usuarioId, agora, 1));
     this.versoes.confirmar(chaveDaSd(atual.sd.id));
     if (ate === 'fechada') {
-      const inicio = agora.toISOString().slice(0, 10);
-      const fim = new Date(agora.getTime() + 180 * DIA_EM_MS).toISOString().slice(0, 10);
+      // Projeto de exemplo já em andamento (começou há 45 dias): dá para mostrar tarefas concluídas e atrasadas.
+      const inicio = new Date(agora.getTime() - 45 * DIA_EM_MS).toISOString().slice(0, 10);
+      const fim = new Date(agora.getTime() + 135 * DIA_EM_MS).toISOString().slice(0, 10);
       await this.aceitar.executar({ id: atual.sd.id, dataInicio: inicio, dataFim: fim });
     }
   }

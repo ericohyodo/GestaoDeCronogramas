@@ -148,6 +148,7 @@ export function AbaResumo({ av }: { av: AvDetalheDTO }) {
         </div>
       </SecaoAv>
 
+      <div data-tour="finalizar-av">
       <SecaoAv tom="ambar" className="flex flex-col gap-3 p-5">
         <TituloSecao>Finalização</TituloSecao>
         {dados.sd ? (
@@ -175,6 +176,7 @@ export function AbaResumo({ av }: { av: AvDetalheDTO }) {
           </div>
         )}
       </SecaoAv>
+      </div>
 
       <DialogoConfirmacao
         aberto={confirmando}

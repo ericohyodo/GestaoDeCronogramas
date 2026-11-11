@@ -53,6 +53,7 @@ export interface ModuloSds {
   };
   consultas: {
     obterPorAv(avId: string): Promise<SdCriada | null>;
+    listar(): Promise<SdCriada[]>;
   };
 }
 
@@ -71,16 +72,43 @@ export function montarModuloSds(deps: DependenciasModuloSds): ModuloSds {
   };
   const armazenamento = new ArmazenamentoDeEvidenciasFs();
   const obterPorAv = new ObterSdPorAv(repositorio, deps.acesso, versoes);
+  const listarSds = new ListarSds(repositorio, deps.acesso, versoes);
   const criarPreSd = new CriarPreSd(repositorio, deps.relogio, deps.geradorDeId);
   const exemplo = new AvancarSdDeExemplo(
     repositorio,
     versoes,
     deps.relogio,
     new AceitarSd(fluxo, deps.projetos, deps.avs, true),
+    async (sd, usuarioId) => {
+      const nome = `PO do cliente - ${sd.numero}.eml`;
+      const guardado = await armazenamento.gravarTexto(
+        sd.id,
+        nome,
+        [
+          'From: compras@cliente-exemplo.com.br',
+          'To: comercial@ferkoda.com.br',
+          `Subject: Pedido de compra - ${sd.numero}`,
+          'Content-Type: text/plain; charset=utf-8',
+          '',
+          'Prezados, segue o pedido de compra aprovado conforme a cotação enviada.',
+          'Dados fictícios do modo apresentação.',
+        ].join(String.fromCharCode(13, 10)),
+      );
+      await fluxo.anexos.inserir({
+        id: deps.geradorDeId.gerar(),
+        sdId: sd.id,
+        nomeArquivo: nome,
+        nomeArmazenado: guardado.nomeArmazenado,
+        tipoMime: guardado.tipoMime,
+        tamanhoBytes: guardado.tamanhoBytes,
+        usuarioId,
+        criadoEm: deps.relogio.agora(),
+      });
+    },
   );
 
   registrarIpcSds(deps.ipc, {
-    listar: new ListarSds(repositorio, deps.acesso, versoes),
+    listar: listarSds,
     obterPorAv,
     obter: new ObterSd(repositorio, deps.acesso, versoes),
     salvar: new SalvarSd(fluxo),
@@ -99,6 +127,6 @@ export function montarModuloSds(deps: DependenciasModuloSds): ModuloSds {
       avancarSdDeExemplo: (avId, ate, usuarioId) =>
         transacao.executar(() => exemplo.executar(avId, ate, usuarioId)),
     },
-    consultas: { obterPorAv: (avId) => obterPorAv.executar(avId) },
+    consultas: { obterPorAv: (avId) => obterPorAv.executar(avId), listar: () => listarSds.executar() },
   };
 }

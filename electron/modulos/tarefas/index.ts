@@ -5,6 +5,7 @@
 import type { GeradorDeId } from '../../nucleo/aplicacao/portas/gerador-de-id';
 import { type Notificador, semNotificacao } from '../../nucleo/aplicacao/portas/notificador';
 import { AvisosDeTarefas, diaLocal } from './aplicacao/avisos-de-tarefas';
+import { semearProjetoDeExemplo } from './aplicacao/projeto-de-exemplo';
 import type { Relogio } from '../../nucleo/aplicacao/portas/relogio';
 import type { BancoDeDados } from '../../nucleo/infraestrutura/banco/conexao-sqlite';
 import type { RegistradorIpc } from '../../nucleo/infraestrutura/ipc/registrador-ipc';
@@ -45,6 +46,10 @@ export interface ModuloTarefas {
   /** Consultas que o módulo oferece aos demais módulos. */
   consultas: {
     obterEstrutura(cronogramaId: string): ReturnType<ObterEstrutura['executar']>;
+  };
+  apresentacao: {
+    /** Preenche um projeto com fases e tarefas fictícias (modo apresentação). */
+    semearProjeto(cronogramaId: string, responsavelIds: string[], inicioIso: string): Promise<void>;
   };
   rotinas: {
     /** Avisa tarefas vencendo (até 2 dias) ou atrasadas de projetos ativos; devolve quantos avisos saíram. */
@@ -112,6 +117,14 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): ModuloTare
 
   return {
     consultas: { obterEstrutura: (cronogramaId) => obterEstrutura.executar(cronogramaId) },
+    apresentacao: {
+      semearProjeto: (cronogramaId, responsavelIds, inicioIso) =>
+        semearProjetoDeExemplo(repositorio, repositorioFases, deps.geradorDeId, deps.relogio, {
+          cronogramaId,
+          responsavelIds,
+          inicioIso,
+        }),
+    },
     rotinas: {
       async verificarPrazos() {
         const ativos = (await deps.consultaDeCronogramas.listar()).filter((cronograma) => !cronograma.arquivado);

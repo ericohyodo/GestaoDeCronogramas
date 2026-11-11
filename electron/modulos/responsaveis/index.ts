@@ -23,6 +23,10 @@ export interface DependenciasModuloResponsaveis {
 }
 
 export interface ModuloResponsaveis {
+  comandos: {
+    /** Cadastra um recurso (usado pelo seed do modo apresentação). */
+    criar(entrada: { nome: string; funcao: string | null; usuarioId: string | null }): Promise<{ id: string }>;
+  };
   consultas: {
     /** Nomes por id, para o módulo de tarefas exibir o responsável sem conhecer este módulo. */
     obterNomes(ids: string[]): Promise<Map<string, string>>;
@@ -44,7 +48,10 @@ export function montarModuloResponsaveis(
     excluir: new ExcluirResponsavel(repositorio),
   });
 
+  const criarResponsavel = new CriarResponsavel(repositorio, deps.relogio, deps.geradorDeId);
+
   return {
+    comandos: { criar: async (entrada) => ({ id: (await criarResponsavel.executar(entrada)).id }) },
     consultas: {
       async obterNomes(ids) {
         const procurados = new Set(ids);

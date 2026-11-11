@@ -1,4 +1,5 @@
 import type { AparenciaDTO } from './aparencia.contrato';
+import type { EstadoApresentacaoDTO } from './apresentacao.contrato';
 import type { CaixaDeNotificacoesDTO } from './notificacoes.contrato';
 import type {
   AceitarSdEntrada,
@@ -102,6 +103,12 @@ import type {
 
 /** Formato de `window.api`, exposto pelo preload via contextBridge. */
 export interface ApiDesktop {
+  /** Modo apresentação: dados fictícios em pasta própria; entrar/sair reinicia o app. */
+  apresentacao: {
+    obterEstado(): Promise<Resultado<EstadoApresentacaoDTO>>;
+    entrar(): Promise<Resultado<null>>;
+    sair(): Promise<Resultado<null>>;
+  };
   /** Sino da barra superior: só as notificações do usuário logado. */
   notificacoes: {
     obterCaixa(): Promise<Resultado<CaixaDeNotificacoesDTO>>;

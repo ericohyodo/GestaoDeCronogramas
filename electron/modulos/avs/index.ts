@@ -83,6 +83,14 @@ export interface DependenciasModuloAvs {
 type LinhasDoRelatorio = Awaited<ReturnType<ObterRelatorioAvs['executar']>>;
 
 export interface ModuloAvs {
+  /** Usado só pelo modo apresentação (banco isolado). */
+  apresentacao: {
+    /** Dá ao usuário todas as competências e os dois papéis de aceite da SD. */
+    prepararApresentador(usuarioId: string): Promise<void>;
+    /** Gera as 25 AVs de exemplo (exige sessão de administrador). */
+    gerarExemplos(): Promise<void>;
+    listar(): Promise<{ id: string; numero: string; etapa: number; descricao: string }[]>;
+  };
   rotinas: {
     /** Avisa o responsável da etapa atual quando o prazo do cliente está a 5 dias ou venceu. */
     verificarPrazosDoCliente(): Promise<number>;
@@ -269,6 +277,27 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
   const verificarPrazosDoCliente = new VerificarPrazosDoCliente(repositorio, notificador, deps.relogio);
 
   return {
+    apresentacao: {
+      async prepararApresentador(usuarioId) {
+        await repositorioPerfis.salvarPerfil({
+          usuarioId,
+          papelAv: 'padrao',
+          competencias: ['comercial', 'produto', 'processo', 'pcp', 'custo'],
+          papeisEspeciais: ['gerente_engenharia', 'gestor_programa'],
+        });
+      },
+      async gerarExemplos() {
+        await gerarExemplos.executar();
+      },
+      async listar() {
+        return (await repositorio.listar()).map((av) => ({
+          id: av.id,
+          numero: av.numero,
+          etapa: av.etapaAtual,
+          descricao: av.descricao,
+        }));
+      },
+    },
     rotinas: { verificarPrazosDoCliente: () => verificarPrazosDoCliente.executar() },
     comandos: { concluirComProjeto: (entrada) => concluirComProjeto.executar(entrada) },
     consultas: {

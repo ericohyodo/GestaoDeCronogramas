@@ -22,6 +22,7 @@ import { BaterPresenca, ListarUsuariosOnline } from './aplicacao/casos-de-uso/pr
 import { Sessao } from './aplicacao/sessao';
 import { registrarIpcUsuarios } from './apresentacao/controlador-ipc-usuarios';
 import type { Perfil } from './dominio/perfil';
+import { Usuario } from './dominio/usuario';
 import { HashDeSenhaScrypt } from './infraestrutura/hash-de-senha-scrypt';
 import { RepositorioPresencaSqlite } from './infraestrutura/repositorio-presenca-sqlite';
 import { RepositorioUsuariosSqlite } from './infraestrutura/repositorio-usuarios-sqlite';
@@ -39,6 +40,13 @@ export interface ModuloUsuarios {
   /** Consultas que o módulo oferece aos demais módulos. */
   /** Avisa que este aplicativo está fechando: some da lista de usuários online. */
   encerrar(): Promise<void>;
+  comandos: {
+    /**
+     * Modo apresentação: cria (se preciso) o usuário "Apresentação" (administrador) e abre a sessão com ele,
+     * sem senha. Nunca é chamado fora do modo apresentação (banco isolado e descartável).
+     */
+    entrarComoApresentador(): Promise<{ id: string; nome: string }>;
+  };
   consultas: {
     /** Nome de quem está logado agora; `null` sem sessão. */
     nomeDoUsuarioAtual(): string | null;
@@ -82,6 +90,25 @@ export function montarModuloUsuarios(deps: DependenciasModuloUsuarios): ModuloUs
 
   return {
     encerrar: () => presenca.remover(idDestaInstancia),
+    comandos: {
+      async entrarComoApresentador() {
+        let usuario = await repositorio.obterPorLogin('apresentacao');
+        if (!usuario) {
+          usuario = Usuario.criar({
+            id: deps.geradorDeId.gerar(),
+            nome: 'Apresentação',
+            login: 'apresentacao',
+            senhaHash: '!sem-senha',
+            perfil: 'administrador',
+            departamento: 'Gestão de Projetos',
+            agora: deps.relogio.agora(),
+          });
+          await repositorio.salvar(usuario);
+        }
+        sessao.abrir(usuario);
+        return { id: usuario.id, nome: usuario.nome };
+      },
+    },
     controleDeAcesso: {
       autenticado: () => sessao.autenticado(),
       possuiPermissao: (permissao) => sessao.possuiPermissao(permissao),

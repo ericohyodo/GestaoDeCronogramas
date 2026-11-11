@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { copyFile, rm, stat } from 'node:fs/promises';
+import { copyFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { BrowserWindow, dialog, shell } from 'electron';
 import { ErroDeDominio } from '../../../nucleo/dominio/erro-de-dominio';
@@ -71,6 +71,15 @@ export class ArmazenamentoDeEvidenciasFs implements ArmazenamentoDeEvidencias {
     const nomeArmazenado = `${randomUUID()}-${sanitizarNomeArquivo(arquivo.nomeArquivo)}`;
     await copyFile(arquivo.caminhoOriginal, path.join(pasta, nomeArmazenado));
     return { nomeArmazenado, tipoMime: TIPOS_MIME[extensao] ?? null, tamanhoBytes: tamanho };
+  }
+
+  async gravarTexto(sdId: string, nomeArquivo: string, conteudo: string): Promise<ArquivoGuardado> {
+    const pasta = pastaDaSd(sdId);
+    garantirPastaGravavel(pasta);
+    const nomeArmazenado = `${randomUUID()}-${sanitizarNomeArquivo(nomeArquivo)}`;
+    await writeFile(path.join(pasta, nomeArmazenado), conteudo, 'utf-8');
+    const extensao = path.extname(nomeArquivo).toLowerCase();
+    return { nomeArmazenado, tipoMime: TIPOS_MIME[extensao] ?? null, tamanhoBytes: Buffer.byteLength(conteudo, 'utf-8') };
   }
 
   async abrir(sdId: string, nomeArmazenado: string): Promise<void> {

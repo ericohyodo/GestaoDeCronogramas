@@ -3,6 +3,8 @@ import { ipcMain } from 'electron';
 import type { AparenciaDTO } from '@contratos/aparencia.contrato';
 import { CANAIS } from '@contratos/canais';
 import { suportaVidroNativo } from './janela/aparencia';
+import { limparPastaDaApresentacao, registrarIpcApresentacao, semearApresentacao } from './apresentacao/modo-apresentacao';
+import { ehModoApresentacao } from './nucleo/infraestrutura/banco/caminho-do-banco';
 import { montarModuloAvs } from './modulos/avs';
 import { montarModuloCronogramas } from './modulos/cronogramas';
 import { montarModuloIa } from './modulos/ia';
@@ -44,6 +46,7 @@ export async function montarAplicacao(opcoes: {
   caminhoDoPreload: string;
 }): Promise<Aplicacao> {
   const pasta = resolverPastaDoBanco();
+  limparPastaDaApresentacao(pasta);
   garantirPastaGravavel(pasta);
   const caminhoDoBanco = path.join(pasta, NOME_ARQUIVO_BANCO);
 
@@ -200,6 +203,12 @@ ${pasta}`,
   ipcMain.on(CANAIS.aparencia.obter, (evento) => {
     evento.returnValue = aparencia;
   });
+
+  // Modo apresentação: dados fictícios no banco próprio (pasta recriada a cada entrada).
+  const roteiro = ehModoApresentacao()
+    ? await semearApresentacao({ usuarios, avs, sds, responsaveis, tarefas, notificador, relogio })
+    : null;
+  registrarIpcApresentacao(ipc, roteiro);
 
   // Rotina de prazos (tarefas vencendo/atrasadas e prazo do cliente nas AVs): na abertura e a cada hora.
   // Cada aviso sai uma vez só, mesmo com vários PCs rodando a rotina (deduplicação por chave no banco).

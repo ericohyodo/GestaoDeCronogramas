@@ -88,7 +88,7 @@ export function PerfisAvPanel() {
   );
 
   return (
-    <PainelVidro className="flex flex-col gap-3 pb-2">
+    <PainelVidro data-tour="perfis-fluxo" className="flex flex-col gap-3 pb-2">
       <div className="flex items-start gap-3 px-5 pt-5">
         <ShieldCheck aria-hidden className="mt-0.5 size-5 text-titulo-secao" />
         <div>

@@ -247,7 +247,9 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
       </PainelVidro>
 
       <div className="flex flex-col gap-5">
-        <AbasDaAv abaAtiva={abaAtiva} aoSelecionar={selecionarAba} etapaAtual={etapa} />
+        <div data-tour="abas-av">
+          <AbasDaAv abaAtiva={abaAtiva} aoSelecionar={selecionarAba} etapaAtual={etapa} />
+        </div>
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
           <RegistroDaAbaContexto.Provider value={registrar}>
             <RecarregarAbaContexto.Provider value={recarregarAba}>
@@ -267,7 +269,7 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
               {abaAtiva === 'resumo' && <AbaResumo av={av} />}
 
               {ehAbaDeArea && (
-                <div className="flex flex-wrap items-center justify-end gap-3">
+                <div data-tour="botoes-aba" className="flex flex-wrap items-center justify-end gap-3">
                   {aviso && <p className="text-xs text-texto-secundario">{aviso}</p>}
                   {erroAvanco && <MensagemErro mensagem={erroAvanco} aoFechar={() => setErroAvanco(null)} />}
                   <Botao icone={Save} onClick={() => void salvarAba()} disabled={operando !== null || somenteLeitura}>
@@ -292,7 +294,9 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
             </RecarregarAbaContexto.Provider>
           </RegistroDaAbaContexto.Provider>
           <div className="flex flex-col gap-5">
-            <EquipePanel av={av} />
+            <div data-tour="equipe-av">
+              <EquipePanel av={av} />
+            </div>
             <HistoricoPanel avId={av.id} />
           </div>
         </div>

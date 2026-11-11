@@ -231,7 +231,7 @@ export function DetalheSd({
       )}
 
       {/* ---------- Bloco 1: Comercial ---------- */}
-      <PainelVidro className="flex flex-col gap-4 p-5">
+      <PainelVidro data-tour="sd-comercial" className="flex flex-col gap-4 p-5">
         <div>
           <h2 className="text-base font-semibold">1. Comercial — oficialização do cliente</h2>
           <p className="text-sm text-texto-secundario">
@@ -374,6 +374,7 @@ export function DetalheSd({
         ) : sd.status === 'aberta' ? (
           // Os botões ficam sempre à vista; só funcionam para quem tem o papel (o servidor confere de novo).
           <div className="flex flex-col gap-2">
+            <div data-tour="sd-parecer">
             <AreaTexto
               rotulo="Parecer da Engenharia"
               ajuda="Observações sobre a SD: inconsistências, evidência que não é de fato o PO, condições do aceite. Obrigatório para devolver ao Comercial; opcional no aceite."
@@ -387,13 +388,14 @@ export function DetalheSd({
               disabled={!permissoes.engenharia}
               onChange={(e) => setParecer(e.target.value)}
             />
+            </div>
             {!permissoes.engenharia && (
               <p className="text-sm text-texto-secundario">
                 Aguardando o aceite do Gerente de Engenharia ou de um Gestor de Programa. Os papéis são atribuídos
                 pelo administrador em Usuários › Fluxo AV / SD.
               </p>
             )}
-            <div className="flex flex-wrap justify-end gap-2">
+            <div data-tour="sd-aceite" className="flex flex-wrap justify-end gap-2">
               <Botao
                 variante="perigo"
                 icone={Undo2}

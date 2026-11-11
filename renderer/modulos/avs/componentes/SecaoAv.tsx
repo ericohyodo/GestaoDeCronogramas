@@ -106,6 +106,7 @@ export function SecaoAv({
 }) {
   return (
     <PainelVidro
+      data-tour={estado === 'atual' ? 'bloco-atual' : undefined}
       className={clsx(
         className,
         'transition-[opacity,box-shadow] duration-200',
@@ -129,7 +130,7 @@ export function ProgressoDaAba({ estados }: { estados: readonly EstadoBloco[] })
   const feitos = estados.filter((estado) => estado === 'completo').length;
   const total = estados.length;
   return (
-    <div className="flex items-center gap-3 text-xs text-texto-secundario" aria-live="polite">
+    <div data-tour="progresso-aba" className="flex items-center gap-3 text-xs text-texto-secundario" aria-live="polite">
       <div className="h-1.5 w-40 overflow-hidden rounded-full bg-borda" aria-hidden>
         <div
           className="h-full rounded-full bg-primaria transition-[width] duration-300"

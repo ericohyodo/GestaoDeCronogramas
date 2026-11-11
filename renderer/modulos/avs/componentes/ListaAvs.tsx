@@ -44,7 +44,7 @@ export function ListaAvs({ itens }: { itens: AvResumoDTO[] }) {
   }, [itens, aba, busca]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div data-tour="lista-avs" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1 rounded-lg bg-texto/5 p-1">
           {ABAS.map(({ chave, rotulo }) => (

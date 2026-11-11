@@ -2,7 +2,7 @@
 
 import { PanelLeftOpen } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
-import { type ReactNode, useEffect, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
 import { type ModuloApp, moduloDaRota } from '@/compartilhado/layout/modulo-da-rota';
 import { clienteDesktop } from '@/compartilhado/api/cliente-desktop';
 import { BotaoIcone } from '@/compartilhado/ui/Botao';
@@ -10,6 +10,9 @@ import { BarraDeTitulo } from '@/compartilhado/layout/BarraDeTitulo';
 import { BarraLateral, NAV_AVS, NAV_PROJETOS, NAV_SDS } from '@/compartilhado/layout/BarraLateral';
 import { FundoDecorativo } from '@/compartilhado/layout/FundoDecorativo';
 import { SeletorTema } from '@/modulos/preferencias/componentes/SeletorTema';
+import { SeloDoModoApresentacao } from '@/modulos/apresentacao/componentes/ControlesDaApresentacao';
+import { TourDaApresentacao } from '@/modulos/apresentacao/componentes/TourDaApresentacao';
+import { useApresentacaoStore } from '@/modulos/apresentacao/store/use-apresentacao-store';
 import { SinoDeNotificacoes } from '@/modulos/notificacoes/componentes/SinoDeNotificacoes';
 import { useNotificacoesStore } from '@/modulos/notificacoes/store/use-notificacoes-store';
 import { MenuDoUsuario } from '@/modulos/usuarios/componentes/MenuDoUsuario';
@@ -48,6 +51,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     void carregar();
   }, [carregar]);
+
+  // Modo apresentação (dados fictícios): selo na barra superior e roteiro guiado.
+  const estadoDaApresentacao = useApresentacaoStore((estado) => estado.estado);
+  const carregarApresentacao = useApresentacaoStore((estado) => estado.carregar);
+  useEffect(() => {
+    void carregarApresentacao();
+  }, [carregarApresentacao]);
 
   const autenticado = sessao?.usuario != null;
   const naTelaDeLogin = rota === ROTA_DE_LOGIN;
@@ -95,10 +105,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <>
       <FundoDecorativo />
+      {autenticado && estadoDaApresentacao?.ativo && estadoDaApresentacao.roteiro && (
+        <Suspense>
+          <TourDaApresentacao roteiro={estadoDaApresentacao.roteiro} />
+        </Suspense>
+      )}
       <div className="flex h-screen flex-col">
         <BarraDeTitulo
           acoes={
             <>
+              <SeloDoModoApresentacao />
               {autenticado && <SinoDeNotificacoes />}
               {autenticado && <MenuDoUsuario />}
               <SeletorTema />

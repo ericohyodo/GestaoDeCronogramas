@@ -4,6 +4,16 @@ import { app } from 'electron';
 
 export const NOME_ARQUIVO_BANCO = 'gestao-cronogramas.db';
 
+/** Argumento de linha de comando que liga o modo apresentação (o app é reiniciado com ele). */
+export const ARGUMENTO_MODO_APRESENTACAO = '--modo-apresentacao';
+/** Subpasta do modo apresentação: banco, anexos e backups próprios, recriados a cada entrada. */
+export const PASTA_MODO_APRESENTACAO = 'modo-apresentacao';
+
+/** O app está em modo apresentação (dados fictícios, isolados dos reais)? */
+export function ehModoApresentacao(): boolean {
+  return process.argv.includes(ARGUMENTO_MODO_APRESENTACAO);
+}
+
 export class ErroPastaSemPermissao extends Error {
   constructor(readonly pasta: string) {
     super(
@@ -23,6 +33,12 @@ export class ErroPastaSemPermissao extends Error {
  * 3. Desenvolvimento: <repositório>/dados-dev.
  */
 export function resolverPastaDoBanco(): string {
+  const base = resolverPastaDosDadosReais();
+  // No modo apresentação tudo (banco, anexos, backups) vai para uma subpasta: os dados reais nunca são tocados.
+  return ehModoApresentacao() ? path.join(base, PASTA_MODO_APRESENTACAO) : base;
+}
+
+function resolverPastaDosDadosReais(): string {
   const pastaPortatil = process.env.PORTABLE_EXECUTABLE_DIR;
   if (pastaPortatil) return pastaPortatil;
   if (app.isPackaged) return path.dirname(process.execPath);
