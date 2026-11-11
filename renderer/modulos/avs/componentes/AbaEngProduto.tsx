@@ -30,7 +30,8 @@ import {
 import { CLASSE_CELULA_EDITAVEL } from './TabelaDeMateriais';
 import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
 import { Ajuda } from '@/compartilhado/ui/Ajuda';
-import { CabecalhoDaSecao, SecaoAv } from './SecaoAv';
+import { estadosDosBlocos, investimentosCompletos, preenchido, todosPreenchidos } from '../blocos';
+import { CabecalhoDaSecao, SecaoAv, ProgressoDaAba } from './SecaoAv';
 
 let contador = 0;
 const chaveLocal = () => `local-${Date.now()}-${contador++}`;
@@ -114,6 +115,8 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
   const [estrutura, setEstrutura] = useState<NoEditavel[]>([]);
 
   const [erroSalvar, setErroSalvar] = useState<unknown>(null);
+  // Anexos já gravados na seção (o bloco de anexos conta como completo com ao menos um).
+  const [qtdAnexos, setQtdAnexos] = useState(0);
   // Versão lida ao abrir a aba (gravação otimista); avança a cada salvamento bem-sucedido.
   const [versao, setVersao] = useState<number | null>(null);
 
@@ -202,6 +205,18 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
   if (carregando) return <PainelVidro className="p-5 text-sm text-texto-secundario">Carregando…</PainelVidro>;
   if (erroCarregamento) return <MensagemErro mensagem={erroCarregamento} />;
 
+  // Liberação fracionada: Dados de entrada → Anexos → Estrutura → Riscos e premissas → Investimentos.
+  const estadosBlocos = estadosDosBlocos([
+    preenchido(escopoTecnico) &&
+      ITENS_CHECKLIST_PRODUTO.every(
+        ({ chave }) => !checklist[`${chave}Disponivel`] || preenchido(links[`${chave}Link`]),
+      ),
+    qtdAnexos > 0,
+    estrutura.length > 0,
+    todosPreenchidos(riscosProjeto, premissasProjeto, recursosProjeto, restricoesProjeto, prazoPrototipoDias, complexidade),
+    investimentosCompletos(investimentos),
+  ]);
+
   return (
     <form
       onSubmit={(evento) => {
@@ -209,7 +224,8 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
         void salvar();
       }}
       className="flex flex-col gap-5">
-      <SecaoAv tom="azul" className="flex flex-col gap-3 p-5">
+      <ProgressoDaAba estados={estadosBlocos} />
+      <SecaoAv estado={estadosBlocos[0]} tom="azul" className="flex flex-col gap-3 p-5">
         <CabecalhoDaSecao
           titulo="Dados de Entrada Técnica"
           ajuda="Levantamento do que já existe de informação técnica sobre o item. Para cada linha: marque 'Existente' se o documento existe, 'Disponível' se a engenharia já tem acesso a ele, e informe onde ficam as evidências (pasta de rede ou link). A lupa busca o arquivo no computador; a pasta abre o local informado."
@@ -286,15 +302,16 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      <SecaoAv tom="verde" className="p-5">
+      <SecaoAv estado={estadosBlocos[1]} tom="verde" className="p-5">
         <AnexosGaleria
+          aoMudarQuantidade={setQtdAnexos}
           avId={av.id}
           secao="produto"
           ajuda="Anexe aqui os desenhos, fotos e PDFs que ajudam a entender o produto (aceita PDF, JPG, JPEG, PNG e BMP). Clique no olho para visualizar em tela cheia."
         />
       </SecaoAv>
 
-      <SecaoAv tom="rosa" className="p-5">
+      <SecaoAv estado={estadosBlocos[2]} tom="rosa" className="p-5">
         <ArvoreDeEstrutura
           nos={estrutura}
           // O conjunto principal se chama pelo número do desenho do cliente (o código do cliente da aba Comercial).
@@ -313,7 +330,7 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      <SecaoAv tom="ambar" className="flex flex-col gap-4 p-5">
+      <SecaoAv estado={estadosBlocos[3]} tom="ambar" className="flex flex-col gap-4 p-5">
         <CabecalhoDaSecao
           titulo="Riscos, premissas e restrições"
           ajuda="Registro do raciocínio da Engenharia por trás da cotação: o que pode dar errado, o que foi assumido e o que limita a solução."
@@ -385,7 +402,7 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
         </div>
       </SecaoAv>
 
-      <SecaoAv tom="lilas" className="p-5">
+      <SecaoAv estado={estadosBlocos[4]} tom="lilas" className="p-5">
         <TabelaDeInvestimentos
           aoLimpar={() => setInvestimentos([])}
           linhas={investimentos}

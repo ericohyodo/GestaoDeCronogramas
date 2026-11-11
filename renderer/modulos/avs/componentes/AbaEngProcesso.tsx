@@ -12,7 +12,8 @@ import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desk
 import { CampoTexto } from '@/compartilhado/ui/Campos';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
-import { CabecalhoDaSecao, SecaoAv } from './SecaoAv';
+import { estadosDosBlocos, investimentosCompletos, preenchido, tabelaObrigatoriaCompleta, todosPreenchidos } from '../blocos';
+import { CabecalhoDaSecao, SecaoAv, ProgressoDaAba } from './SecaoAv';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { BarraDeTemplates } from './BarraDeTemplates';
 import { novaLinhaOperacao, TabelaDeOperacoes, type LinhaOperacaoEditavel } from './TabelaDeOperacoes';
@@ -143,6 +144,17 @@ export function AbaEngProcesso({ av }: { av: AvDetalheDTO }) {
   if (carregando) return <PainelVidro className="p-5 text-sm text-texto-secundario">Carregando…</PainelVidro>;
   if (erroCarregamento) return <MensagemErro mensagem={erroCarregamento} />;
 
+  // Liberação fracionada: Operações → Prazo → Investimentos.
+  const estadosBlocos = estadosDosBlocos([
+    tabelaObrigatoriaCompleta(
+      operacoes,
+      (operacao) => preenchido(operacao.descricao),
+      (operacao) => todosPreenchidos(operacao.maquina, operacao.pecasHora),
+    ),
+    preenchido(prazoProducaoDias),
+    investimentosCompletos(investimentos),
+  ]);
+
   return (
     <form
       onSubmit={(evento) => {
@@ -150,7 +162,8 @@ export function AbaEngProcesso({ av }: { av: AvDetalheDTO }) {
         void salvar();
       }}
       className="flex flex-col gap-5">
-      <SecaoAv tom="azul" className="flex flex-col gap-4 p-5">
+      <ProgressoDaAba estados={estadosBlocos} />
+      <SecaoAv estado={estadosBlocos[0]} tom="azul" className="flex flex-col gap-4 p-5">
         <BarraDeTemplates
           tipo="operacoes"
           itens={() => operacoesParaEntrada(operacoes)}
@@ -171,7 +184,7 @@ export function AbaEngProcesso({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      <SecaoAv tom="ambar" className="flex flex-col gap-3 p-5">
+      <SecaoAv estado={estadosBlocos[1]} tom="ambar" className="flex flex-col gap-3 p-5">
         <CabecalhoDaSecao
           titulo="Prazo"
           ajuda="Tempo que a fábrica precisa, depois do protótipo aprovado, para ficar pronta para produzir em série (ferramental, ajustes, ensaios)."
@@ -188,7 +201,7 @@ export function AbaEngProcesso({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      <SecaoAv tom="lilas" className="p-5">
+      <SecaoAv estado={estadosBlocos[2]} tom="lilas" className="p-5">
         <TabelaDeInvestimentos
           aoLimpar={() => setInvestimentos([])}
           linhas={investimentos}

@@ -7,7 +7,8 @@ import { AreaTexto, CampoData, CampoTexto, Selecao } from '@/compartilhado/ui/Ca
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { useAvsStore } from '../store/use-avs-store';
 import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
-import { CabecalhoDaSecao, SecaoAv, TituloSecao } from './SecaoAv';
+import { estadosDosBlocos, preenchido, tabelaObrigatoriaCompleta, todosPreenchidos } from '../blocos';
+import { CabecalhoDaSecao, SecaoAv, TituloSecao, ProgressoDaAba } from './SecaoAv';
 import { novaLinhaContato, TabelaDeContatos, type LinhaContatoEditavel } from './TabelaDeContatos';
 
 // Os contatos são uma lista à parte (TabelaDeContatos); por isso os quatro campos antigos ficam de fora.
@@ -152,6 +153,30 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
 
   useRegistrarAba({ sujo, salvar });
 
+  // Liberação fracionada: Identificação → Contato → Logística → Observações (opcional).
+  const estadosBlocos = estadosDosBlocos([
+    todosPreenchidos(
+      campos.descricao,
+      campos.cliente,
+      campos.codigo,
+      campos.solicitante,
+      campos.volumeAnual,
+      campos.linha,
+      campos.familia,
+      campos.origemProjeto,
+      campos.programa,
+      campos.anoSopEop,
+      campos.prazoCliente,
+    ),
+    tabelaObrigatoriaCompleta(
+      contatos ?? [],
+      (contato) => [contato.nome, contato.area, contato.telefone, contato.email].some(preenchido),
+      (contato) => preenchido(contato.nome) && (preenchido(contato.email) || preenchido(contato.telefone)),
+    ),
+    todosPreenchidos(campos.localEntrega, campos.conceitoLogistico, campos.respEmbalagem),
+    true,
+  ]);
+
   return (
     <form
       onSubmit={(evento) => {
@@ -160,7 +185,8 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
       }}
       className="flex flex-col gap-5"
     >
-      <SecaoAv tom="azul" className="flex flex-col gap-4 p-5">
+      <ProgressoDaAba estados={estadosBlocos} />
+      <SecaoAv estado={estadosBlocos[0]} tom="azul" className="flex flex-col gap-4 p-5">
         <CabecalhoDaSecao
           titulo="Identificação"
           ajuda="Dados que identificam o item que o cliente quer cotar e de que negócio ele faz parte."
@@ -252,7 +278,7 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
         </div>
       </SecaoAv>
 
-      <SecaoAv tom="verde" className="flex flex-col gap-4 p-5">
+      <SecaoAv estado={estadosBlocos[1]} tom="verde" className="flex flex-col gap-4 p-5">
         {contatos === null ? (
           <>
             <TituloSecao>Contato</TituloSecao>
@@ -273,7 +299,7 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
         )}
       </SecaoAv>
 
-      <SecaoAv tom="ciano" className="flex flex-col gap-4 p-5">
+      <SecaoAv estado={estadosBlocos[2]} tom="ciano" className="flex flex-col gap-4 p-5">
         <CabecalhoDaSecao
           titulo="Logística"
           ajuda="Como o produto chega ao cliente: para onde vai, de que forma é entregue e quem cuida da embalagem."
@@ -299,7 +325,7 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
         </div>
       </SecaoAv>
 
-      <SecaoAv tom="lilas" className="flex flex-col gap-3 p-5">
+      <SecaoAv estado={estadosBlocos[3]} tom="lilas" className="flex flex-col gap-3 p-5">
         <CabecalhoDaSecao titulo="Observações" aoLimpar={() => limpar(['infoComplementarComercial'])} />
         <AreaTexto
           rotulo="Informações complementares"

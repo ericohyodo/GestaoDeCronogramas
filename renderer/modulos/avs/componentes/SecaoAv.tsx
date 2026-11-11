@@ -1,12 +1,13 @@
 'use client';
 
 import clsx from 'clsx';
-import { Eraser } from 'lucide-react';
+import { CircleCheck, CircleDot, Eraser, Lock } from 'lucide-react';
 import { type ComponentProps, type ReactNode, useState } from 'react';
 import { Ajuda } from '@/compartilhado/ui/Ajuda';
 import { Botao } from '@/compartilhado/ui/Botao';
 import { DialogoConfirmacao } from '@/compartilhado/ui/DialogoConfirmacao';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
+import type { EstadoBloco } from '../blocos';
 
 export type TomSecao = 'azul' | 'verde' | 'ambar' | 'lilas' | 'rosa' | 'ciano';
 
@@ -61,19 +62,83 @@ export function CabecalhoDaSecao({
   );
 }
 
-/** Cartão de uma seção da aba, com um fundo pastel sutil (a cor vem dos tokens `--pastel-*`). */
+/** Selo do estado do bloco na liberação fracionada. */
+function SeloDoBloco({ estado }: { estado: EstadoBloco }) {
+  if (estado === 'completo') {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-sucesso">
+        <CircleCheck aria-hidden className="size-3.5" />
+        Bloco completo
+      </span>
+    );
+  }
+  if (estado === 'atual') {
+    return (
+      <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-primaria">
+        <CircleDot aria-hidden className="size-3.5" />
+        Preencha agora
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-texto-sutil">
+      <Lock aria-hidden className="size-3.5" />
+      Complete o bloco anterior
+    </span>
+  );
+}
+
+/**
+ * Cartão de uma seção da aba, com um fundo pastel sutil (a cor vem dos tokens `--pastel-*`).
+ * Com `estado`, participa da liberação fracionada: o bloco atual fica em destaque, os completos ganham selo
+ * e os seguintes ficam esmaecidos (continuam editáveis; ao passar o mouse voltam à opacidade normal).
+ */
 export function SecaoAv({
   tom,
   className,
+  estado,
   children,
 }: {
   tom: TomSecao;
   className?: string;
+  estado?: EstadoBloco;
   children: ReactNode;
 }) {
   return (
-    <PainelVidro className={className} style={{ backgroundColor: `var(--pastel-${tom})` }}>
+    <PainelVidro
+      className={clsx(
+        className,
+        'transition-[opacity,box-shadow] duration-200',
+        estado === 'atual' && 'ring-2 ring-primaria/45',
+        estado === 'pendente' && 'opacity-55 hover:opacity-100 focus-within:opacity-100',
+      )}
+      style={{ backgroundColor: `var(--pastel-${tom})` }}
+    >
+      {estado && (
+        <div className="-mb-1">
+          <SeloDoBloco estado={estado} />
+        </div>
+      )}
       {children}
     </PainelVidro>
+  );
+}
+
+/** Indicador "N de M blocos" no topo da aba. */
+export function ProgressoDaAba({ estados }: { estados: readonly EstadoBloco[] }) {
+  const feitos = estados.filter((estado) => estado === 'completo').length;
+  const total = estados.length;
+  return (
+    <div className="flex items-center gap-3 text-xs text-texto-secundario" aria-live="polite">
+      <div className="h-1.5 w-40 overflow-hidden rounded-full bg-borda" aria-hidden>
+        <div
+          className="h-full rounded-full bg-primaria transition-[width] duration-300"
+          style={{ width: `${total ? (feitos / total) * 100 : 0}%` }}
+        />
+      </div>
+      <span className="tabular-nums">
+        {feitos} de {total} blocos preenchidos
+      </span>
+    </div>
   );
 }

@@ -22,6 +22,7 @@ import { EquipePanel } from './EquipePanel';
 import { EtapaBadge } from './EtapaBadge';
 import { HistoricoPanel } from './HistoricoPanel';
 import { useAvsStore } from '../store/use-avs-store';
+import { podeEditarAreaDaAv, useMeuPerfilAv } from '../store/use-meu-perfil-av';
 
 /** Da Proposta Enviada em diante (e nas AVs encerradas) não há mais o que preencher: abre no Resumo. */
 function abreNoResumo(av: AvDetalheDTO): boolean {
@@ -35,6 +36,8 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
   const carregarGrupos = useAvsStore((estado) => estado.carregarGrupos);
   const aplicarAoGrupo = useAvsStore((estado) => estado.aplicarAoGrupo);
   const grupos = useAvsStore((estado) => estado.grupos);
+  const meuPerfil = useMeuPerfilAv((estado) => estado.perfil);
+  const carregarMeuPerfil = useMeuPerfilAv((estado) => estado.carregar);
   const [operando, setOperando] = useState<'salvar' | 'liberar' | 'trocar' | null>(null);
   const [erroAvanco, setErroAvanco] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
@@ -62,8 +65,16 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
   }, [grupoId, carregarGrupos]);
   const avsDoGrupo = grupos.find((grupo) => grupo.id === grupoId)?.avs ?? [];
 
+  useEffect(() => {
+    // Relê sempre: outro usuário pode ter entrado nesta janela desde a última vez.
+    void carregarMeuPerfil(true);
+  }, [carregarMeuPerfil]);
+
   const etapa = av.etapaAtual;
   const ehAbaDeArea = abaAtiva !== 'resumo';
+  // Mesma regra do servidor: só o responsável pela área (ou o administrador) grava a aba.
+  const responsavelDaAba = ehAbaDeArea ? av.membros[abaAtiva] : undefined;
+  const somenteLeitura = ehAbaDeArea && meuPerfil !== null && !podeEditarAreaDaAv(meuPerfil, responsavelDaAba?.id);
   const podeLiberar =
     !etapa.terminal &&
     etapa.area === abaAtiva &&
@@ -241,6 +252,13 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
           <RegistroDaAbaContexto.Provider value={registrar}>
             <RecarregarAbaContexto.Provider value={recarregarAba}>
             <div key={`${abaAtiva}-${recarga}`} className="flex flex-col gap-5">
+              {somenteLeitura && (
+                <p className="etiqueta tom-info rounded-xl px-3.5 py-2.5 text-sm">
+                  Somente leitura: esta aba é editada por{' '}
+                  <span className="font-semibold">{responsavelDaAba?.nome ?? 'o responsável pela área'}</span> (ou pelo
+                  administrador).
+                </p>
+              )}
               {abaAtiva === 'comercial' && <AbaComercial av={av} />}
               {abaAtiva === 'produto' && <AbaEngProduto av={av} />}
               {abaAtiva === 'processo' && <AbaEngProcesso av={av} />}
@@ -252,14 +270,14 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
                 <div className="flex flex-wrap items-center justify-end gap-3">
                   {aviso && <p className="text-xs text-texto-secundario">{aviso}</p>}
                   {erroAvanco && <MensagemErro mensagem={erroAvanco} aoFechar={() => setErroAvanco(null)} />}
-                  <Botao icone={Save} onClick={() => void salvarAba()} disabled={operando !== null}>
+                  <Botao icone={Save} onClick={() => void salvarAba()} disabled={operando !== null || somenteLeitura}>
                     {operando === 'salvar' ? 'Salvando…' : 'Salvar'}
                   </Botao>
                   <Botao
                     variante="primario"
                     icone={SkipForward}
                     onClick={() => void salvarELiberar()}
-                    disabled={operando !== null || !podeLiberar}
+                    disabled={operando !== null || !podeLiberar || somenteLeitura}
                     title={
                       podeLiberar
                         ? undefined

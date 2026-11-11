@@ -34,12 +34,15 @@ export function AnexosGaleria({
   secao,
   titulo = 'Desenhos e evidências',
   ajuda,
+  aoMudarQuantidade,
 }: {
   avId: string;
   secao: AreaAvDTO;
   titulo?: string;
   /** Explicação do que anexar aqui (aparece ao passar o mouse no ícone de ajuda). */
   ajuda?: string;
+  /** Avisa a aba quantos anexos a seção tem (liberação fracionada dos blocos). */
+  aoMudarQuantidade?: (quantidade: number) => void;
 }) {
   const [anexos, setAnexos] = useState<AnexoAvDTO[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -63,6 +66,10 @@ export function AnexosGaleria({
   }, [avId]);
 
   const itens = anexos.filter((anexo) => anexo.secao === secao);
+  const quantidade = itens.length;
+  useEffect(() => {
+    if (!carregando) aoMudarQuantidade?.(quantidade);
+  }, [quantidade, carregando, aoMudarQuantidade]);
 
   const adicionar = async () => {
     setEnviando(true);

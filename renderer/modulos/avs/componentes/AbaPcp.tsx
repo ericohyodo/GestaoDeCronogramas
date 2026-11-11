@@ -10,7 +10,8 @@ import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
 import { AnexosGaleria } from './AnexosGaleria';
-import { CabecalhoDaSecao, SecaoAv } from './SecaoAv';
+import { estadosDosBlocos, preenchido, tabelaObrigatoriaCompleta, tabelaOpcionalCompleta, todosPreenchidos } from '../blocos';
+import { CabecalhoDaSecao, SecaoAv, ProgressoDaAba } from './SecaoAv';
 import { novaLinhaCarga, TabelaDeCargas, type LinhaCargaEditavel } from './TabelaDeCargas';
 import {
   novaLinhaCustoLogistico,
@@ -68,6 +69,8 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
   const [sugestoesMaquina, setSugestoesMaquina] = useState<string[]>([]);
   const [aviso, setAviso] = useState<string | null>(null);
   const [erroSalvar, setErroSalvar] = useState<unknown>(null);
+  // Anexos já gravados na seção (o bloco de anexos conta como completo com ao menos um).
+  const [qtdAnexos, setQtdAnexos] = useState(0);
   // Versão lida ao abrir a aba (gravação otimista); avança a cada salvamento bem-sucedido.
   const [versao, setVersao] = useState<number | null>(null);
 
@@ -127,6 +130,18 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
   if (carregando) return <PainelVidro className="p-5 text-sm text-texto-secundario">Carregando…</PainelVidro>;
   if (erroCarregamento) return <MensagemErro mensagem={erroCarregamento} />;
 
+  // Liberação fracionada: Cargas → Layout da fábrica → Custos logísticos (opcional) → Observações (opcional).
+  const estadosBlocos = estadosDosBlocos([
+    tabelaObrigatoriaCompleta(
+      cargas,
+      (carga) => preenchido(carga.operacao),
+      (carga) => todosPreenchidos(carga.cargaAtual, carga.cargaFutura),
+    ),
+    qtdAnexos > 0,
+    tabelaOpcionalCompleta(custos, (custo) => preenchido(custo.descricao), (custo) => preenchido(custo.valor)),
+    true,
+  ]);
+
   return (
     <form
       onSubmit={(evento) => {
@@ -135,7 +150,8 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
       }}
       className="flex flex-col gap-5"
     >
-      <SecaoAv tom="azul" className="p-5">
+      <ProgressoDaAba estados={estadosBlocos} />
+      <SecaoAv estado={estadosBlocos[0]} tom="azul" className="p-5">
         <TabelaDeCargas
           linhas={cargas}
           operacoes={sugestoesOperacao}
@@ -170,8 +186,9 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      <SecaoAv tom="verde" className="p-5">
+      <SecaoAv estado={estadosBlocos[1]} tom="verde" className="p-5">
         <AnexosGaleria
+          aoMudarQuantidade={setQtdAnexos}
           avId={av.id}
           secao="pcp"
           titulo="Layout da fábrica"
@@ -179,7 +196,7 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      <SecaoAv tom="ambar" className="p-5">
+      <SecaoAv estado={estadosBlocos[2]} tom="ambar" className="p-5">
         <TabelaDeCustosLogisticos
           linhas={custos}
           aoLimpar={() => setCustos([])}
@@ -191,7 +208,7 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      <SecaoAv tom="lilas" className="flex flex-col gap-3 p-5">
+      <SecaoAv estado={estadosBlocos[3]} tom="lilas" className="flex flex-col gap-3 p-5">
         <CabecalhoDaSecao titulo="Observações" aoLimpar={() => setObservacoes('')} />
         <AreaTexto
           rotulo="Observações do PCP"

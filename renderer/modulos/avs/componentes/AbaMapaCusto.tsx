@@ -34,7 +34,8 @@ import {
 } from '../linha-de-processo';
 import { TabelaDeProcesso } from './TabelaDeProcesso';
 import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
-import { CabecalhoDaSecao, SecaoAv, type TomSecao } from './SecaoAv';
+import { estadosDosBlocos, preenchido, tabelaObrigatoriaCompleta, tabelaOpcionalCompleta } from '../blocos';
+import { CabecalhoDaSecao, SecaoAv, type TomSecao, ProgressoDaAba } from './SecaoAv';
 
 const TOM_MATERIAL: Record<SecaoCustoMaterialDTO, TomSecao> = {
   materia_prima: 'verde',
@@ -304,6 +305,24 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
   if (carregando) return <PainelVidro className="p-5 text-sm text-texto-secundario">Carregando…</PainelVidro>;
   if (erroCarregamento) return <MensagemErro mensagem={erroCarregamento} />;
 
+  // Liberação fracionada: Condições → Matéria-prima → Outros insumos (opc.) → Embalagem (opc.) → Processo.
+  const materialIniciado = (linha: LinhaMaterialEditavel) => preenchido(linha.descricao);
+  const materialCompleto = (linha: LinhaMaterialEditavel) => preenchido(linha.custoTotal);
+  const estadosBlocos = estadosDosBlocos([
+    preenchido(incoterm),
+    tabelaObrigatoriaCompleta(materiaPrima, materialIniciado, materialCompleto),
+    tabelaOpcionalCompleta(outrosInsumos, materialIniciado, materialCompleto),
+    tabelaOpcionalCompleta(embalagem, materialIniciado, materialCompleto),
+    tabelaObrigatoriaCompleta(
+      processo,
+      (linha) => preenchido(linha.processo),
+      (linha) => preenchido(linha.custoTotal),
+    ),
+  ]);
+  /** Posição do bloco de cada seção de material na sequência (logo após Condições). */
+  const blocoDaSecao = (secaoAtual: SecaoCustoMaterialDTO) =>
+    estadosBlocos[1 + SECOES_CUSTO_MATERIAL.indexOf(secaoAtual)];
+
   return (
     <form
       onSubmit={(evento) => {
@@ -311,7 +330,8 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
         void salvar();
       }}
       className="flex flex-col gap-5">
-      <SecaoAv tom="azul" className="flex flex-col gap-4 p-5">
+      <ProgressoDaAba estados={estadosBlocos} />
+      <SecaoAv estado={estadosBlocos[0]} tom="azul" className="flex flex-col gap-4 p-5">
         <CabecalhoDaSecao
           titulo="Condições"
           ajuda="Condições comerciais que afetam o custo final da proposta."
@@ -336,7 +356,7 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
       </SecaoAv>
 
       {SECOES_CUSTO_MATERIAL.map((secaoAtual) => (
-        <SecaoAv tom={TOM_MATERIAL[secaoAtual]} key={secaoAtual} className="p-5">
+        <SecaoAv estado={blocoDaSecao(secaoAtual)} tom={TOM_MATERIAL[secaoAtual]} key={secaoAtual} className="p-5">
           <TabelaDeMateriais
             acoes={
               <div className="flex flex-col gap-1">
@@ -396,7 +416,7 @@ export function AbaMapaCusto({ av }: { av: AvDetalheDTO }) {
         </SecaoAv>
       ))}
 
-      <SecaoAv tom="ciano" className="p-5">
+      <SecaoAv estado={estadosBlocos[4]} tom="ciano" className="p-5">
         <TabelaDeProcesso
           aoLimpar={() => setProcesso([])}
           aoCalcular={() => setProcesso((atual) => atual.map(calcularLinhaProcesso))}
