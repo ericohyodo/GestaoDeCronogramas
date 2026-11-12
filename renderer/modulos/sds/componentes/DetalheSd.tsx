@@ -6,11 +6,9 @@ import { useEffect, useState } from 'react';
 import type { AnexoSdDTO, SdDTO } from '@contratos/sds.contrato';
 import { ErroDaApi, clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import {
-  formatarData,
   formatarDataHora,
   formatarTamanho,
   hojeIso,
-  somarDias,
 } from '@/compartilhado/formatacao';
 import { Botao, BotaoIcone } from '@/compartilhado/ui/Botao';
 import { AreaTexto, CampoData, CampoTexto } from '@/compartilhado/ui/Campos';
@@ -19,10 +17,12 @@ import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { Modal, RodapeModal } from '@/compartilhado/ui/Modal';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { STATUS_SD_VISUAL } from '../rotulos';
+import { type EntradaDoModalDeAceite, ModalAceiteSd } from './ModalAceiteSd';
 
 // =====================================================================================================
 // Formulário da SD — passagem de bastão do Comercial para a Engenharia.
-//   Bloco 1 (Comercial): data de envio da cotação, nº do PO, evidência de oficialização, observações.
+//   Bloco 1 (Comercial): data de envio da cotação, nº do PO, prazo acordado (lead time), evidência de
+//   oficialização e observações.
 //   Bloco 2 (no fim da página): aceite do Gerente de Engenharia / Gestor de Programa.
 // As permissões vêm do servidor; aqui só decidimos o que oferecer na tela.
 // =====================================================================================================
@@ -38,12 +38,17 @@ interface Formulario {
   dataEnvioCotacao: string;
   numeroPo: string;
   observacoes: string;
+  /** Texto do campo numérico (vazio = não informado). */
+  leadTimeDias: string;
+  leadTimeObservacao: string;
 }
 
 const paraFormulario = (sd: SdDTO): Formulario => ({
   dataEnvioCotacao: sd.dataEnvioCotacao ?? '',
   numeroPo: sd.numeroPo ?? '',
   observacoes: sd.observacoes ?? '',
+  leadTimeDias: sd.leadTimeDias === null ? '' : String(sd.leadTimeDias),
+  leadTimeObservacao: sd.leadTimeObservacao ?? '',
 });
 
 /**
@@ -69,7 +74,6 @@ export function DetalheSd({
   const [operando, setOperando] = useState<string | null>(null);
   const [aceiteAberto, setAceiteAberto] = useState(false);
   const [devolucaoAberta, setDevolucaoAberta] = useState(false);
-  const [periodo, setPeriodo] = useState({ inicio: hojeIso(), fim: somarDias(hojeIso(), 180) });
   // Parecer da Engenharia: observação no aceite ou motivo (obrigatório) da devolução ao Comercial.
   const [parecer, setParecer] = useState('');
 
@@ -82,7 +86,7 @@ export function DetalheSd({
 
   const editavel = permissoes.comercial && sd.status === 'pre_sd';
   const sujo = JSON.stringify(form) !== JSON.stringify(paraFormulario(sd));
-  const prontaParaAbrir = !!form.dataEnvioCotacao && evidencias.length > 0;
+  const prontaParaAbrir = !!form.dataEnvioCotacao && !!form.leadTimeDias && evidencias.length > 0;
 
   /** Executa uma ação da tela mostrando erro/conflito de forma uniforme. */
   const executar = async (nome: string, acao: () => Promise<void>) => {
@@ -113,6 +117,8 @@ export function DetalheSd({
       dataEnvioCotacao: form.dataEnvioCotacao || null,
       numeroPo: form.numeroPo || null,
       observacoes: form.observacoes || null,
+      leadTimeDias: form.leadTimeDias ? Number(form.leadTimeDias) : null,
+      leadTimeObservacao: form.leadTimeObservacao || null,
     });
     aplicar(salva);
     return salva;
@@ -151,16 +157,9 @@ export function DetalheSd({
   const abrirEvidencia = (anexoId: string) =>
     executar('abrir-evidencia', () => clienteDesktop.sds.abrirEvidencia(anexoId).then(() => undefined));
 
-  const aceitar = () =>
+  const aceitar = (entrada: EntradaDoModalDeAceite) =>
     executar('aceitar', async () => {
-      aplicar(
-        await clienteDesktop.sds.aceitar({
-          id: sd.id,
-          dataInicio: periodo.inicio,
-          dataFim: periodo.fim,
-          parecer: parecer.trim() || null,
-        }),
-      );
+      aplicar(await clienteDesktop.sds.aceitar({ id: sd.id, parecer: parecer.trim() || null, ...entrada }));
       setParecer('');
       setAceiteAberto(false);
       setAviso('Aceite registrado. O projeto foi criado em Gestão de Projetos.');
@@ -237,7 +236,8 @@ export function DetalheSd({
           <p className="text-sm text-texto-secundario">
             Preenchido pelo responsável Comercial da AV
             {sd.responsavelComercialNome ? ` (${sd.responsavelComercialNome})` : ''}. Para abrir a SD é preciso a
-            data de envio da cotação e ao menos uma evidência do cliente (PO, e-mail ou documento).
+            data de envio da cotação, o prazo acordado com o cliente e ao menos uma evidência do cliente (PO, e-mail
+            ou documento).
           </p>
         </div>
 
@@ -256,6 +256,28 @@ export function DetalheSd({
             disabled={!editavel}
             placeholder="Ex.: 4500012345"
             onChange={(e) => setForm((atual) => ({ ...atual, numeroPo: e.target.value }))}
+          />
+          <CampoTexto
+            rotulo="Prazo acordado com o cliente (dias corridos) *"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={1825}
+            step={1}
+            value={form.leadTimeDias}
+            disabled={!editavel}
+            placeholder="Ex.: 180"
+            dica="Lead time do pedido até a entrega/SOP; define o término do projeto no aceite."
+            onChange={(e) => setForm((atual) => ({ ...atual, leadTimeDias: e.target.value }))}
+          />
+          <AreaTexto
+            rotulo="Observação do prazo"
+            value={form.leadTimeObservacao}
+            maxLength={500}
+            rows={2}
+            disabled={!editavel}
+            placeholder="Ex.: SOP em mar/27; PPAP até jan/27"
+            onChange={(e) => setForm((atual) => ({ ...atual, leadTimeObservacao: e.target.value }))}
           />
         </div>
 
@@ -330,7 +352,11 @@ export function DetalheSd({
               icone={Send}
               onClick={() => void abrir()}
               disabled={ocupado || !prontaParaAbrir}
-              title={prontaParaAbrir ? undefined : 'Informe a data de envio da cotação e anexe a evidência do cliente.'}
+              title={
+                prontaParaAbrir
+                  ? undefined
+                  : 'Informe a data de envio da cotação e o prazo acordado, e anexe a evidência do cliente.'
+              }
             >
               {operando === 'abrir' ? 'Abrindo…' : 'Abrir SD e enviar à Engenharia'}
             </Botao>
@@ -358,6 +384,12 @@ export function DetalheSd({
               Aceite de <span className="font-medium">{sd.aceitePorNome ?? '—'}</span>
               {sd.aceiteEm && <> em {formatarDataHora(sd.aceiteEm)}</>}
             </p>
+            {sd.prazoJustificativa && (
+              <p className="basis-full whitespace-pre-line text-sm text-texto-secundario">
+                <span className="font-medium text-texto">Prazo alterado no aceite: </span>
+                {sd.prazoJustificativa}
+              </p>
+            )}
             {sd.parecerAceite && (
               <p className="basis-full whitespace-pre-line text-sm text-texto-secundario">
                 <span className="font-medium text-texto">Parecer: </span>
@@ -427,40 +459,15 @@ export function DetalheSd({
         )}
       </PainelVidro>
 
-      <Modal
-        aberto={aceiteAberto}
-        aoFechar={() => setAceiteAberto(false)}
-        titulo={`Aceite da ${sd.numero}`}
-        descricao={`Cria o projeto ${sd.numeroProjeto} em Gestão de Projetos com o período previsto abaixo (ajustável depois).`}
-        largura="sm"
-      >
-        <div className="grid grid-cols-2 gap-3">
-          <CampoData
-            rotulo="Início previsto"
-            value={periodo.inicio}
-            onChange={(e) => setPeriodo((atual) => ({ ...atual, inicio: e.target.value }))}
-          />
-          <CampoData
-            rotulo="Término previsto"
-            value={periodo.fim}
-            min={periodo.inicio}
-            onChange={(e) => setPeriodo((atual) => ({ ...atual, fim: e.target.value }))}
-          />
-        </div>
-        {periodo.inicio && periodo.fim && periodo.fim < periodo.inicio && (
-          <p className="mt-2 text-xs text-perigo">O término não pode ser antes do início.</p>
-        )}
-        <RodapeModal>
-          <Botao onClick={() => setAceiteAberto(false)}>Cancelar</Botao>
-          <Botao
-            variante="primario"
-            onClick={() => void aceitar()}
-            disabled={ocupado || !periodo.inicio || !periodo.fim || periodo.fim < periodo.inicio}
-          >
-            {operando === 'aceitar' ? 'Registrando…' : `Confirmar aceite (${formatarData(periodo.inicio || hojeIso())})`}
-          </Botao>
-        </RodapeModal>
-      </Modal>
+      {aceiteAberto && (
+        <ModalAceiteSd
+          sd={sd}
+          aberto
+          operando={operando === 'aceitar'}
+          aoFechar={() => setAceiteAberto(false)}
+          aoAceitar={(entrada) => void aceitar(entrada)}
+        />
+      )}
 
       <Modal
         aberto={devolucaoAberta}
