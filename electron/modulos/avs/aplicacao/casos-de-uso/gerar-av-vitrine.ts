@@ -32,6 +32,8 @@ export interface TextosDaSdDeVitrine {
   numeroPo: string;
   observacoes: string;
   parecer: string;
+  /** Observação do prazo acordado com o cliente (o lead time de exemplo é de 180 dias). */
+  leadTimeObservacao?: string;
 }
 
 /** Leva a SD da AV até "fechada" (cria o PRO), via módulo de SDs. */
@@ -160,6 +162,7 @@ export class GerarAvVitrine {
       parecer:
         'Escopo, prazos e investimentos conferidos com a AV. Aceite dado: projeto aberto com fases APQP e responsáveis definidos ' +
         'pela equipe da AV. Atenção ao prazo do ferramental (fornecedor externo).',
+      leadTimeObservacao: 'PPAP até jan/27; SOP do VX-300 em mar/27 (cronograma do cliente rev. B).',
     });
     return { avId, membros };
   }

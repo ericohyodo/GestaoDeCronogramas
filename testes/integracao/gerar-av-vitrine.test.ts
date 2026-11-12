@@ -102,7 +102,7 @@ describe('GerarAvVitrine', () => {
     expect(db.prepare('SELECT status FROM sd WHERE av_id = ?').pluck().get(avId)).toBe('pre_sd');
 
     // A SD é levada até "fechada" (com o PRO) pelo módulo de SDs, com os textos da vitrine.
-    expect(avancarSd).toHaveBeenCalledWith(avId, 'fechada', 'u1', expect.objectContaining({ numeroPo: expect.any(String) }));
+    expect(avancarSd).toHaveBeenCalledWith(avId, 'fechada', 'u1', expect.objectContaining({ numeroPo: expect.any(String), leadTimeObservacao: expect.stringContaining('SOP') }));
   });
 
   it('recusa quem não é administrador', async () => {

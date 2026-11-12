@@ -29,13 +29,13 @@ export class AvancarSdDeExemplo {
    * @param avId AV de exemplo que já tem Pré-SD
    * @param ate estado final desejado da SD
    * @param usuarioId quem consta como tendo aberto a SD
-   * @param textos PO, observações e parecer específicos (AV de vitrine); sem eles, usa textos genéricos
+   * @param textos PO, observações, parecer e observação do prazo da AV de vitrine; sem eles, usa textos genéricos
    */
   async executar(
     avId: string,
     ate: 'aberta' | 'fechada',
     usuarioId: string,
-    textos?: { numeroPo: string; observacoes: string; parecer: string },
+    textos?: { numeroPo: string; observacoes: string; parecer: string; leadTimeObservacao?: string },
   ): Promise<void> {
     const atual = await this.repositorio.obterPorAv(avId);
     if (!atual) throw new ErroNaoEncontrado('SD');
@@ -46,6 +46,7 @@ export class AvancarSdDeExemplo {
       observacoes: textos?.observacoes ?? 'Pedido confirmado pelo cliente por e-mail (exemplo).',
       // O PRO de exemplo vai de hoje −45 a hoje +135: 180 dias, igual ao lead time (aceite sem justificativa).
       leadTimeDias: LEAD_TIME_DE_EXEMPLO,
+      leadTimeObservacao: textos?.leadTimeObservacao ?? null,
     });
     await this.anexarEvidenciaDeExemplo?.({ id: atual.sd.id, numero: atual.sd.numero }, usuarioId);
     await this.repositorio.salvar(abrirSd(preenchida, usuarioId, agora, 1));

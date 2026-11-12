@@ -220,9 +220,14 @@ describe('fluxo da SD', () => {
       { concluirComProjeto: (e) => new ConcluirAvComProjeto(new RepositorioAvsSqlite(db), new RepositorioHistoricoAvSqlite(db), deps.relogio, deps.geradorDeId).executar(e) },
       true,
     );
-    await new AvancarSdDeExemplo(deps.repositorio, deps.versoes, deps.relogio, aceitarSemPapel).executar(avId, 'fechada', 'adm');
-    const sd = db.prepare('SELECT status, lead_time_dias FROM sd WHERE id = ?').get(sdId);
-    expect(sd).toEqual({ status: 'fechada', lead_time_dias: 180 });
+    await new AvancarSdDeExemplo(deps.repositorio, deps.versoes, deps.relogio, aceitarSemPapel).executar(avId, 'fechada', 'adm', {
+      numeroPo: 'PO-1',
+      observacoes: 'obs',
+      parecer: 'ok',
+      leadTimeObservacao: 'SOP em mar/27',
+    });
+    const sd = db.prepare('SELECT status, lead_time_dias, lead_time_observacao FROM sd WHERE id = ?').get(sdId);
+    expect(sd).toEqual({ status: 'fechada', lead_time_dias: 180, lead_time_observacao: 'SOP em mar/27' });
   });
 
   it('aceite: término calculado dispensa justificativa; diferente exige; sem lead time aceita', async () => {

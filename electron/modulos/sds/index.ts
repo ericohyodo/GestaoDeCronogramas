@@ -53,7 +53,7 @@ export interface ModuloSds {
       avId: string,
       ate: 'aberta' | 'fechada',
       usuarioId: string,
-      textos?: { numeroPo: string; observacoes: string; parecer: string },
+      textos?: { numeroPo: string; observacoes: string; parecer: string; leadTimeObservacao?: string },
     ): Promise<void>;
   };
   consultas: {
