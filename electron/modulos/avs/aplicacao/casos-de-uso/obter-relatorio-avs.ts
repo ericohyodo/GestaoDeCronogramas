@@ -39,7 +39,10 @@ export class ObterRelatorioAvs implements CasoDeUso<void, LinhaRelatorioAvDTO[]>
     const hoje = agora.toLocaleDateString('sv-SE');
     const [avs, ativos] = await Promise.all([this.repositorio.listar(), this.usuarios.listarAtivos()]);
     const nomes = construirMapaDeNomes(ativos);
-    const prazoAberto = new Map((await (this.prazos?.listarAbertos() ?? [])).map((prazo) => [prazo.avId, prazo]));
+    // Chave AV + etapa: só vale o prazo da etapa em que a AV está.
+    const prazoAberto = new Map(
+      (await (this.prazos?.listarAbertos() ?? [])).map((prazo) => [`${prazo.avId}:${prazo.etapa}`, prazo]),
+    );
 
     const linhas: LinhaRelatorioAvDTO[] = [];
     for (const av of avs) {
@@ -61,7 +64,8 @@ export class ObterRelatorioAvs implements CasoDeUso<void, LinhaRelatorioAvDTO[]>
         av.criadoEm,
       );
       const responsavelId = etapa.area ? av.membros[etapa.area] : undefined;
-      const prazo = situacao === 'em_andamento' ? prazoAberto.get(av.id) : undefined;
+      const prazo =
+        situacao === 'em_andamento' && !av.historico ? prazoAberto.get(`${av.id}:${av.etapaAtual}`) : undefined;
       const situacaoDoPrazoArea = prazo ? situacaoDoPrazo(prazo, hoje) : null;
 
       linhas.push({
@@ -96,7 +100,9 @@ export class ObterRelatorioAvs implements CasoDeUso<void, LinhaRelatorioAvDTO[]>
           situacaoDoPrazoArea === 'no_prazo' || situacaoDoPrazoArea === 'vencendo' || situacaoDoPrazoArea === 'atrasada'
             ? situacaoDoPrazoArea
             : null,
-        diasUteisDeAtraso: prazo && situacaoDoPrazoArea === 'atrasada' ? diasUteisEntre(prazo.dataLimite, hoje) : 0,
+        // Vencido na sexta e visto no fim de semana: ainda é 1 dia útil de atraso, não 0.
+        diasUteisDeAtraso:
+          prazo && situacaoDoPrazoArea === 'atrasada' ? Math.max(1, diasUteisEntre(prazo.dataLimite, hoje)) : 0,
       });
     }
     return linhas;

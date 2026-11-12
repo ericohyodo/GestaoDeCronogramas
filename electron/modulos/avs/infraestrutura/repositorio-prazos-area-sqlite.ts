@@ -20,6 +20,7 @@ interface LinhaPrazo {
   entregue_em: string | null;
 }
 
+/** Converte a linha do banco no prazo do domínio. */
 const paraPrazo = (linha: LinhaPrazo): PrazoArea => ({
   id: linha.id,
   avId: linha.av_id,
@@ -59,6 +60,7 @@ export class RepositorioPrazosAreaSqlite implements RepositorioPrazosArea {
     };
   }
 
+  /** Grava o prazo; ignora se já existe prazo para a etapa da AV (UNIQUE av_id, etapa). */
   async abrir(prazo: PrazoArea): Promise<void> {
     this.sql.abrir.run({
       id: prazo.id,
@@ -72,23 +74,28 @@ export class RepositorioPrazosAreaSqlite implements RepositorioPrazosArea {
     });
   }
 
+  /** Marca a entrega do prazo aberto da etapa. */
   async entregar(avId: string, etapa: number, instante: Date): Promise<void> {
     this.sql.entregar.run(instante.toISOString(), avId, etapa);
   }
 
+  /** @returns o prazo aberto da etapa, ou `null` */
   async obterAberto(avId: string, etapa: number): Promise<PrazoArea | null> {
     const linha = this.sql.obterAberto.get(avId, etapa);
     return linha ? paraPrazo(linha) : null;
   }
 
+  /** @returns prazos não entregues, por data-limite */
   async listarAbertos(): Promise<PrazoArea[]> {
     return this.sql.listarAbertos.all().map(paraPrazo);
   }
 
+  /** Troca a data-limite do prazo aberto (dados do modo Apresentação). */
   async redefinirLimite(avId: string, etapa: number, dataLimite: string): Promise<void> {
     this.sql.redefinirLimite.run(dataLimite, avId, etapa);
   }
 
+  /** @returns prazos entregues a partir do instante ISO informado */
   async listarEntreguesDesde(desdeIso: string): Promise<PrazoArea[]> {
     return this.sql.listarEntreguesDesde.all(desdeIso).map(paraPrazo);
   }
@@ -112,12 +119,14 @@ export class RepositorioConfigPrazosSqlite implements RepositorioConfigPrazos {
     };
   }
 
+  /** @returns dias úteis por área (padrão 3 para área sem registro) */
   async obter(): Promise<ConfigPrazos> {
     const valores = Object.fromEntries(AREAS_COM_PRAZO.map((area) => [area, DIAS_UTEIS_PADRAO])) as ConfigPrazos;
     for (const linha of this.sql.obter.all()) valores[linha.area] = linha.dias_uteis;
     return valores;
   }
 
+  /** Grava as quatro áreas numa transação. */
   async salvar(valores: ConfigPrazos, usuarioId: string, instante: Date): Promise<void> {
     const gravar = this.db.transaction(() => {
       for (const area of AREAS_COM_PRAZO) {

@@ -1,4 +1,4 @@
-import { diaLocal, somarDiasUteis } from '../../../../nucleo/dominio/calendario';
+import { diaLocal } from '../../../../nucleo/dominio/calendario';
 import type { Notificador } from '../../../../nucleo/aplicacao/portas/notificador';
 import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
 import { obterEtapaAv } from '../../dominio/etapa-av';
@@ -38,7 +38,10 @@ export class VerificarPrazosDasAreas {
     for (const prazo of abertos) {
       const av = avs.get(prazo.avId);
       const responsavel = av?.membros[prazo.area];
-      if (!av || av.historico || obterEtapaAv(av.etapaAtual).terminal || !responsavel) continue;
+      // Prazo de uma etapa que a AV já deixou (não deveria existir aberto) não gera aviso.
+      if (!av || av.historico || av.etapaAtual !== prazo.etapa || obterEtapaAv(av.etapaAtual).terminal || !responsavel) {
+        continue;
+      }
       const situacao = situacaoDoPrazo(prazo, hoje);
       if (situacao !== 'vencendo' && situacao !== 'atrasada') continue;
       const area = ROTULO_DA_AREA[prazo.area];
@@ -48,7 +51,7 @@ export class VerificarPrazosDasAreas {
         titulo:
           situacao === 'vencendo'
             ? `${av.numero} · ${area} vence em ${diaMes(prazo.dataLimite)}`
-            : `${av.numero} · ${area} em atraso desde ${diaMes(somarDiasUteis(prazo.dataLimite, 1))}`,
+            : `${av.numero} · ${area} em atraso (venceu em ${diaMes(prazo.dataLimite)})`,
         mensagem: resumoDaAv(av),
         link: linkDaAv(av.id),
         chave: `${av.id}:${prazo.etapa}:${situacao}`,

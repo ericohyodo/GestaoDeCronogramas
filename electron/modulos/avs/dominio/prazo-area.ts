@@ -58,7 +58,9 @@ export interface RepositorioPrazosArea {
   abrir(prazo: PrazoArea): Promise<void>;
   /** Marca a entrega do prazo aberto da etapa (sem efeito se já entregue ou inexistente). */
   entregar(avId: string, etapa: number, instante: Date): Promise<void>;
+  /** Prazo em aberto da etapa da AV, ou `null` se não houver. */
   obterAberto(avId: string, etapa: number): Promise<PrazoArea | null>;
+  /** Todos os prazos ainda não entregues, do vencimento mais próximo ao mais distante. */
   listarAbertos(): Promise<PrazoArea[]>;
   /** Prazos entregues a partir do instante ISO informado. */
   listarEntreguesDesde(desdeIso: string): Promise<PrazoArea[]>;
@@ -69,6 +71,8 @@ export interface RepositorioPrazosArea {
 export type ConfigPrazos = Record<AreaComPrazo, number>;
 
 export interface RepositorioConfigPrazos {
+  /** Dias úteis de cada área (padrão 3 para área sem registro). */
   obter(): Promise<ConfigPrazos>;
+  /** Grava os dias úteis das quatro áreas, com quem alterou e quando. */
   salvar(valores: ConfigPrazos, usuarioId: string, instante: Date): Promise<void>;
 }

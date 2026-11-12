@@ -215,7 +215,7 @@ describe('prazos das áreas da AV', () => {
       await verificar.executar();
       const tipos = notificacoesDe('pro').map((n) => n.tipo).filter((tipo) => tipo.startsWith('av.area_'));
       expect(tipos).toEqual(['av.area_vencendo', 'av.area_atrasada']);
-      expect(notificacoesDe('pro').at(-1)!.titulo).toContain('Eng. Produto em atraso desde 01/10');
+      expect(notificacoesDe('pro').at(-1)!.titulo).toContain('Eng. Produto em atraso (venceu em 30/09)');
     });
 
     it('área sem membro não avisa e não quebra', async () => {
@@ -252,7 +252,7 @@ describe('prazos das áreas da AV', () => {
   });
 
   describe('painel e relatório', () => {
-    /** Cria uma AV (etapa 1) com um prazo de Produto já gravado. */
+    /** Cria uma AV na etapa 2 (Eng. Produto) com o prazo de Produto já gravado. */
     const avComPrazo = async (descricao: string, dataLimite: string, entregueEm: string | null = null, iniciadaEm = '2026-09-25T12:00:00.000Z') => {
       const id = (await new CriarAv(avs, relogio, ids, consulta, autorizacao).executar({ descricao, membros: { produto: 'pro' } })).id;
       await prazos.abrir({
@@ -265,6 +265,7 @@ describe('prazos das áreas da AV', () => {
         dataLimite,
         entregueEm: entregueEm ? new Date(entregueEm) : null,
       });
+      db.prepare('UPDATE av SET etapa_atual = 2 WHERE id = ?').run(id);
       return id;
     };
 
@@ -327,5 +328,54 @@ describe('prazos das áreas da AV', () => {
     await ajustarPrazosDeExemplo(prazos, '2026-10-07'); // quarta
     const limites = (await prazos.listarAbertos()).map((prazo) => prazo.dataLimite).sort();
     expect(limites).toEqual(['2026-10-02', '2026-10-07']); // atrasado desde sexta; vence hoje
+  });
+
+  describe('correções da revisão final', () => {
+    const relatorioDe = () =>
+      new ObterRelatorioAvs(
+        avs,
+        new RepositorioHistoricoAvSqlite(db),
+        new RepositorioSecaoProdutoSqlite(db),
+        new RepositorioSecaoProcessoSqlite(db),
+        new RepositorioSecaoCustoSqlite(db),
+        consulta,
+        relogio,
+        prazos,
+      );
+
+    it('fim de semana: vencido na sexta e visto no sábado conta 1 dia útil de atraso e não cita data futura', async () => {
+      await prazos.abrir({
+        id: 'fds', avId, etapa: 1 + 1, area: 'produto', diasUteis: 3,
+        iniciadaEm: new Date('2026-11-10T12:00:00.000Z'), dataLimite: '2026-11-13', entregueEm: null,
+      });
+      db.prepare('UPDATE av SET etapa_atual = 2 WHERE id = ?').run(avId);
+      relogio.instante = new Date('2026-11-14T15:00:00.000Z'); // sábado
+      await new VerificarPrazosDasAreas(avs, prazos, notificador, relogio).executar();
+      expect(notificacoesDe('pro').at(-1)!.titulo).toContain('em atraso (venceu em 13/11)');
+      const linha = (await relatorioDe().executar()).find((item) => item.id === avId)!;
+      expect(linha).toMatchObject({ situacaoPrazoArea: 'atrasada', diasUteisDeAtraso: 1 });
+    });
+
+    it('prazo esquecido de uma etapa que já saiu não conta no painel, no relatório nem nos avisos', async () => {
+      await avancar.executar({ avId }); // na 2 (produto)
+      await avancar.executar({ avId }); // na 3 (processo)
+      // Prazo da etapa 2 reaberto por engano (ex.: corrida do preenchimento retroativo entre dois PCs).
+      db.prepare('UPDATE av_prazos_area SET entregue_em = NULL WHERE av_id = ? AND etapa = 2').run(avId);
+      relogio.instante = new Date('2026-10-05T12:00:00.000Z');
+      const painel = await new ObterDashboard(avs, prazos, relogio).executar();
+      expect([...painel.prazosDasAreas.noPrazo, ...painel.prazosDasAreas.vencendo, ...painel.prazosDasAreas.atrasadas]).toEqual([avId]);
+      const linha = (await relatorioDe().executar()).find((item) => item.id === avId)!;
+      expect(linha.areaComPrazo).toBe('Eng. Processo');
+      await new VerificarPrazosDasAreas(avs, prazos, notificador, relogio).executar();
+      expect(notificacoesDe('pro').filter((n) => n.tipo.startsWith('av.area_'))).toEqual([]);
+    });
+
+    it('AV do histórico não traz prazo da área no relatório', async () => {
+      await avancar.executar({ avId });
+      db.prepare('UPDATE av SET historico = 1 WHERE id = ?').run(avId);
+      relogio.instante = new Date('2026-10-05T12:00:00.000Z');
+      const linha = (await relatorioDe().executar()).find((item) => item.id === avId)!;
+      expect(linha).toMatchObject({ areaComPrazo: null, prazoArea: null, situacaoPrazoArea: null });
+    });
   });
 });

@@ -38,3 +38,15 @@ export function estadoDoTermino(
     exigeJustificativa: leadTimeDias !== null && fim !== calculado,
   };
 }
+
+/** Maior lead time aceito (5 anos), igual ao do servidor. */
+export const LEAD_TIME_MAXIMO = 1825;
+
+/**
+ * Confere o lead time digitado pelo Comercial antes de enviar.
+ * @param texto conteúdo do campo
+ * @returns `true` só para inteiros de 1 a 1825 escritos só com dígitos
+ */
+export function leadTimeValido(texto: string): boolean {
+  return /^\d+$/.test(texto) && Number(texto) >= 1 && Number(texto) <= LEAD_TIME_MAXIMO;
+}

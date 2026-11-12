@@ -9,6 +9,7 @@ const COMO_LER_AS_AVS = `Como ler os dados (JSON):
 - "hoje" é a data de referência. Cada item de "avs" é uma Análise de Viabilidade (AV) de um produto pedido por um cliente.
 - "etapa" é onde a AV está no fluxo: Comercial, Eng. Produto, Eng. Processo, PCP, Mapa de Custo, Proposta Enviada, SD Aberta; as etapas finais são Projeto Criado, Declinada pelo Cliente e Declinada Internamente. "situacao" é "em_andamento", "concluida" (virou projeto) ou "declinada".
 - "prazo" é a data limite para entregar a análise ao cliente; "atrasada" indica AV em andamento com prazo vencido. "diasNaEtapa" é há quantos dias a AV está parada na etapa atual e "responsavelDaEtapa" é quem responde por ela.
+- Prazo da área (diferente do prazo do cliente): nas etapas Eng. Produto, Eng. Processo, PCP e Mapa de Custo, cada área tem alguns dias úteis para preencher a sua parte. "areaComPrazo" é a área, "prazoArea" a data limite dela, "situacaoPrazoArea" é "no_prazo", "vencendo" ou "atrasada" e "diasUteisDeAtraso" conta os dias úteis de atraso. Ao falar de atraso, diga se é do prazo do cliente ("atrasada") ou do prazo da área.
 - "grupo" agrupa AVs do mesmo cliente/projeto. "familia", "linha" e "complexidade" (Alta, Média, Baixa) classificam o produto; "volumeAnual" é a previsão de peças por ano.
 - "investimentoTotal" (R$) soma os investimentos de Eng. Produto e Eng. Processo; "custoPorPeca" (R$) soma materiais e mão de obra do Mapa de Custo. Valor ausente ou zero significa que ainda não foi preenchido, não que o custo seja nulo.
 - Campos ausentes significam vazio, falso ou zero.`;

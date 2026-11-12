@@ -20,6 +20,7 @@ export class ObterDashboard implements CasoDeUso<void, DashboardAvDTO> {
     private readonly relogio: Relogio,
   ) {}
 
+  /** @returns contadores das AVs (fora do histórico), por etapa e pela situação do prazo da área atual */
   async executar(): Promise<DashboardAvDTO> {
     // O histórico (antes do uso multiusuário) fica fora dos contadores.
     const avs = (await this.repositorio.listar()).filter((av) => !av.historico);
@@ -34,11 +35,14 @@ export class ObterDashboard implements CasoDeUso<void, DashboardAvDTO> {
       else if (ETAPAS_DE_DECLINIO.has(etapa.chave)) declinadas += 1;
     }
 
-    const emAndamento = new Set(avs.filter((av) => !obterEtapaAv(av.etapaAtual).terminal).map((av) => av.id));
+    // AV em andamento → etapa atual; só conta o prazo da etapa em que a AV está.
+    const etapaAtual = new Map(
+      avs.filter((av) => !obterEtapaAv(av.etapaAtual).terminal).map((av) => [av.id, av.etapaAtual]),
+    );
     const hoje = diaLocal(this.relogio.agora());
     const prazosDasAreas = { noPrazo: [] as string[], vencendo: [] as string[], atrasadas: [] as string[] };
     for (const prazo of await this.prazos.listarAbertos()) {
-      if (!emAndamento.has(prazo.avId)) continue;
+      if (etapaAtual.get(prazo.avId) !== prazo.etapa) continue;
       const situacao = situacaoDoPrazo(prazo, hoje);
       if (situacao === 'no_prazo') prazosDasAreas.noPrazo.push(prazo.avId);
       else if (situacao === 'vencendo') prazosDasAreas.vencendo.push(prazo.avId);

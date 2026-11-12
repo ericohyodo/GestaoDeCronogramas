@@ -18,6 +18,7 @@ import { Modal, RodapeModal } from '@/compartilhado/ui/Modal';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { STATUS_SD_VISUAL } from '../rotulos';
 import { type EntradaDoModalDeAceite, ModalAceiteSd } from './ModalAceiteSd';
+import { leadTimeValido } from '../prazo-do-aceite';
 
 // =====================================================================================================
 // Formulário da SD — passagem de bastão do Comercial para a Engenharia.
@@ -86,7 +87,9 @@ export function DetalheSd({
 
   const editavel = permissoes.comercial && sd.status === 'pre_sd';
   const sujo = JSON.stringify(form) !== JSON.stringify(paraFormulario(sd));
-  const prontaParaAbrir = !!form.dataEnvioCotacao && !!form.leadTimeDias && evidencias.length > 0;
+  // Vazio é permitido ao salvar (preenche depois); preenchido, precisa ser inteiro de 1 a 1825.
+  const leadTimeOk = form.leadTimeDias === '' || leadTimeValido(form.leadTimeDias);
+  const prontaParaAbrir = !!form.dataEnvioCotacao && leadTimeValido(form.leadTimeDias) && evidencias.length > 0;
 
   /** Executa uma ação da tela mostrando erro/conflito de forma uniforme. */
   const executar = async (nome: string, acao: () => Promise<void>) => {
@@ -268,6 +271,7 @@ export function DetalheSd({
             disabled={!editavel}
             placeholder="Ex.: 180"
             dica="Lead time do pedido até a entrega/SOP; define o término do projeto no aceite."
+            erro={leadTimeOk ? undefined : 'Informe um número inteiro de dias, de 1 a 1825.'}
             onChange={(e) => setForm((atual) => ({ ...atual, leadTimeDias: e.target.value }))}
           />
           <AreaTexto
@@ -344,7 +348,7 @@ export function DetalheSd({
 
         {editavel && (
           <div className="flex flex-wrap items-center justify-end gap-2">
-            <Botao onClick={() => void salvar()} disabled={ocupado || !sujo}>
+            <Botao onClick={() => void salvar()} disabled={ocupado || !sujo || !leadTimeOk}>
               {operando === 'salvar' ? 'Salvando…' : 'Salvar'}
             </Botao>
             <Botao
