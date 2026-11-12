@@ -32,6 +32,7 @@ import type {
   CriarAvEntrada,
   CriarGrupoAvEntrada,
   DashboardAvDTO,
+  PrazosConfigDTO,
   DeclinarAvEntrada,
   GerarAvsExemploSaida,
   GrupoAvDTO,
@@ -184,6 +185,10 @@ export interface ApiDesktop {
     /** Lista simples (id + nome) para preencher os seletores de responsável por área. */
     listarMembros(): Promise<Resultado<MembroAreaDTO[]>>;
     obterDashboard(): Promise<Resultado<DashboardAvDTO>>;
+    /** Dias úteis de cada área da AV. */
+    obterPrazosConfig(): Promise<Resultado<PrazosConfigDTO>>;
+    /** Altera os dias úteis de cada área (administrador). */
+    salvarPrazosConfig(entrada: PrazosConfigDTO): Promise<Resultado<PrazosConfigDTO>>;
     avancarEtapa(entrada: AvancarEtapaEntrada): Promise<Resultado<AvDetalheDTO>>;
     declinar(entrada: DeclinarAvEntrada): Promise<Resultado<AvDetalheDTO>>;
     listarHistorico(avId: string): Promise<Resultado<HistoricoAvItemDTO[]>>;

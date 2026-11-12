@@ -6,6 +6,7 @@ import type { GeradorDeId } from '../../../../nucleo/aplicacao/portas/gerador-de
 import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
 import { obterEtapaAv } from '../../dominio/etapa-av';
 import type { RepositorioHistoricoAv } from '../../dominio/historico-av';
+import type { RepositorioPrazosArea } from '../../dominio/prazo-area';
 import type { RepositorioAvs } from '../../dominio/repositorio-avs';
 import type { AutorizacaoAv } from '../autorizacao';
 import { construirMapaDeNomes, paraAvDetalheDTO } from '../mapeador-dto';
@@ -29,6 +30,8 @@ export class AvancarEtapa implements CasoDeUso<AvancarEtapaEntrada, AvDetalheDTO
     private readonly usuarios: ConsultaDeUsuarios,
     private readonly versoes: ControleDeVersao = versaoSemControle,
     private readonly notificador: Notificador = semNotificacao,
+    /** Leitura do prazo aberto da área, para informar a data-limite no aviso de etapa liberada. */
+    private readonly prazos: Pick<RepositorioPrazosArea, 'obterAberto'> = { obterAberto: async () => null },
   ) {}
 
   async executar(entrada: AvancarEtapaEntrada): Promise<AvDetalheDTO> {
@@ -73,12 +76,16 @@ export class AvancarEtapa implements CasoDeUso<AvancarEtapaEntrada, AvDetalheDTO
       data: agora,
     });
     if (proxima.area) {
+      const prazo = await this.prazos.obterAberto(av.id, proxima.numero);
+      const textoDoPrazo = prazo
+        ? ` Prazo: ${prazo.dataLimite.slice(8, 10)}/${prazo.dataLimite.slice(5, 7)} (${prazo.diasUteis} dias úteis).`
+        : '';
       await this.notificador.notificar({
         usuarioIds: [av.membros[proxima.area]],
         excetoUsuarioId: usuario.id,
         tipo: 'av.etapa_liberada',
         titulo: `${av.numero} chegou à sua área: ${ROTULO_DA_AREA[proxima.area]}`,
-        mensagem: `${resumoDaAv(av)}. Etapa atual: ${proxima.nome}.`,
+        mensagem: `${resumoDaAv(av)}. Etapa atual: ${proxima.nome}.${textoDoPrazo}`,
         link: linkDaAv(av.id),
       });
     }

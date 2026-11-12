@@ -115,6 +115,8 @@ export const CANAIS = {
     atualizarEquipe: 'avs:atualizar-equipe',
     listarMembros: 'avs:listar-membros',
     obterDashboard: 'avs:obter-dashboard',
+    obterPrazosConfig: 'avs:obter-prazos-config',
+    salvarPrazosConfig: 'avs:salvar-prazos-config',
     avancarEtapa: 'avs:avancar-etapa',
     declinar: 'avs:declinar',
     listarHistorico: 'avs:listar-historico',

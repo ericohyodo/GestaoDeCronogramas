@@ -627,6 +627,14 @@ export interface AtualizarSecaoPcpEntrada {
 
 export type SituacaoAvDTO = 'em_andamento' | 'concluida' | 'declinada';
 
+/** Dias úteis que cada área da AV tem para preencher a sua aba (1 a 30). */
+export interface PrazosConfigDTO {
+  produto: number;
+  processo: number;
+  pcp: number;
+  custo: number;
+}
+
 export interface LinhaRelatorioAvDTO {
   id: string;
   numero: string;

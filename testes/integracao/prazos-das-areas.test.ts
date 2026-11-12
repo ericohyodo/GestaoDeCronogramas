@@ -2,6 +2,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { AutorizacaoAv } from '../../electron/modulos/avs/aplicacao/autorizacao';
 import { AvancarEtapa } from '../../electron/modulos/avs/aplicacao/casos-de-uso/avancar-etapa';
+import {
+  ObterPrazosConfig,
+  SalvarPrazosConfig,
+} from '../../electron/modulos/avs/aplicacao/casos-de-uso/configurar-prazos-das-areas';
+import { GarantirPrazosDasAreas } from '../../electron/modulos/avs/aplicacao/casos-de-uso/garantir-prazos-das-areas';
+import { VerificarPrazosDasAreas } from '../../electron/modulos/avs/aplicacao/casos-de-uso/verificar-prazos-das-areas';
 import { CriarAv } from '../../electron/modulos/avs/aplicacao/casos-de-uso/criar-av';
 import { DeclinarAv } from '../../electron/modulos/avs/aplicacao/casos-de-uso/declinar-av';
 import { FinalizarECriarPreSd } from '../../electron/modulos/avs/aplicacao/casos-de-uso/finalizar-e-criar-pre-sd';
@@ -14,6 +20,8 @@ import {
   RepositorioConfigPrazosSqlite,
   RepositorioPrazosAreaSqlite,
 } from '../../electron/modulos/avs/infraestrutura/repositorio-prazos-area-sqlite';
+import { NotificadorInterno } from '../../electron/modulos/notificacoes/aplicacao/casos-de-uso';
+import { RepositorioNotificacoesSqlite } from '../../electron/modulos/notificacoes/infraestrutura/repositorio-notificacoes-sqlite';
 import { CriarPreSd } from '../../electron/modulos/sds/aplicacao/casos-de-uso/criar-pre-sd';
 import { RepositorioSdsSqlite } from '../../electron/modulos/sds/infraestrutura/repositorio-sds-sqlite';
 import { Usuario } from '../../electron/modulos/usuarios/dominio/usuario';
@@ -43,6 +51,8 @@ describe('prazos das áreas da AV', () => {
   let autorizacao: AutorizacaoAv;
   let avancar: AvancarEtapa;
   let avId: string;
+  let perfil: 'administrador' | 'gestor';
+  let notificador: NotificadorInterno;
 
   beforeEach(async () => {
     db = abrirConexao(':memory:');
@@ -50,14 +60,18 @@ describe('prazos das áreas da AV', () => {
     relogio = new RelogioFixo(new Date('2026-09-25T12:00:00.000Z')); // sexta
     ids = new GeradorDeIdSequencial('p');
     const usuarios = new RepositorioUsuariosSqlite(db);
-    await usuarios.salvar(
-      Usuario.criar({ id: 'adm', nome: 'Admin', login: 'adm', senhaHash: 'h', perfil: 'administrador', agora: relogio.agora() }),
-    );
+    for (const [id, nome] of [['adm', 'Admin'], ['pro', 'Produto']] as const) {
+      await usuarios.salvar(
+        Usuario.criar({ id, nome, login: id, senhaHash: 'h', perfil: 'administrador', agora: relogio.agora() }),
+      );
+    }
+    perfil = 'administrador';
     consulta = {
-      usuarioAtual: () => ({ id: 'adm', nome: 'Admin', perfil: 'administrador' }),
-      listarAtivos: async () => [{ id: 'adm', nome: 'Admin' }],
-      obterPerfilGlobal: async () => 'administrador',
+      usuarioAtual: () => ({ id: 'adm', nome: 'Admin', perfil }),
+      listarAtivos: async () => [{ id: 'adm', nome: 'Admin' }, { id: 'pro', nome: 'Produto' }],
+      obterPerfilGlobal: async () => perfil,
     };
+    notificador = new NotificadorInterno(new RepositorioNotificacoesSqlite(db), relogio, ids);
     avs = new RepositorioAvsSqlite(db);
     prazos = new RepositorioPrazosAreaSqlite(db);
     config = new RepositorioConfigPrazosSqlite(db);
@@ -68,7 +82,7 @@ describe('prazos das áreas da AV', () => {
       await new CriarAv(avs, relogio, ids, consulta, autorizacao).executar({
         descricao: 'Suporte',
         cliente: 'Aurora',
-        membros: { comercial: 'adm', produto: 'adm', processo: 'adm', pcp: 'adm', custo: 'adm' },
+        membros: { comercial: 'adm', produto: 'pro', processo: 'adm', pcp: 'adm', custo: 'adm' },
       })
     ).id;
   });
@@ -123,5 +137,110 @@ describe('prazos das áreas da AV', () => {
     const aberto = (await prazos.obterAberto(avId, 2))!;
     await prazos.abrir({ ...aberto, id: 'outro' });
     expect(linhas()).toHaveLength(1);
+  });
+
+  /** Notificações gravadas para um usuário (tipo, título e mensagem). */
+  const notificacoesDe = (usuarioId: string) =>
+    db.prepare('SELECT tipo, titulo, mensagem FROM notificacoes WHERE usuario_id = ? ORDER BY criada_em').all(usuarioId) as {
+      tipo: string;
+      titulo: string;
+      mensagem: string;
+    }[];
+
+  it('o aviso de etapa liberada informa o prazo da área', async () => {
+    const comAviso = new AvancarEtapa(avs, historico, autorizacao, relogio, ids, consulta, undefined, notificador, prazos);
+    await comAviso.executar({ avId });
+    const aviso = notificacoesDe('pro').find((n) => n.tipo === 'av.etapa_liberada');
+    expect(aviso?.mensagem).toContain('Prazo: 30/09 (3 dias úteis)');
+  });
+
+  describe('rotinas', () => {
+    let garantir: GarantirPrazosDasAreas;
+    let verificar: VerificarPrazosDasAreas;
+    const historicoReal = () => new RepositorioHistoricoAvSqlite(db);
+
+    beforeEach(() => {
+      garantir = new GarantirPrazosDasAreas(avs, historicoReal(), prazos, config, ids);
+      verificar = new VerificarPrazosDasAreas(avs, prazos, notificador, relogio);
+    });
+
+    /** Cria uma AV direto na etapa informada, com a linha de histórico da chegada (sem o decorador). */
+    const avNaEtapa = async (etapa: number, chegada: string, extra: { historico?: boolean } = {}) => {
+      const id = (
+        await new CriarAv(avs, relogio, ids, consulta, autorizacao).executar({
+          descricao: `AV na ${etapa}`,
+          membros: { comercial: 'adm', produto: 'pro', processo: 'adm', pcp: 'adm', custo: 'adm' },
+        })
+      ).id;
+      const av = (await avs.obterPorId(id))!;
+      av.moverParaEtapa(etapa);
+      await avs.salvar(av);
+      await historicoReal().registrar({
+        id: ids.gerar(),
+        avId: id,
+        etapaDe: etapa - 1,
+        etapaPara: etapa,
+        usuarioId: 'adm',
+        comentario: null,
+        data: new Date(chegada),
+      });
+      if (extra.historico) db.prepare('UPDATE av SET historico = 1 WHERE id = ?').run(id);
+      return id;
+    };
+
+    it('preenche retroativamente só AVs ativas fora do histórico, uma vez', async () => {
+      const ativa = await avNaEtapa(3, '2026-09-25T12:00:00.000Z');
+      await avNaEtapa(8, '2026-09-25T12:00:00.000Z');
+      // Por último: a AV marcada como histórico libera o número, e a próxima criada colidiria com ele.
+      await avNaEtapa(3, '2026-09-25T12:00:00.000Z', { historico: true });
+      expect(await garantir.executar()).toBe(1);
+      expect(await prazos.obterAberto(ativa, 3)).toMatchObject({ area: 'processo', dataLimite: '2026-09-30' });
+      expect(await garantir.executar()).toBe(0);
+    });
+
+    it('avisa "vencendo" e "atrasada" uma única vez cada', async () => {
+      await avancar.executar({ avId }); // produto, limite 30/09, membro 'pro'
+      relogio.instante = new Date('2026-09-29T12:00:00.000Z');
+      await verificar.executar();
+      await verificar.executar();
+      relogio.instante = new Date('2026-10-01T12:00:00.000Z');
+      await verificar.executar();
+      await verificar.executar();
+      const tipos = notificacoesDe('pro').map((n) => n.tipo).filter((tipo) => tipo.startsWith('av.area_'));
+      expect(tipos).toEqual(['av.area_vencendo', 'av.area_atrasada']);
+      expect(notificacoesDe('pro').at(-1)!.titulo).toContain('Eng. Produto em atraso desde 01/10');
+    });
+
+    it('área sem membro não avisa e não quebra', async () => {
+      await avancar.executar({ avId });
+      db.prepare('UPDATE av SET membro_produto = NULL WHERE id = ?').run(avId);
+      relogio.instante = new Date('2026-10-05T12:00:00.000Z');
+      await expect(verificar.executar()).resolves.toBe(0);
+      expect(notificacoesDe('pro').filter((n) => n.tipo.startsWith('av.area_'))).toEqual([]);
+    });
+
+    it('prazo entregue não gera aviso', async () => {
+      await avancar.executar({ avId });
+      await avancar.executar({ avId }); // produto entregue; processo (adm) aberto até 30/09
+      relogio.instante = new Date('2026-10-05T12:00:00.000Z');
+      await verificar.executar();
+      expect(notificacoesDe('pro').filter((n) => n.tipo.startsWith('av.area_'))).toEqual([]);
+      expect(notificacoesDe('adm').map((n) => n.tipo)).toContain('av.area_atrasada');
+    });
+  });
+
+  describe('configuração', () => {
+    it('só administrador salva; valores fora de 1..30 são recusados', async () => {
+      const salvar = new SalvarPrazosConfig(config, consulta, relogio);
+      const valores = { produto: 4, processo: 3, pcp: 2, custo: 5 };
+      perfil = 'gestor';
+      await expect(salvar.executar(valores)).rejects.toThrow(/administradores/);
+      perfil = 'administrador';
+      await expect(salvar.executar({ ...valores, produto: 0 })).rejects.toThrow(/1 a 30/);
+      await expect(salvar.executar({ ...valores, custo: 31 })).rejects.toThrow(/1 a 30/);
+      await expect(salvar.executar({ ...valores, pcp: 2.5 })).rejects.toThrow(/1 a 30/);
+      expect(await salvar.executar(valores)).toEqual(valores);
+      expect(await new ObterPrazosConfig(config).executar()).toEqual(valores);
+    });
   });
 });

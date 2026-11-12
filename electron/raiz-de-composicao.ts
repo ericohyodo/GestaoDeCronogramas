@@ -255,12 +255,14 @@ ${pasta}`,
   });
   atualizacao.iniciar();
 
-  // Rotina de prazos (tarefas vencendo/atrasadas e prazo do cliente nas AVs): na abertura e a cada hora.
+  // Rotina de prazos (tarefas vencendo/atrasadas, prazo do cliente e prazos das áreas nas AVs): na abertura
+  // e a cada hora.
   // Cada aviso sai uma vez só, mesmo com vários PCs rodando a rotina (deduplicação por chave no banco).
   const verificarPrazos = async () => {
     try {
       const tarefasAvisadas = await tarefas.rotinas.verificarPrazos();
-      const avsAvisadas = await avs.rotinas.verificarPrazosDoCliente();
+      const avsAvisadas =
+        (await avs.rotinas.verificarPrazosDoCliente()) + (await avs.rotinas.verificarPrazosDasAreas());
       const conversasApagadas = await ia.rotinas.limparConversasAntigas();
       if (conversasApagadas > 0) console.info(`[chat] conversas sem uso há 90 dias apagadas: ${conversasApagadas}`);
       if (tarefasAvisadas + avsAvisadas > 0) console.info(`[prazos] avisos verificados: ${tarefasAvisadas} tarefa(s), ${avsAvisadas} AV(s)`);

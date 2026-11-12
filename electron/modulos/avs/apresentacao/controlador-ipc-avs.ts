@@ -43,6 +43,7 @@ import type { ObterAv } from '../aplicacao/casos-de-uso/obter-av';
 import type { ObterCatalogoCusto } from '../aplicacao/casos-de-uso/obter-catalogo-custo';
 import type { ObterConteudoAnexo } from '../aplicacao/casos-de-uso/obter-conteudo-anexo';
 import type { ObterDashboard } from '../aplicacao/casos-de-uso/obter-dashboard';
+import type { ObterPrazosConfig, SalvarPrazosConfig } from '../aplicacao/casos-de-uso/configurar-prazos-das-areas';
 import type { ObterSecaoCusto } from '../aplicacao/casos-de-uso/obter-secao-custo';
 import type { ObterSecaoProcesso } from '../aplicacao/casos-de-uso/obter-secao-processo';
 import type { ObterSecaoProduto } from '../aplicacao/casos-de-uso/obter-secao-produto';
@@ -62,6 +63,8 @@ export interface CasosDeUsoAvs {
   atualizarEquipe: AtualizarEquipe;
   listarMembros: ListarMembros;
   obterDashboard: ObterDashboard;
+  obterPrazosConfig: ObterPrazosConfig;
+  salvarPrazosConfig: SalvarPrazosConfig;
   avancarEtapa: Pick<AvancarEtapa, 'executar'>;
   declinar: DeclinarAv;
   listarHistorico: ListarHistoricoAv;
@@ -286,6 +289,14 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
   );
   ipc.registrar(CANAIS.avs.obterDashboard, 'leitura', esquemaSemEntrada, () =>
     casos.obterDashboard.executar(),
+  );
+  ipc.registrar(CANAIS.avs.obterPrazosConfig, 'leitura', esquemaSemEntrada, () => casos.obterPrazosConfig.executar());
+  const diasUteis = z.number().int().min(1).max(30);
+  ipc.registrar(
+    CANAIS.avs.salvarPrazosConfig,
+    'administracao',
+    z.object({ produto: diasUteis, processo: diasUteis, pcp: diasUteis, custo: diasUteis }),
+    (entrada) => casos.salvarPrazosConfig.executar(entrada),
   );
   ipc.registrar(CANAIS.avs.avancarEtapa, 'tarefas', esquemaAvancarEtapa, (entrada) =>
     casos.avancarEtapa.executar(entrada),

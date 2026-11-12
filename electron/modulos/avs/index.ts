@@ -42,6 +42,9 @@ import { ObterSecaoPcp, SalvarSecaoPcp } from './aplicacao/casos-de-uso/secao-pc
 import { ListarPerfisAv, ObterMeuPerfilAv, SalvarPerfilAv } from './aplicacao/casos-de-uso/perfis-av';
 import { ConcluirAvComProjeto, type ConcluirComProjetoEntrada } from './aplicacao/casos-de-uso/concluir-com-projeto';
 import { VerificarPrazosDoCliente } from './aplicacao/casos-de-uso/verificar-prazos-do-cliente';
+import { GarantirPrazosDasAreas } from './aplicacao/casos-de-uso/garantir-prazos-das-areas';
+import { VerificarPrazosDasAreas } from './aplicacao/casos-de-uso/verificar-prazos-das-areas';
+import { ObterPrazosConfig, SalvarPrazosConfig } from './aplicacao/casos-de-uso/configurar-prazos-das-areas';
 import { podeDarAceiteDaSd } from './dominio/papel-av';
 import { ROTULO_DA_AREA } from './aplicacao/notificacoes-av';
 import { SalvarSecaoCusto } from './aplicacao/casos-de-uso/salvar-secao-custo';
@@ -100,6 +103,8 @@ export interface ModuloAvs {
   rotinas: {
     /** Avisa o responsável da etapa atual quando o prazo do cliente está a 5 dias ou venceu. */
     verificarPrazosDoCliente(): Promise<number>;
+    /** Dá prazo às AVs que ainda não têm e avisa as áreas com prazo vencendo ou em atraso. */
+    verificarPrazosDasAreas(): Promise<number>;
   };
   comandos: {
     /** Aceite da SD: a AV vai para "Projeto Criado" apontando para o projeto. */
@@ -182,6 +187,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     deps.consultaDeUsuarios,
     versoes,
     notificador,
+    repositorioPrazos,
   );
   const declinarAv = new DeclinarAv(
     repositorio,
@@ -262,6 +268,8 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     atualizarEquipe: new AtualizarEquipe(repositorio, autorizacao, deps.consultaDeUsuarios, versoes, notificador),
     listarMembros: new ListarMembros(deps.consultaDeUsuarios),
     obterDashboard: new ObterDashboard(repositorio),
+    obterPrazosConfig: new ObterPrazosConfig(repositorioConfigPrazos),
+    salvarPrazosConfig: new SalvarPrazosConfig(repositorioConfigPrazos, deps.consultaDeUsuarios, deps.relogio),
     avancarEtapa: transacional(avancarEtapa, transacao),
     declinar: declinarAv,
     listarHistorico: new ListarHistoricoAv(repositorioHistorico, deps.consultaDeUsuarios),
@@ -309,6 +317,14 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
   });
 
   const verificarPrazosDoCliente = new VerificarPrazosDoCliente(repositorio, notificador, deps.relogio);
+  const garantirPrazos = new GarantirPrazosDasAreas(
+    repositorio,
+    repositorioHistorico,
+    repositorioPrazos,
+    repositorioConfigPrazos,
+    deps.geradorDeId,
+  );
+  const verificarPrazosDasAreas = new VerificarPrazosDasAreas(repositorio, repositorioPrazos, notificador, deps.relogio);
 
   return {
     apresentacao: {
@@ -333,7 +349,13 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
         }));
       },
     },
-    rotinas: { verificarPrazosDoCliente: () => verificarPrazosDoCliente.executar() },
+    rotinas: {
+      verificarPrazosDoCliente: () => verificarPrazosDoCliente.executar(),
+      verificarPrazosDasAreas: async () => {
+        await garantirPrazos.executar();
+        return verificarPrazosDasAreas.executar();
+      },
+    },
     comandos: { concluirComProjeto: (entrada) => concluirComProjeto.executar(entrada) },
     consultas: {
       podeDarAceite: async (usuarioId) => podeDarAceiteDaSd(await autorizacao.obterPerfilAv(usuarioId)),
