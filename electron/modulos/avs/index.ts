@@ -44,6 +44,7 @@ import { ConcluirAvComProjeto, type ConcluirComProjetoEntrada } from './aplicaca
 import { VerificarPrazosDoCliente } from './aplicacao/casos-de-uso/verificar-prazos-do-cliente';
 import { GarantirPrazosDasAreas } from './aplicacao/casos-de-uso/garantir-prazos-das-areas';
 import { VerificarPrazosDasAreas } from './aplicacao/casos-de-uso/verificar-prazos-das-areas';
+import { ObterEntregasNoPrazo } from './aplicacao/casos-de-uso/obter-entregas-no-prazo';
 import { ObterPrazosConfig, SalvarPrazosConfig } from './aplicacao/casos-de-uso/configurar-prazos-das-areas';
 import { podeDarAceiteDaSd } from './dominio/papel-av';
 import { ROTULO_DA_AREA } from './aplicacao/notificacoes-av';
@@ -207,6 +208,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     repositorioSecaoCusto,
     deps.consultaDeUsuarios,
     deps.relogio,
+    repositorioPrazos,
   );
   const finalizar = new FinalizarECriarPreSd(
     repositorio,
@@ -267,8 +269,9 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     atualizarComercial: atualizarComercial,
     atualizarEquipe: new AtualizarEquipe(repositorio, autorizacao, deps.consultaDeUsuarios, versoes, notificador),
     listarMembros: new ListarMembros(deps.consultaDeUsuarios),
-    obterDashboard: new ObterDashboard(repositorio),
+    obterDashboard: new ObterDashboard(repositorio, repositorioPrazos, deps.relogio),
     obterPrazosConfig: new ObterPrazosConfig(repositorioConfigPrazos),
+    entregasNoPrazo: new ObterEntregasNoPrazo(repositorioPrazos, repositorio, deps.relogio),
     salvarPrazosConfig: new SalvarPrazosConfig(repositorioConfigPrazos, deps.consultaDeUsuarios, deps.relogio),
     avancarEtapa: transacional(avancarEtapa, transacao),
     declinar: declinarAv,

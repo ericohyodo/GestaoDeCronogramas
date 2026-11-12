@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect } from 'react';
 import { TituloSecao } from './SecaoAv';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
@@ -30,6 +31,28 @@ export function DashboardAvPanel({
         <Indicador rotulo="Concluídas" valor={dashboard.concluidas} />
         <Indicador rotulo="Declinadas" valor={dashboard.declinadas} />
       </div>
+      <PainelVidro className="flex flex-col gap-3 p-5">
+        <TituloSecao>Prazos das áreas</TituloSecao>
+        <p className="-mt-1 text-xs text-texto-secundario">
+          AVs em Eng. Produto, Eng. Processo, PCP ou Mapa de Custo, pelo prazo da área atual. Clique para ver no
+          relatório.
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          <IndicadorDePrazo rotulo="No prazo" valor={dashboard.prazosDasAreas.noPrazo.length} filtro="no_prazo" />
+          <IndicadorDePrazo
+            rotulo="Vencendo"
+            valor={dashboard.prazosDasAreas.vencendo.length}
+            filtro="vencendo"
+            tom="alerta"
+          />
+          <IndicadorDePrazo
+            rotulo="Atrasadas"
+            valor={dashboard.prazosDasAreas.atrasadas.length}
+            filtro="atrasada"
+            tom="perigo"
+          />
+        </div>
+      </PainelVidro>
       <PainelVidro className="flex flex-col gap-2 p-5">
         <TituloSecao>AVs por etapa</TituloSecao>
         <ul className="flex flex-col gap-2">
@@ -64,5 +87,32 @@ function Indicador({ rotulo, valor }: { rotulo: string; valor: number }) {
       <p className="text-xs font-medium text-texto-sutil">{rotulo}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums">{valor}</p>
     </PainelVidro>
+  );
+}
+
+/**
+ * Número da faixa "Prazos das áreas": leva ao relatório das AVs já filtrado pela situação do prazo.
+ * @param tom cor do número quando maior que zero (vencendo = alerta, atrasadas = perigo)
+ */
+function IndicadorDePrazo({
+  rotulo,
+  valor,
+  filtro,
+  tom,
+}: {
+  rotulo: string;
+  valor: number;
+  filtro: 'no_prazo' | 'vencendo' | 'atrasada';
+  tom?: 'alerta' | 'perigo';
+}) {
+  const cor = valor > 0 && tom ? (tom === 'perigo' ? 'text-perigo' : 'text-alerta') : '';
+  return (
+    <Link
+      href={`/avs/relatorios/?prazo=${filtro}`}
+      className="rounded-xl border border-borda px-4 py-3 transition-colors hover:bg-texto/5"
+    >
+      <p className="text-xs font-medium text-texto-sutil">{rotulo}</p>
+      <p className={`mt-1 text-2xl font-semibold tabular-nums ${cor}`}>{valor}</p>
+    </Link>
   );
 }

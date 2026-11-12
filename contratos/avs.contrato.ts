@@ -172,6 +172,8 @@ export interface DashboardAvDTO {
   concluidas: number;
   declinadas: number;
   porEtapa: ContagemPorEtapaDTO[];
+  /** IDs das AVs em andamento por situação do prazo da área atual (o histórico fica fora). */
+  prazosDasAreas: { noPrazo: string[]; vencendo: string[]; atrasadas: string[] };
 }
 
 // --- Mapa de Custo ---
@@ -635,6 +637,20 @@ export interface PrazosConfigDTO {
   custo: number;
 }
 
+/** Situação do prazo da área atual da AV (só prazos em aberto). */
+export type SituacaoPrazoAreaDTO = 'no_prazo' | 'vencendo' | 'atrasada';
+
+/** Pontualidade de uma área nos últimos 90 dias. */
+export interface EntregasPorAreaDTO {
+  area: string;
+  entregues: number;
+  noPrazo: number;
+  /** 0 a 100. */
+  percentualNoPrazo: number;
+  /** Média de dias úteis entre a chegada da etapa e a entrega. */
+  mediaDiasUteis: number;
+}
+
 export interface LinhaRelatorioAvDTO {
   id: string;
   numero: string;
@@ -662,4 +678,11 @@ export interface LinhaRelatorioAvDTO {
   investimentoTotal: number;
   /** Soma dos custos do Mapa de Custo (materiais + mão de obra), por peça (R$). */
   custoPorPeca: number;
+  /** Área com prazo em aberto (rótulo, ex.: "Eng. Produto"); `null` fora das etapas 2 a 5. */
+  areaComPrazo: string | null;
+  /** Data-limite (AAAA-MM-DD) do prazo da área em aberto. */
+  prazoArea: string | null;
+  situacaoPrazoArea: SituacaoPrazoAreaDTO | null;
+  /** Dias úteis de atraso do prazo da área (0 se não atrasado). */
+  diasUteisDeAtraso: number;
 }

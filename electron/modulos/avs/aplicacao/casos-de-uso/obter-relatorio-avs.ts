@@ -3,11 +3,14 @@ import type { CasoDeUso } from '../../../../nucleo/aplicacao/caso-de-uso';
 import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
 import { obterEtapaAv } from '../../dominio/etapa-av';
 import type { RepositorioHistoricoAv } from '../../dominio/historico-av';
+import { diasUteisEntre } from '../../../../nucleo/dominio/calendario';
+import { type RepositorioPrazosArea, situacaoDoPrazo } from '../../dominio/prazo-area';
 import type { RepositorioAvs } from '../../dominio/repositorio-avs';
 import type { RepositorioSecaoCusto } from '../../dominio/repositorio-secao-custo';
 import type { RepositorioSecaoProcesso } from '../../dominio/repositorio-secao-processo';
 import type { RepositorioSecaoProduto } from '../../dominio/repositorio-secao-produto';
 import { construirMapaDeNomes } from '../mapeador-dto';
+import { ROTULO_DA_AREA } from '../notificacoes-av';
 import type { ConsultaDeUsuarios } from '../portas';
 
 const DIA_EM_MS = 86_400_000;
@@ -27,6 +30,8 @@ export class ObterRelatorioAvs implements CasoDeUso<void, LinhaRelatorioAvDTO[]>
     private readonly custo: RepositorioSecaoCusto,
     private readonly usuarios: ConsultaDeUsuarios,
     private readonly relogio: Relogio,
+    /** Prazos das áreas (colunas "Prazo da área" e "Situação"). */
+    private readonly prazos?: Pick<RepositorioPrazosArea, 'listarAbertos'>,
   ) {}
 
   async executar(): Promise<LinhaRelatorioAvDTO[]> {
@@ -34,6 +39,7 @@ export class ObterRelatorioAvs implements CasoDeUso<void, LinhaRelatorioAvDTO[]>
     const hoje = agora.toLocaleDateString('sv-SE');
     const [avs, ativos] = await Promise.all([this.repositorio.listar(), this.usuarios.listarAtivos()]);
     const nomes = construirMapaDeNomes(ativos);
+    const prazoAberto = new Map((await (this.prazos?.listarAbertos() ?? [])).map((prazo) => [prazo.avId, prazo]));
 
     const linhas: LinhaRelatorioAvDTO[] = [];
     for (const av of avs) {
@@ -55,6 +61,8 @@ export class ObterRelatorioAvs implements CasoDeUso<void, LinhaRelatorioAvDTO[]>
         av.criadoEm,
       );
       const responsavelId = etapa.area ? av.membros[etapa.area] : undefined;
+      const prazo = situacao === 'em_andamento' ? prazoAberto.get(av.id) : undefined;
+      const situacaoDoPrazoArea = prazo ? situacaoDoPrazo(prazo, hoje) : null;
 
       linhas.push({
         id: av.id,
@@ -82,6 +90,13 @@ export class ObterRelatorioAvs implements CasoDeUso<void, LinhaRelatorioAvDTO[]>
           ...(dadosCusto?.materiais ?? []).map((item) => item.custoTotal),
           ...(dadosCusto?.processo ?? []).map((item) => item.custoTotal),
         ]),
+        areaComPrazo: prazo ? ROTULO_DA_AREA[prazo.area] : null,
+        prazoArea: prazo?.dataLimite ?? null,
+        situacaoPrazoArea:
+          situacaoDoPrazoArea === 'no_prazo' || situacaoDoPrazoArea === 'vencendo' || situacaoDoPrazoArea === 'atrasada'
+            ? situacaoDoPrazoArea
+            : null,
+        diasUteisDeAtraso: prazo && situacaoDoPrazoArea === 'atrasada' ? diasUteisEntre(prazo.dataLimite, hoje) : 0,
       });
     }
     return linhas;

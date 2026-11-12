@@ -75,6 +75,7 @@ const api: ApiDesktop = {
     listarMembros: () => invocar(CANAIS.avs.listarMembros),
     obterDashboard: () => invocar(CANAIS.avs.obterDashboard),
     obterPrazosConfig: () => invocar(CANAIS.avs.obterPrazosConfig),
+    entregasNoPrazo: () => invocar(CANAIS.avs.entregasNoPrazo),
     salvarPrazosConfig: (entrada) => invocar(CANAIS.avs.salvarPrazosConfig, entrada),
     avancarEtapa: (entrada) => invocar(CANAIS.avs.avancarEtapa, entrada),
     declinar: (entrada) => invocar(CANAIS.avs.declinar, entrada),

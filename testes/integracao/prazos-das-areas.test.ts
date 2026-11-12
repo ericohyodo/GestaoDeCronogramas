@@ -6,6 +6,12 @@ import {
   ObterPrazosConfig,
   SalvarPrazosConfig,
 } from '../../electron/modulos/avs/aplicacao/casos-de-uso/configurar-prazos-das-areas';
+import { ObterDashboard } from '../../electron/modulos/avs/aplicacao/casos-de-uso/obter-dashboard';
+import { ObterEntregasNoPrazo } from '../../electron/modulos/avs/aplicacao/casos-de-uso/obter-entregas-no-prazo';
+import { ObterRelatorioAvs } from '../../electron/modulos/avs/aplicacao/casos-de-uso/obter-relatorio-avs';
+import { RepositorioSecaoCustoSqlite } from '../../electron/modulos/avs/infraestrutura/repositorio-secao-custo-sqlite';
+import { RepositorioSecaoProcessoSqlite } from '../../electron/modulos/avs/infraestrutura/repositorio-secao-processo-sqlite';
+import { RepositorioSecaoProdutoSqlite } from '../../electron/modulos/avs/infraestrutura/repositorio-secao-produto-sqlite';
 import { GarantirPrazosDasAreas } from '../../electron/modulos/avs/aplicacao/casos-de-uso/garantir-prazos-das-areas';
 import { VerificarPrazosDasAreas } from '../../electron/modulos/avs/aplicacao/casos-de-uso/verificar-prazos-das-areas';
 import { CriarAv } from '../../electron/modulos/avs/aplicacao/casos-de-uso/criar-av';
@@ -241,6 +247,75 @@ describe('prazos das áreas da AV', () => {
       await expect(salvar.executar({ ...valores, pcp: 2.5 })).rejects.toThrow(/1 a 30/);
       expect(await salvar.executar(valores)).toEqual(valores);
       expect(await new ObterPrazosConfig(config).executar()).toEqual(valores);
+    });
+  });
+
+  describe('painel e relatório', () => {
+    /** Cria uma AV (etapa 1) com um prazo de Produto já gravado. */
+    const avComPrazo = async (descricao: string, dataLimite: string, entregueEm: string | null = null, iniciadaEm = '2026-09-25T12:00:00.000Z') => {
+      const id = (await new CriarAv(avs, relogio, ids, consulta, autorizacao).executar({ descricao, membros: { produto: 'pro' } })).id;
+      await prazos.abrir({
+        id: ids.gerar(),
+        avId: id,
+        etapa: 2,
+        area: 'produto',
+        diasUteis: 3,
+        iniciadaEm: new Date(iniciadaEm),
+        dataLimite,
+        entregueEm: entregueEm ? new Date(entregueEm) : null,
+      });
+      return id;
+    };
+
+    it('painel separa AVs no prazo, vencendo e atrasadas e ignora o histórico', async () => {
+      relogio.instante = new Date('2026-10-05T12:00:00.000Z'); // segunda
+      const noPrazo = await avComPrazo('No prazo', '2026-10-20');
+      const vencendo = await avComPrazo('Vencendo', '2026-10-05');
+      const atrasada = await avComPrazo('Atrasada', '2026-09-30');
+      const doHistorico = await avComPrazo('Histórico', '2026-09-30');
+      db.prepare('UPDATE av SET historico = 1 WHERE id = ?').run(doHistorico);
+
+      const painel = await new ObterDashboard(avs, prazos, relogio).executar();
+      expect(painel.prazosDasAreas).toEqual({ noPrazo: [noPrazo], vencendo: [vencendo], atrasadas: [atrasada] });
+    });
+
+    it('relatório traz o prazo e a situação da área e os dias úteis de atraso', async () => {
+      relogio.instante = new Date('2026-10-05T12:00:00.000Z');
+      const atrasada = await avComPrazo('Atrasada', '2026-09-30');
+      const relatorio = new ObterRelatorioAvs(
+        avs,
+        new RepositorioHistoricoAvSqlite(db),
+        new RepositorioSecaoProdutoSqlite(db),
+        new RepositorioSecaoProcessoSqlite(db),
+        new RepositorioSecaoCustoSqlite(db),
+        consulta,
+        relogio,
+        prazos,
+      );
+      const linha = (await relatorio.executar()).find((item) => item.id === atrasada)!;
+      expect(linha).toMatchObject({
+        areaComPrazo: 'Eng. Produto',
+        prazoArea: '2026-09-30',
+        situacaoPrazoArea: 'atrasada',
+        diasUteisDeAtraso: 3,
+      });
+      expect((await relatorio.executar()).find((item) => item.id === avId)).toMatchObject({
+        areaComPrazo: null,
+        prazoArea: null,
+        situacaoPrazoArea: null,
+        diasUteisDeAtraso: 0,
+      });
+    });
+
+    it('entregas no prazo por área nos últimos 90 dias', async () => {
+      relogio.instante = new Date('2026-10-05T12:00:00.000Z');
+      await avComPrazo('No prazo', '2026-09-30', '2026-09-29T15:00:00.000Z');
+      await avComPrazo('Com atraso', '2026-09-30', '2026-10-02T15:00:00.000Z');
+      await avComPrazo('Antiga', '2026-05-30', '2026-05-29T15:00:00.000Z', '2026-05-25T12:00:00.000Z');
+      const entregas = await new ObterEntregasNoPrazo(prazos, avs, relogio).executar();
+      expect(entregas.map((item) => item.area)).toEqual(['Eng. Produto', 'Eng. Processo', 'PCP', 'Mapa de Custo']);
+      expect(entregas[0]).toEqual({ area: 'Eng. Produto', entregues: 2, noPrazo: 1, percentualNoPrazo: 50, mediaDiasUteis: 3.5 });
+      expect(entregas[1]).toEqual({ area: 'Eng. Processo', entregues: 0, noPrazo: 0, percentualNoPrazo: 0, mediaDiasUteis: 0 });
     });
   });
 });

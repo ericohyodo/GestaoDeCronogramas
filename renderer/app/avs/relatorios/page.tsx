@@ -1,5 +1,10 @@
-import { PaginaRelatoriosAvs } from '@/modulos/avs/componentes/PaginaRelatoriosAvs';
+import { Suspense } from 'react';
+import { PaginaRelatoriosComFiltro } from './pagina-relatorios-com-filtro';
 
 export default function RelatoriosDasAvs() {
-  return <PaginaRelatoriosAvs />;
+  return (
+    <Suspense>
+      <PaginaRelatoriosComFiltro />
+    </Suspense>
+  );
 }

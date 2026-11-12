@@ -3,7 +3,12 @@
 import { BarChart3, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { LinhaRelatorioAvDTO, SituacaoAvDTO } from '@contratos/avs.contrato';
+import type {
+  EntregasPorAreaDTO,
+  LinhaRelatorioAvDTO,
+  SituacaoAvDTO,
+  SituacaoPrazoAreaDTO,
+} from '@contratos/avs.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { formatarData, formatarMoeda } from '@/compartilhado/formatacao';
 import { Botao } from '@/compartilhado/ui/Botao';
@@ -22,6 +27,32 @@ const SITUACOES: { valor: SituacaoAvDTO | 'todas'; rotulo: string }[] = [
   { valor: 'concluida', rotulo: 'Concluídas' },
   { valor: 'declinada', rotulo: 'Declinadas' },
 ];
+
+/** Filtro pela situação do prazo da área atual. */
+export type FiltroDePrazo = SituacaoPrazoAreaDTO | 'todas';
+
+const FILTROS_DE_PRAZO: { valor: FiltroDePrazo; rotulo: string }[] = [
+  { valor: 'todas', rotulo: 'Todos os prazos' },
+  { valor: 'no_prazo', rotulo: 'No prazo' },
+  { valor: 'vencendo', rotulo: 'Vencendo' },
+  { valor: 'atrasada', rotulo: 'Atrasadas' },
+];
+
+const AREAS_COM_PRAZO = ['Eng. Produto', 'Eng. Processo', 'PCP', 'Mapa de Custo'];
+
+/** Texto e cor da situação do prazo da área. */
+function EtiquetaDoPrazo({ linha }: { linha: LinhaRelatorioAvDTO }) {
+  if (linha.situacaoPrazoArea === 'atrasada') {
+    return (
+      <Etiqueta tom="perigo">
+        Atrasada há {linha.diasUteisDeAtraso} {linha.diasUteisDeAtraso === 1 ? 'dia útil' : 'dias úteis'}
+      </Etiqueta>
+    );
+  }
+  if (linha.situacaoPrazoArea === 'vencendo') return <Etiqueta tom="alerta">Vencendo</Etiqueta>;
+  if (linha.situacaoPrazoArea === 'no_prazo') return <Etiqueta tom="sucesso">No prazo</Etiqueta>;
+  return <span className="text-texto-sutil">—</span>;
+}
 
 interface Agrupamento {
   chave: string;
@@ -43,17 +74,25 @@ function agrupar(linhas: LinhaRelatorioAvDTO[], chaveDe: (linha: LinhaRelatorioA
   return [...grupos.values()].sort((a, b) => b.quantidade - a.quantidade || a.chave.localeCompare(b.chave, 'pt-BR'));
 }
 
-/** Relatórios do módulo de AVs: visão por situação, etapa, cliente e família, e o detalhe de cada AV. */
-export function PaginaRelatoriosAvs() {
+/**
+ * Relatórios do módulo de AVs: visão por situação, etapa, cliente e família, prazos das áreas e o detalhe de
+ * cada AV.
+ * @param prazoInicial filtro de prazo vindo do link do painel (`?prazo=`)
+ */
+export function PaginaRelatoriosAvs({ prazoInicial = 'todas' }: { prazoInicial?: FiltroDePrazo }) {
   const [linhas, setLinhas] = useState<LinhaRelatorioAvDTO[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [situacao, setSituacao] = useState<SituacaoAvDTO | 'todas'>('todas');
   const [busca, setBusca] = useState('');
+  const [prazo, setPrazo] = useState<FiltroDePrazo>(prazoInicial);
+  const [area, setArea] = useState<string>('todas');
+  const [entregas, setEntregas] = useState<EntregasPorAreaDTO[]>([]);
 
   const carregar = useCallback(async () => {
     setErro(null);
     try {
       setLinhas(await clienteDesktop.avs.relatorio());
+      setEntregas(await clienteDesktop.avs.entregasNoPrazo());
     } catch (falha) {
       setErro(mensagemDeErro(falha));
     }
@@ -64,6 +103,10 @@ export function PaginaRelatoriosAvs() {
       .relatorio()
       .then(setLinhas)
       .catch((falha: unknown) => setErro(mensagemDeErro(falha)));
+    clienteDesktop.avs
+      .entregasNoPrazo()
+      .then(setEntregas)
+      .catch((falha: unknown) => setErro(mensagemDeErro(falha)));
   }, []);
 
   const filtradas = useMemo(() => {
@@ -71,12 +114,14 @@ export function PaginaRelatoriosAvs() {
     return (linhas ?? []).filter(
       (linha) =>
         (situacao === 'todas' || linha.situacao === situacao) &&
+        (prazo === 'todas' || linha.situacaoPrazoArea === prazo) &&
+        (area === 'todas' || linha.areaComPrazo === area) &&
         (!termo ||
           [linha.numero, linha.cliente, linha.descricao, linha.grupo, linha.familia, linha.responsavelDaEtapa].some(
             (campo) => campo?.toLowerCase().includes(termo),
           )),
     );
-  }, [linhas, situacao, busca]);
+  }, [linhas, situacao, busca, prazo, area]);
 
   const resumo = useMemo(() => {
     const emAndamento = filtradas.filter((l) => l.situacao === 'em_andamento').length;
@@ -134,12 +179,26 @@ export function PaginaRelatoriosAvs() {
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
             />
+            <Selecao
+              rotulo="Prazo da área"
+              classeContainer="w-48"
+              value={prazo}
+              onChange={(e) => setPrazo(e.target.value as FiltroDePrazo)}
+              opcoes={FILTROS_DE_PRAZO.map((f) => ({ valor: f.valor, rotulo: f.rotulo }))}
+            />
+            <Selecao
+              rotulo="Área"
+              classeContainer="w-48"
+              value={area}
+              onChange={(e) => setArea(e.target.value)}
+              opcoes={[{ valor: 'todas', rotulo: 'Todas as áreas' }, ...AREAS_COM_PRAZO.map((a) => ({ valor: a, rotulo: a }))]}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
             <Indicador rotulo="AVs" valor={String(resumo.total)} />
             <Indicador rotulo="Em andamento" valor={String(resumo.emAndamento)} />
-            <Indicador rotulo="Atrasadas" valor={String(resumo.atrasadas)} alerta={resumo.atrasadas > 0} />
+            <Indicador rotulo="Prazo do cliente vencido" valor={String(resumo.atrasadas)} alerta={resumo.atrasadas > 0} />
             <Indicador rotulo="Concluídas" valor={String(resumo.concluidas)} />
             <Indicador rotulo="Declinadas" valor={String(resumo.declinadas)} />
             <Indicador rotulo="Investimento total" valor={formatarMoeda(resumo.investimento)} />
@@ -172,6 +231,36 @@ export function PaginaRelatoriosAvs() {
           </div>
 
           <PainelVidro className="flex flex-col gap-3 p-5">
+            <TituloSecao>Entregas no prazo por área (90 dias)</TituloSecao>
+            <Tabela>
+              <thead>
+                <tr>
+                  <CelulaCabecalho className="pl-3">Área</CelulaCabecalho>
+                  <CelulaCabecalho className="text-right">Entregues</CelulaCabecalho>
+                  <CelulaCabecalho className="text-right">No prazo</CelulaCabecalho>
+                  <CelulaCabecalho className="text-right">% no prazo</CelulaCabecalho>
+                  <CelulaCabecalho className="pr-3 text-right">Média (dias úteis)</CelulaCabecalho>
+                </tr>
+              </thead>
+              <tbody>
+                {entregas.map((item) => (
+                  <LinhaTabela key={item.area}>
+                    <CelulaTabela className="pl-3">{item.area}</CelulaTabela>
+                    <CelulaTabela className="text-right tabular-nums">{item.entregues}</CelulaTabela>
+                    <CelulaTabela className="text-right tabular-nums">{item.noPrazo}</CelulaTabela>
+                    <CelulaTabela className="text-right tabular-nums">
+                      {item.entregues ? `${item.percentualNoPrazo}%` : '—'}
+                    </CelulaTabela>
+                    <CelulaTabela className="pr-3 text-right tabular-nums">
+                      {item.entregues ? item.mediaDiasUteis.toLocaleString('pt-BR') : '—'}
+                    </CelulaTabela>
+                  </LinhaTabela>
+                ))}
+              </tbody>
+            </Tabela>
+          </PainelVidro>
+
+          <PainelVidro className="flex flex-col gap-3 p-5">
             <TituloSecao>Por cliente</TituloSecao>
             <TabelaDeGrupos rotulo="Cliente" grupos={porCliente} />
           </PainelVidro>
@@ -185,7 +274,9 @@ export function PaginaRelatoriosAvs() {
                   <CelulaCabecalho>Cliente / Descrição</CelulaCabecalho>
                   <CelulaCabecalho>Etapa</CelulaCabecalho>
                   <CelulaCabecalho>Responsável</CelulaCabecalho>
-                  <CelulaCabecalho>Prazo</CelulaCabecalho>
+                  <CelulaCabecalho>Prazo do cliente</CelulaCabecalho>
+                  <CelulaCabecalho>Prazo da área</CelulaCabecalho>
+                  <CelulaCabecalho>Situação</CelulaCabecalho>
                   <CelulaCabecalho className="text-right">Dias na etapa</CelulaCabecalho>
                   <CelulaCabecalho className="text-right">Investimento</CelulaCabecalho>
                   <CelulaCabecalho className="pr-3 text-right">Custo/Pç</CelulaCabecalho>
@@ -212,6 +303,12 @@ export function PaginaRelatoriosAvs() {
                           <Etiqueta tom="perigo">Atrasada</Etiqueta>
                         </span>
                       )}
+                    </CelulaTabela>
+                    <CelulaTabela className="whitespace-nowrap tabular-nums">
+                      {linha.prazoArea ? formatarData(linha.prazoArea) : '—'}
+                    </CelulaTabela>
+                    <CelulaTabela className="whitespace-nowrap">
+                      <EtiquetaDoPrazo linha={linha} />
                     </CelulaTabela>
                     <CelulaTabela className="text-right tabular-nums">
                       {linha.situacao === 'em_andamento' ? linha.diasNaEtapa : '—'}

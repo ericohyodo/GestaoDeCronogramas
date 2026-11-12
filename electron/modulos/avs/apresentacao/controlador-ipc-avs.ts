@@ -43,6 +43,7 @@ import type { ObterAv } from '../aplicacao/casos-de-uso/obter-av';
 import type { ObterCatalogoCusto } from '../aplicacao/casos-de-uso/obter-catalogo-custo';
 import type { ObterConteudoAnexo } from '../aplicacao/casos-de-uso/obter-conteudo-anexo';
 import type { ObterDashboard } from '../aplicacao/casos-de-uso/obter-dashboard';
+import type { ObterEntregasNoPrazo } from '../aplicacao/casos-de-uso/obter-entregas-no-prazo';
 import type { ObterPrazosConfig, SalvarPrazosConfig } from '../aplicacao/casos-de-uso/configurar-prazos-das-areas';
 import type { ObterSecaoCusto } from '../aplicacao/casos-de-uso/obter-secao-custo';
 import type { ObterSecaoProcesso } from '../aplicacao/casos-de-uso/obter-secao-processo';
@@ -64,6 +65,7 @@ export interface CasosDeUsoAvs {
   listarMembros: ListarMembros;
   obterDashboard: ObterDashboard;
   obterPrazosConfig: ObterPrazosConfig;
+  entregasNoPrazo: ObterEntregasNoPrazo;
   salvarPrazosConfig: SalvarPrazosConfig;
   avancarEtapa: Pick<AvancarEtapa, 'executar'>;
   declinar: DeclinarAv;
@@ -291,6 +293,7 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
     casos.obterDashboard.executar(),
   );
   ipc.registrar(CANAIS.avs.obterPrazosConfig, 'leitura', esquemaSemEntrada, () => casos.obterPrazosConfig.executar());
+  ipc.registrar(CANAIS.avs.entregasNoPrazo, 'leitura', esquemaSemEntrada, () => casos.entregasNoPrazo.executar());
   const diasUteis = z.number().int().min(1).max(30);
   ipc.registrar(
     CANAIS.avs.salvarPrazosConfig,
