@@ -49,7 +49,12 @@ export interface ModuloSds {
     /** Cria a SD (status "pré-SD") da AV informada, herdando o número dela. */
     criarPreSd(entrada: CriarPreSdEntrada): Promise<SdCriada>;
     /** Dados de exemplo: leva a SD da AV até "aberta" ou "fechada" (com projeto). */
-    avancarSdDeExemplo(avId: string, ate: 'aberta' | 'fechada', usuarioId: string): Promise<void>;
+    avancarSdDeExemplo(
+      avId: string,
+      ate: 'aberta' | 'fechada',
+      usuarioId: string,
+      textos?: { numeroPo: string; observacoes: string; parecer: string },
+    ): Promise<void>;
   };
   consultas: {
     obterPorAv(avId: string): Promise<SdCriada | null>;
@@ -124,8 +129,8 @@ export function montarModuloSds(deps: DependenciasModuloSds): ModuloSds {
   return {
     comandos: {
       criarPreSd: (entrada) => criarPreSd.executar(entrada),
-      avancarSdDeExemplo: (avId, ate, usuarioId) =>
-        transacao.executar(() => exemplo.executar(avId, ate, usuarioId)),
+      avancarSdDeExemplo: (avId, ate, usuarioId, textos) =>
+        transacao.executar(() => exemplo.executar(avId, ate, usuarioId, textos)),
     },
     consultas: { obterPorAv: (avId) => obterPorAv.executar(avId), listar: () => listarSds.executar() },
   };

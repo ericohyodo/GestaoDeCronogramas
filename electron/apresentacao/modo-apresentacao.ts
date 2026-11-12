@@ -54,6 +54,8 @@ export async function semearApresentacao(m: ModulosDaApresentacao): Promise<Rote
   const equipe = await m.usuarios.consultas.listarAtivos();
   const porNome = (nome: string) => equipe.find((u) => u.nome === nome)?.id ?? null;
   const recursos: string[] = [];
+  const recursoDoNome = new Map<string, string>();
+  const recursoDoUsuario = new Map<string, string>();
   for (const [nome, funcao] of [
     ['Apresentação', 'Gestão de Projetos'],
     ['Allan', 'Engenharia de Processo'],
@@ -62,20 +64,44 @@ export async function semearApresentacao(m: ModulosDaApresentacao): Promise<Rote
     ['Leandro Cruz', 'Gerente de Engenharia'],
     ['Evandro Farias', 'Qualidade'],
   ] as const) {
-    recursos.push((await m.responsaveis.comandos.criar({ nome, funcao, usuarioId: porNome(nome) })).id);
+    const usuarioId = porNome(nome);
+    const id = (await m.responsaveis.comandos.criar({ nome, funcao, usuarioId })).id;
+    recursos.push(id);
+    recursoDoNome.set(nome, id);
+    if (usuarioId) recursoDoUsuario.set(usuarioId, id);
   }
 
   await m.avs.apresentacao.gerarExemplos();
-  const avs = await m.avs.apresentacao.listar();
-  const sds = await m.sds.consultas.listar();
-  const naEtapa = (etapa: number) => avs.find((av) => av.etapa === etapa)?.id ?? null;
-  const projeto = sds.find((sd) => sd.status === 'fechada' && sd.cronogramaId)?.cronogramaId ?? null;
-  const sdAguardandoAceite = sds.find((sd) => sd.status === 'aberta') ?? null;
+  const hoje = diaLocal(m.relogio.agora());
+  const exemplos = await m.sds.consultas.listar();
+  const projetoDeExemplo = exemplos.find((sd) => sd.status === 'fechada' && sd.cronogramaId)?.cronogramaId ?? null;
+  if (projetoDeExemplo) await m.tarefas.apresentacao.semearProjeto(projetoDeExemplo, recursos, hoje);
 
-  if (projeto) {
-    const hoje = diaLocal(m.relogio.agora());
-    await m.tarefas.apresentacao.semearProjeto(projeto, recursos, hoje);
+  // Vitrine: uma AV completa → SD fechada → PRO cujas tarefas têm como responsável a equipe da AV.
+  const vitrine = await m.avs.apresentacao.gerarVitrine();
+  const FUNCAO_DA_AREA = { comercial: 'Comercial', produto: 'Engenharia de Produto', processo: 'Engenharia de Processo', pcp: 'PCP', custo: 'Custos' } as const;
+  const responsavelPorArea: Record<string, string> = {};
+  for (const [area, usuarioId] of Object.entries(vitrine.membros) as [keyof typeof FUNCAO_DA_AREA, string][]) {
+    let recurso = recursoDoUsuario.get(usuarioId);
+    if (!recurso) {
+      const nome = equipe.find((u) => u.id === usuarioId)?.nome ?? FUNCAO_DA_AREA[area];
+      recurso = (await m.responsaveis.comandos.criar({ nome, funcao: FUNCAO_DA_AREA[area], usuarioId })).id;
+      recursoDoUsuario.set(usuarioId, recurso);
+    }
+    responsavelPorArea[area] = recurso;
   }
+  responsavelPorArea.gestao = recursoDoNome.get('Apresentação')!;
+  responsavelPorArea.qualidade = recursoDoNome.get('Evandro Farias')!;
+
+  const sds = await m.sds.consultas.listar();
+  const sdDaVitrine = sds.find((sd) => sd.avId === vitrine.avId) ?? null;
+  const projetoDaVitrine = sdDaVitrine?.cronogramaId ?? null;
+  if (projetoDaVitrine) await m.tarefas.apresentacao.semearProjetoDeVitrine(projetoDaVitrine, responsavelPorArea, hoje);
+
+  const avs = await m.avs.apresentacao.listar();
+  const naEtapa = (etapa: number) => avs.find((av) => av.etapa === etapa)?.id ?? null;
+  const projeto = projetoDaVitrine ?? projetoDeExemplo;
+  const sdAguardandoAceite = sds.find((sd) => sd.status === 'aberta') ?? null;
 
   // Sino do apresentador com o que ele "receberia" no dia a dia.
   if (sdAguardandoAceite) {

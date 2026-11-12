@@ -5,7 +5,7 @@
 import type { GeradorDeId } from '../../nucleo/aplicacao/portas/gerador-de-id';
 import { type Notificador, semNotificacao } from '../../nucleo/aplicacao/portas/notificador';
 import { AvisosDeTarefas, diaLocal } from './aplicacao/avisos-de-tarefas';
-import { semearProjetoDeExemplo } from './aplicacao/projeto-de-exemplo';
+import { type AreaDaVitrine, semearProjetoDeExemplo, semearProjetoDeVitrine } from './aplicacao/projeto-de-exemplo';
 import type { Relogio } from '../../nucleo/aplicacao/portas/relogio';
 import type { BancoDeDados } from '../../nucleo/infraestrutura/banco/conexao-sqlite';
 import type { RegistradorIpc } from '../../nucleo/infraestrutura/ipc/registrador-ipc';
@@ -58,6 +58,12 @@ export interface ModuloTarefas {
   apresentacao: {
     /** Preenche um projeto com fases e tarefas fictícias (modo apresentação). */
     semearProjeto(cronogramaId: string, responsavelIds: string[], inicioIso: string): Promise<void>;
+    /** Preenche o PRO da AV de vitrine; o responsável de cada tarefa vem da área dela na equipe da AV. */
+    semearProjetoDeVitrine(
+      cronogramaId: string,
+      responsavelPorArea: Partial<Record<AreaDaVitrine, string>>,
+      inicioIso: string,
+    ): Promise<void>;
   };
   rotinas: {
     /** Avisa tarefas vencendo (até 2 dias) ou atrasadas de projetos ativos; devolve quantos avisos saíram. */
@@ -150,6 +156,12 @@ export function montarModuloTarefas(deps: DependenciasModuloTarefas): ModuloTare
         semearProjetoDeExemplo(repositorio, repositorioFases, deps.geradorDeId, deps.relogio, {
           cronogramaId,
           responsavelIds,
+          inicioIso,
+        }),
+      semearProjetoDeVitrine: (cronogramaId, responsavelPorArea, inicioIso) =>
+        semearProjetoDeVitrine(repositorio, repositorioFases, deps.geradorDeId, deps.relogio, {
+          cronogramaId,
+          responsavelPorArea,
           inicioIso,
         }),
     },

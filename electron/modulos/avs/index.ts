@@ -25,6 +25,7 @@ import {
 } from './aplicacao/casos-de-uso/grupos-av';
 import { FinalizarECriarPreSd } from './aplicacao/casos-de-uso/finalizar-e-criar-pre-sd';
 import { GerarAvsExemplo } from './aplicacao/casos-de-uso/gerar-avs-exemplo';
+import { type AvancarSdDeVitrine, GerarAvVitrine } from './aplicacao/casos-de-uso/gerar-av-vitrine';
 import { ListarAnexos } from './aplicacao/casos-de-uso/listar-anexos';
 import { ListarAvs } from './aplicacao/casos-de-uso/listar-avs';
 import { ListarHistoricoAv } from './aplicacao/casos-de-uso/listar-historico';
@@ -78,7 +79,7 @@ export interface DependenciasModuloAvs {
   /** Sino da barra superior (módulo de notificações). */
   notificador?: Notificador;
   /** Dados de exemplo: leva a SD da AV até aberta/fechada (módulo de SDs). */
-  avancarSdDeExemplo?: (avId: string, ate: 'aberta' | 'fechada', usuarioId: string) => Promise<void>;
+  avancarSdDeExemplo?: AvancarSdDeVitrine;
 }
 
 type LinhasDoRelatorio = Awaited<ReturnType<ObterRelatorioAvs['executar']>>;
@@ -90,6 +91,8 @@ export interface ModuloAvs {
     prepararApresentador(usuarioId: string): Promise<void>;
     /** Gera as 25 AVs de exemplo (exige sessão de administrador). */
     gerarExemplos(): Promise<void>;
+    /** Cria a AV de vitrine completa e a leva até o PRO (exige sessão de administrador). */
+    gerarVitrine(): ReturnType<GerarAvVitrine['executar']>;
     listar(): Promise<{ id: string; numero: string; etapa: number; descricao: string }[]>;
   };
   rotinas: {
@@ -223,6 +226,24 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     deps.avancarSdDeExemplo,
   );
 
+  const salvarSecaoPcp = new SalvarSecaoPcp(repositorio, repositorioSecaoPcp, autorizacao, deps.relogio, deps.geradorDeId, versoes);
+  const salvarContatos = new SalvarContatosAv(repositorio, repositorioContatos, autorizacao, deps.geradorDeId);
+  const gerarVitrine = new GerarAvVitrine(
+    autorizacao,
+    deps.consultaDeUsuarios,
+    deps.relogio,
+    criarAv,
+    atualizarComercial,
+    salvarContatos,
+    salvarSecaoProduto,
+    salvarSecaoProcesso,
+    salvarSecaoPcp,
+    salvarSecaoCusto,
+    avancarEtapa,
+    finalizar,
+    deps.avancarSdDeExemplo,
+  );
+
   registrarIpcAvs(deps.ipc, {
     listar: new ListarAvs(repositorio, deps.consultaDeUsuarios),
     obter: new ObterAv(repositorio, deps.consultaDeUsuarios, versoes),
@@ -265,9 +286,9 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     aplicarAoGrupo: new AplicarAoGrupo(repositorio, autorizacao, repositorioContatos, deps.geradorDeId, versoes, notificador),
     relatorio,
     obterSecaoPcp: new ObterSecaoPcp(repositorioSecaoPcp, versoes),
-    salvarSecaoPcp: new SalvarSecaoPcp(repositorio, repositorioSecaoPcp, autorizacao, deps.relogio, deps.geradorDeId, versoes),
+    salvarSecaoPcp,
     obterContatos: new ObterContatosAv(repositorioContatos, autorizacao),
-    salvarContatos: new SalvarContatosAv(repositorio, repositorioContatos, autorizacao, deps.geradorDeId),
+    salvarContatos,
     finalizarECriarPreSd: transacional(finalizar, transacao),
     listarTemplates: new ListarTemplatesAv(repositorioTemplates, autorizacao),
     salvarTemplate: new SalvarTemplateAv(repositorioTemplates, autorizacao, deps.relogio, deps.geradorDeId),
@@ -292,6 +313,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
       async gerarExemplos() {
         await gerarExemplos.executar();
       },
+      gerarVitrine: () => gerarVitrine.executar(),
       async listar() {
         return (await repositorio.listar()).map((av) => ({
           id: av.id,

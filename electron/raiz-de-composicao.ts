@@ -172,7 +172,7 @@ ${pasta}`,
     },
     criadorDePreSd: { criar: (entrada) => sds.comandos.criarPreSd(entrada) },
     notificador,
-    avancarSdDeExemplo: (avId, ate, usuarioId) => sds.comandos.avancarSdDeExemplo(avId, ate, usuarioId),
+    avancarSdDeExemplo: (avId, ate, usuarioId, textos) => sds.comandos.avancarSdDeExemplo(avId, ate, usuarioId, textos),
   });
 
   const ia = montarModuloIa({
