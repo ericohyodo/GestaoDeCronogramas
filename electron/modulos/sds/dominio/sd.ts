@@ -14,6 +14,9 @@ export type StatusSd = 'pre_sd' | 'aberta' | 'fechada' | 'cancelada';
 const TAMANHO_MAXIMO_PO = 60;
 const TAMANHO_MAXIMO_OBSERVACOES = 2000;
 const TAMANHO_MAXIMO_MOTIVO = 500;
+const TAMANHO_MAXIMO_OBSERVACAO_PRAZO = 500;
+/** Lead time acordado com o cliente: de 1 dia a 5 anos (dias corridos). */
+const LEAD_TIME_MAXIMO = 1825;
 
 export interface Sd {
   id: string;
@@ -38,6 +41,12 @@ export interface Sd {
   devolucaoEm: Date | null;
   /** Projeto (cronograma) criado no aceite. */
   cronogramaId: string | null;
+  /** Prazo acordado com o cliente, em dias corridos (lead time). Define o término do PRO no aceite. */
+  leadTimeDias: number | null;
+  /** Observação do Comercial sobre o prazo acordado (marcos do cliente etc.). */
+  leadTimeObservacao: string | null;
+  /** Justificativa da Engenharia quando o término do PRO difere de início + lead time. */
+  prazoJustificativa: string | null;
 }
 
 /**
@@ -84,6 +93,9 @@ export function novaPreSd(dados: { id: string; avId: string; avNumero: string; u
     devolucaoPor: null,
     devolucaoEm: null,
     cronogramaId: null,
+    leadTimeDias: null,
+    leadTimeObservacao: null,
+    prazoJustificativa: null,
   };
 }
 
@@ -118,10 +130,29 @@ function limitar(texto: string | null | undefined, maximo: number, rotulo: strin
   return valor;
 }
 
+/**
+ * Valida o lead time informado pelo Comercial.
+ * @param dias valor digitado (ausente = não informado)
+ * @returns o número de dias, ou `null` se não informado
+ */
+function validarLeadTime(dias: number | null | undefined): number | null {
+  if (dias === null || dias === undefined) return null;
+  if (!Number.isInteger(dias) || dias < 1 || dias > LEAD_TIME_MAXIMO) {
+    throw new ErroDeValidacao(`O prazo acordado deve ser um número inteiro de dias, de 1 a ${LEAD_TIME_MAXIMO}.`);
+  }
+  return dias;
+}
+
 /** Atualiza os campos do Comercial. Só enquanto a SD não foi aberta (ou depois de devolvida). */
 export function atualizarFormulario(
   sd: Sd,
-  campos: { dataEnvioCotacao?: string | null; numeroPo?: string | null; observacoes?: string | null },
+  campos: {
+    dataEnvioCotacao?: string | null;
+    numeroPo?: string | null;
+    observacoes?: string | null;
+    leadTimeDias?: number | null;
+    leadTimeObservacao?: string | null;
+  },
 ): Sd {
   exigirStatus(sd, 'pre_sd', 'alterar o formulário');
   return {
@@ -129,6 +160,8 @@ export function atualizarFormulario(
     dataEnvioCotacao: validarDataOpcional(campos.dataEnvioCotacao, 'A data de envio da cotação'),
     numeroPo: limitar(campos.numeroPo, TAMANHO_MAXIMO_PO, 'O número do PO'),
     observacoes: limitar(campos.observacoes, TAMANHO_MAXIMO_OBSERVACOES, 'As observações'),
+    leadTimeDias: validarLeadTime(campos.leadTimeDias),
+    leadTimeObservacao: limitar(campos.leadTimeObservacao, TAMANHO_MAXIMO_OBSERVACAO_PRAZO, 'A observação do prazo'),
   };
 }
 
@@ -140,6 +173,9 @@ export function abrirSd(sd: Sd, usuarioId: string, agora: Date, quantidadeDeEvid
   exigirStatus(sd, 'pre_sd', 'abrir a SD');
   if (!sd.dataEnvioCotacao) {
     throw new ErroDeValidacao('Informe a data de envio da cotação antes de abrir a SD.');
+  }
+  if (sd.leadTimeDias === null) {
+    throw new ErroDeValidacao('Informe o prazo acordado com o cliente (em dias).');
   }
   if (quantidadeDeEvidencias < 1) {
     throw new ErroDeValidacao(

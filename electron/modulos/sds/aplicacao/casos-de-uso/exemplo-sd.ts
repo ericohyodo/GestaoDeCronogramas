@@ -6,6 +6,8 @@ import { abrirSd, atualizarFormulario } from '../../dominio/sd';
 import { chaveDaSd } from '../mapeador-dto';
 import type { AceitarSd } from './fluxo-sd';
 
+/** Lead time das SDs de exemplo, em dias corridos (= duração do PRO de exemplo). */
+const LEAD_TIME_DE_EXEMPLO = 180;
 const DIA_EM_MS = 86_400_000;
 
 /**
@@ -42,6 +44,8 @@ export class AvancarSdDeExemplo {
       dataEnvioCotacao: new Date(agora.getTime() - 10 * DIA_EM_MS).toISOString().slice(0, 10),
       numeroPo: textos?.numeroPo ?? `PO-${atual.sd.numero.replace(/\D/g, '')}`,
       observacoes: textos?.observacoes ?? 'Pedido confirmado pelo cliente por e-mail (exemplo).',
+      // O PRO de exemplo vai de hoje −45 a hoje +135: 180 dias, igual ao lead time (aceite sem justificativa).
+      leadTimeDias: LEAD_TIME_DE_EXEMPLO,
     });
     await this.anexarEvidenciaDeExemplo?.({ id: atual.sd.id, numero: atual.sd.numero }, usuarioId);
     await this.repositorio.salvar(abrirSd(preenchida, usuarioId, agora, 1));

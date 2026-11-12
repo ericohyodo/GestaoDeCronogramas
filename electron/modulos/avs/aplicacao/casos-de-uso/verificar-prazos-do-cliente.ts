@@ -1,3 +1,4 @@
+import { diaLocal } from '../../../../nucleo/dominio/calendario';
 import type { Notificador } from '../../../../nucleo/aplicacao/portas/notificador';
 import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
 import { obterEtapaAv } from '../../dominio/etapa-av';
@@ -7,10 +8,6 @@ import { linkDaAv, resumoDaAv, ROTULO_DA_AREA } from '../notificacoes-av';
 /** Quantos dias antes do prazo do cliente a AV em andamento gera aviso. */
 export const DIAS_PARA_AVISAR_PRAZO_DO_CLIENTE = 5;
 
-const diaLocal = (instante: Date) => {
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${instante.getFullYear()}-${p(instante.getMonth() + 1)}-${p(instante.getDate())}`;
-};
 
 /**
  * Rotina automática: AVs em andamento cujo prazo do cliente vence em até 5 dias (ou já venceu) avisam o

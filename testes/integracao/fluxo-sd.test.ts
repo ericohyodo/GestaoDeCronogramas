@@ -12,6 +12,7 @@ import { CriarProjetoDaSd } from '../../electron/modulos/cronogramas/aplicacao/c
 import { ExcluirCronograma } from '../../electron/modulos/cronogramas/aplicacao/casos-de-uso/excluir-cronograma';
 import { RepositorioCronogramasSqlite } from '../../electron/modulos/cronogramas/infraestrutura/repositorio-cronogramas-sqlite';
 import { ObterSd } from '../../electron/modulos/sds/aplicacao/casos-de-uso/consultar-sds';
+import { AvancarSdDeExemplo } from '../../electron/modulos/sds/aplicacao/casos-de-uso/exemplo-sd';
 import { CriarPreSd } from '../../electron/modulos/sds/aplicacao/casos-de-uso/criar-pre-sd';
 import {
   AbrirSd,
@@ -32,6 +33,7 @@ import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestr
 import { ControleDeVersaoSqlite } from '../../electron/nucleo/infraestrutura/banco/controle-de-versao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
 import { MIGRACOES } from '../dubles/migracoes-de-teste';
+import { ErroDeValidacao } from '../../electron/nucleo/dominio/erro-de-dominio';
 import { UnidadeDeTrabalhoSqlite } from '../../electron/nucleo/infraestrutura/banco/unidade-de-trabalho-sqlite';
 import { GeradorDeIdSequencial, RelogioFixo } from '../dubles/dubles';
 
@@ -148,7 +150,13 @@ describe('fluxo da SD', () => {
 
     logado = comercial;
     await expect(abrir.executar(sdId)).rejects.toThrow(/data de envio da cotação/);
-    const salva = await salvar.executar({ id: sdId, versaoEsperada: 1, dataEnvioCotacao: '2026-11-01', numeroPo: 'PO-778' });
+    const salva = await salvar.executar({
+      id: sdId,
+      versaoEsperada: 1,
+      dataEnvioCotacao: '2026-11-01',
+      numeroPo: 'PO-778',
+      leadTimeDias: 180,
+    });
     await expect(salvar.executar({ id: sdId, versaoEsperada: 1, numeroPo: 'X' })).rejects.toThrow(/Outro usuário/);
     expect(salva.numeroPo).toBe('PO-778');
     await expect(abrir.executar(sdId)).rejects.toThrow(/evidência/);
@@ -179,9 +187,47 @@ describe('fluxo da SD', () => {
     ).rejects.toThrow(/Arquivado/);
   });
 
+  it('lead time é obrigatório para abrir e validado ao salvar', async () => {
+    logado = comercial;
+    const salvar = new SalvarSd(deps);
+    await salvar.executar({ id: sdId, dataEnvioCotacao: '2026-11-01' });
+    await anexarPo();
+    await expect(new AbrirSd(deps).executar(sdId)).rejects.toThrow(/prazo acordado com o cliente/);
+
+    for (const invalido of [0, -5, 2.5, 1826]) {
+      await expect(salvar.executar({ id: sdId, dataEnvioCotacao: '2026-11-01', leadTimeDias: invalido })).rejects.toThrow(
+        ErroDeValidacao,
+      );
+    }
+    await expect(
+      salvar.executar({ id: sdId, dataEnvioCotacao: '2026-11-01', leadTimeDias: 180, leadTimeObservacao: 'x'.repeat(501) }),
+    ).rejects.toThrow(ErroDeValidacao);
+
+    const salva = await salvar.executar({
+      id: sdId,
+      dataEnvioCotacao: '2026-11-01',
+      leadTimeDias: 180,
+      leadTimeObservacao: 'SOP em mar/27',
+    });
+    expect(salva).toMatchObject({ leadTimeDias: 180, leadTimeObservacao: 'SOP em mar/27', prazoJustificativa: null });
+    expect((await new AbrirSd(deps).executar(sdId)).leadTimeDias).toBe(180);
+  });
+
+  it('SD de exemplo (modo Apresentação) chega a fechada com lead time e sem justificativa', async () => {
+    const aceitarSemPapel = new AceitarSd(
+      deps,
+      { criar: (e) => new CriarProjetoDaSd(new RepositorioCronogramasSqlite(db), deps.relogio, deps.geradorDeId).executar(e) },
+      { concluirComProjeto: (e) => new ConcluirAvComProjeto(new RepositorioAvsSqlite(db), new RepositorioHistoricoAvSqlite(db), deps.relogio, deps.geradorDeId).executar(e) },
+      true,
+    );
+    await new AvancarSdDeExemplo(deps.repositorio, deps.versoes, deps.relogio, aceitarSemPapel).executar(avId, 'fechada', 'adm');
+    const sd = db.prepare('SELECT status, lead_time_dias FROM sd WHERE id = ?').get(sdId);
+    expect(sd).toEqual({ status: 'fechada', lead_time_dias: 180 });
+  });
+
   it('Engenharia devolve com motivo e o Comercial reabre', async () => {
     logado = comercial;
-    await new SalvarSd(deps).executar({ id: sdId, dataEnvioCotacao: '2026-11-01' });
+    await new SalvarSd(deps).executar({ id: sdId, dataEnvioCotacao: '2026-11-01', leadTimeDias: 180 });
     await anexarPo();
     await new AbrirSd(deps).executar(sdId);
 
@@ -204,7 +250,7 @@ describe('fluxo da SD', () => {
 
   it('aceite que falha no meio não deixa nada pela metade', async () => {
     logado = comercial;
-    await new SalvarSd(deps).executar({ id: sdId, dataEnvioCotacao: '2026-11-01' });
+    await new SalvarSd(deps).executar({ id: sdId, dataEnvioCotacao: '2026-11-01', leadTimeDias: 180 });
     await anexarPo();
     await new AbrirSd(deps).executar(sdId);
     logado = engenharia;

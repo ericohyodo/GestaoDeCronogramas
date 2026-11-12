@@ -40,6 +40,9 @@ export function paraSdDTO(listada: SdListada, nomes: Map<string, string>, versao
     devolucaoPorNome: nomeDe(nomes, sd.devolucaoPor),
     devolucaoEm: iso(sd.devolucaoEm),
     cronogramaId: sd.cronogramaId,
+    leadTimeDias: sd.leadTimeDias,
+    leadTimeObservacao: sd.leadTimeObservacao,
+    prazoJustificativa: sd.prazoJustificativa,
     versao,
   };
 }

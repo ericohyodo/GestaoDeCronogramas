@@ -21,6 +21,9 @@ interface LinhaSd {
   devolucao_por: string | null;
   devolucao_em: string | null;
   cronograma_id: string | null;
+  lead_time_dias: number | null;
+  lead_time_observacao: string | null;
+  prazo_justificativa: string | null;
 }
 
 interface LinhaSdListada extends LinhaSd {
@@ -56,11 +59,11 @@ export class RepositorioSdsSqlite implements RepositorioSds {
         INSERT INTO sd (
           id, av_id, numero, status, criado_por, criado_em, data_envio_cotacao, numero_po, observacoes,
           aberta_por, aberta_em, aceite_por, aceite_em, devolucao_motivo, devolucao_por, devolucao_em, cronograma_id,
-          parecer_aceite
+          parecer_aceite, lead_time_dias, lead_time_observacao, prazo_justificativa
         ) VALUES (
           @id, @av_id, @numero, @status, @criado_por, @criado_em, @data_envio_cotacao, @numero_po, @observacoes,
           @aberta_por, @aberta_em, @aceite_por, @aceite_em, @devolucao_motivo, @devolucao_por, @devolucao_em,
-          @cronograma_id, @parecer_aceite
+          @cronograma_id, @parecer_aceite, @lead_time_dias, @lead_time_observacao, @prazo_justificativa
         )
         ON CONFLICT (id) DO UPDATE SET
           status             = excluded.status,
@@ -75,7 +78,10 @@ export class RepositorioSdsSqlite implements RepositorioSds {
           devolucao_motivo   = excluded.devolucao_motivo,
           devolucao_por      = excluded.devolucao_por,
           devolucao_em       = excluded.devolucao_em,
-          cronograma_id      = excluded.cronograma_id
+          cronograma_id      = excluded.cronograma_id,
+          lead_time_dias       = excluded.lead_time_dias,
+          lead_time_observacao = excluded.lead_time_observacao,
+          prazo_justificativa  = excluded.prazo_justificativa
       `),
     };
   }
@@ -100,6 +106,9 @@ export class RepositorioSdsSqlite implements RepositorioSds {
       devolucao_por: sd.devolucaoPor,
       devolucao_em: data(sd.devolucaoEm),
       cronograma_id: sd.cronogramaId,
+      lead_time_dias: sd.leadTimeDias,
+      lead_time_observacao: sd.leadTimeObservacao,
+      prazo_justificativa: sd.prazoJustificativa,
     });
   }
 
@@ -139,6 +148,9 @@ function paraListada(linha: LinhaSdListada): SdListada {
       devolucaoPor: linha.devolucao_por,
       devolucaoEm: dataOuNull(linha.devolucao_em),
       cronogramaId: linha.cronograma_id,
+      leadTimeDias: linha.lead_time_dias,
+      leadTimeObservacao: linha.lead_time_observacao,
+      prazoJustificativa: linha.prazo_justificativa,
     },
     avNumero: linha.av_numero,
     cliente: linha.cliente,

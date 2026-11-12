@@ -44,6 +44,8 @@ export function registrarIpcSds(ipc: RegistradorIpc, casos: CasosDeUsoSds): void
       dataEnvioCotacao: esquemaData.nullish(),
       numeroPo: z.string().max(60).nullish(),
       observacoes: z.string().max(2000).nullish(),
+      leadTimeDias: z.number().int().min(1).max(1825).nullish(),
+      leadTimeObservacao: z.string().max(500).nullish(),
     }),
     (entrada) => casos.salvar.executar(entrada),
   );

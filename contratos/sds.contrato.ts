@@ -33,6 +33,12 @@ export interface SdDTO {
   devolucaoEm: string | null;
   /** Projeto criado no aceite. */
   cronogramaId: string | null;
+  /** Prazo acordado com o cliente, em dias corridos (lead time). */
+  leadTimeDias: number | null;
+  /** Observação do Comercial sobre o prazo acordado. */
+  leadTimeObservacao: string | null;
+  /** Justificativa da Engenharia quando o término do PRO difere de início + lead time. */
+  prazoJustificativa: string | null;
   /** Versão lida (gravação otimista). */
   versao: number;
 }
@@ -43,6 +49,9 @@ export interface SalvarSdEntrada {
   dataEnvioCotacao?: string | null;
   numeroPo?: string | null;
   observacoes?: string | null;
+  /** Lead time acordado com o cliente (dias corridos, 1 a 1825). */
+  leadTimeDias?: number | null;
+  leadTimeObservacao?: string | null;
 }
 
 export interface AceitarSdEntrada {
