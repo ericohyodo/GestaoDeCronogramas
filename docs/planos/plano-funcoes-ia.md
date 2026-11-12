@@ -39,7 +39,7 @@ Esse filtro fica em dois lugares: na lista de ferramentas que o agente recebe e,
 
 ### Fase 0: fundação (custo, limites e erros), cerca de 1 dia
 Sem ela não dá para cumprir o teto de US$ 50.
-- **Registro de uso:** migração nova `0044-ia-uso` com a tabela `ia_uso`. Cada chamada grava data, usuário, função, modelo, tokens (entrada, leitura e escrita de cache, saída) e custo estimado em US$. **O conteúdo das mensagens não é gravado.** Os dados vêm de `response.usage`, em `modelo-claude.ts`.
+- **Registro de uso:** migração nova `0046-ia-uso` com a tabela `ia_uso`. Cada chamada grava data, usuário, função, modelo, tokens (entrada, leitura e escrita de cache, saída) e custo estimado em US$. **O conteúdo das mensagens não é gravado.** Os dados vêm de `response.usage`, em `modelo-claude.ts`.
 - **Teto mensal configurável** em Configurações da IA. Com 80% atingido, o administrador é avisado pelo sino. Com 100%, as funções de sugestão param e o chat de baixa continua funcionando.
 - **Tela "Uso da IA"** para o administrador: gasto do mês por função e por usuário. Ela responde em parte a dúvida sobre créditos, mas o saldo pré-pago continua só no Console.
 - **Erro de crédito esgotado** com mensagem própria em `traduzirErro`: "Créditos da API esgotados. Avise o T.I."
@@ -118,7 +118,7 @@ Sem ela não dá para cumprir o teto de US$ 50.
 | AVs parecidas e catálogos | `electron/modulos/avs/` (consulta nova de AVs parecidas), `obter-catalogo-custo.ts` |
 | Permissões | `electron/modulos/usuarios/dominio/perfil.ts`, `electron/raiz-de-composicao.ts` (ligação de `permissoes` da IA) |
 | Tela | `renderer/compartilhado/ui/` (`CampoComSugestao`), abas da AV, `CartaoDaProposta.tsx` / prévia de cronograma, tela "Uso da IA" |
-| Banco | Migrações novas `0044-ia-uso` e `0045-tarefas-area`. Nenhuma migração existente é alterada. |
+| Banco | Migrações novas `0046-ia-uso` e `0047-tarefas-area`. Nenhuma migração existente é alterada. |
 
 ## 7. Segurança e riscos
 

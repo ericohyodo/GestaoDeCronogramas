@@ -1,5 +1,44 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.4.0 — 12/11/2026
+
+### Novidades
+- **Prazo das áreas na AV:** Eng. Produto, Eng. Processo, PCP e Mapa de Custo têm, cada uma, um prazo em
+  **dias úteis** para preencher a sua aba (padrão: 3), contado a partir do dia em que a etapa chega à área.
+  Sábado e domingo não contam; feriados ainda não entram na conta.
+  - O aviso "chegou à sua área" passa a trazer a data-limite.
+  - O responsável da área recebe um aviso na véspera útil (ou no próprio dia) e outro quando o prazo vence,
+    uma vez cada.
+  - **Painel das AVs:** faixa "Prazos das áreas" com No prazo, Vencendo e Atrasadas. Cada número abre o
+    relatório já filtrado.
+  - **Relatório das AVs:** colunas "Prazo da área" e "Situação" (atrasada há N dias úteis), filtros por prazo e
+    por área e o quadro "Entregas no prazo por área (90 dias)". O indicador que comparava com o prazo do
+    cliente passa a se chamar "Prazo do cliente vencido".
+  - **Configurações (administrador):** dias úteis de cada área, de 1 a 30. A mudança vale para as próximas
+    etapas liberadas; prazos em curso não mudam.
+  - AVs que já estavam em andamento recebem o prazo a partir da data em que a etapa atual foi liberada. O
+    histórico (H-AV) fica de fora.
+- **Lead time na SD:** o Comercial informa o **prazo acordado com o cliente, em dias corridos** (obrigatório
+  para abrir a SD) e uma observação do prazo (marcos do cliente, por exemplo).
+- **Confirmação do aceite da SD:** o aceite abre o modal "Confirmar aceite da SD" com as especificações do
+  produto (cliente, código, programa, volume, complexidade, linha, família, PO), o prazo acordado e o período
+  do projeto. O término do PRO vem calculado como **início + lead time**. Se a Engenharia mudar o término, a
+  justificativa é obrigatória (mínimo de 10 caracteres) e fica registrada na SD. SDs abertas antes desta
+  versão, sem lead time, continuam com o padrão de 180 dias.
+
+### Técnico
+- Migrações:
+  - 0044: `lead_time_dias`, `lead_time_observacao` e `prazo_justificativa` em `sd`;
+  - 0045: `av_prazo_config` (dias úteis por área) e `av_prazos_area` (prazo de cada etapa, com entrega).
+- `HistoricoComPrazos`: decorador do histórico de etapas; toda mudança de etapa (avançar, finalizar,
+  declinar, concluir) entrega o prazo da etapa que sai e abre o da etapa que chega, na mesma transação.
+- Rotina horária ganha `avs.rotinas.verificarPrazosDasAreas()` (preenchimento retroativo + avisos
+  `av.area_vencendo` e `av.area_atrasada`, com deduplicação por chave).
+- O servidor confere a regra do término no aceite (`exigirJustificativaDoPrazo`), não só a tela.
+- Canais IPC novos: `avs:obter-prazos-config` (leitura), `avs:salvar-prazos-config` (administração) e
+  `avs:entregas-no-prazo` (leitura).
+- Calendário do núcleo (`calendario.ts`): dias corridos, dias úteis e dia local.
+
 ## 0.3.0 — 11/11/2026
 
 ### Novidades

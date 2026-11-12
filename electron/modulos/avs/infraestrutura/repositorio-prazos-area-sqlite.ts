@@ -50,6 +50,9 @@ export class RepositorioPrazosAreaSqlite implements RepositorioPrazosArea {
       listarAbertos: db.prepare<[], LinhaPrazo>(
         'SELECT * FROM av_prazos_area WHERE entregue_em IS NULL ORDER BY data_limite',
       ),
+      redefinirLimite: db.prepare<[string, string, number]>(
+        'UPDATE av_prazos_area SET data_limite = ? WHERE av_id = ? AND etapa = ? AND entregue_em IS NULL',
+      ),
       listarEntreguesDesde: db.prepare<[string], LinhaPrazo>(
         'SELECT * FROM av_prazos_area WHERE entregue_em IS NOT NULL AND entregue_em >= ? ORDER BY entregue_em',
       ),
@@ -80,6 +83,10 @@ export class RepositorioPrazosAreaSqlite implements RepositorioPrazosArea {
 
   async listarAbertos(): Promise<PrazoArea[]> {
     return this.sql.listarAbertos.all().map(paraPrazo);
+  }
+
+  async redefinirLimite(avId: string, etapa: number, dataLimite: string): Promise<void> {
+    this.sql.redefinirLimite.run(dataLimite, avId, etapa);
   }
 
   async listarEntreguesDesde(desdeIso: string): Promise<PrazoArea[]> {

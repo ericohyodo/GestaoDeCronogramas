@@ -62,6 +62,8 @@ export interface RepositorioPrazosArea {
   listarAbertos(): Promise<PrazoArea[]>;
   /** Prazos entregues a partir do instante ISO informado. */
   listarEntreguesDesde(desdeIso: string): Promise<PrazoArea[]>;
+  /** Troca a data-limite do prazo aberto (usado só pelos dados do modo Apresentação). */
+  redefinirLimite(avId: string, etapa: number, dataLimite: string): Promise<void>;
 }
 
 export type ConfigPrazos = Record<AreaComPrazo, number>;

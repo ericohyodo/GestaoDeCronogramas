@@ -18,6 +18,7 @@ import { CriarAv } from '../../electron/modulos/avs/aplicacao/casos-de-uso/criar
 import { DeclinarAv } from '../../electron/modulos/avs/aplicacao/casos-de-uso/declinar-av';
 import { FinalizarECriarPreSd } from '../../electron/modulos/avs/aplicacao/casos-de-uso/finalizar-e-criar-pre-sd';
 import { HistoricoComPrazos } from '../../electron/modulos/avs/aplicacao/prazos/historico-com-prazos';
+import { ajustarPrazosDeExemplo } from '../../electron/modulos/avs/aplicacao/prazos/prazos-de-exemplo';
 import type { ConsultaDeUsuarios } from '../../electron/modulos/avs/aplicacao/portas';
 import { RepositorioAvsSqlite } from '../../electron/modulos/avs/infraestrutura/repositorio-avs-sqlite';
 import { RepositorioHistoricoAvSqlite } from '../../electron/modulos/avs/infraestrutura/repositorio-historico-av-sqlite';
@@ -317,5 +318,14 @@ describe('prazos das áreas da AV', () => {
       expect(entregas[0]).toEqual({ area: 'Eng. Produto', entregues: 2, noPrazo: 1, percentualNoPrazo: 50, mediaDiasUteis: 3.5 });
       expect(entregas[1]).toEqual({ area: 'Eng. Processo', entregues: 0, noPrazo: 0, percentualNoPrazo: 0, mediaDiasUteis: 0 });
     });
+  });
+
+  it('modo Apresentação: os dois primeiros prazos abertos ficam atrasado e vencendo', async () => {
+    const outra = (await new CriarAv(avs, relogio, ids, consulta, autorizacao).executar({ descricao: 'Outra' })).id;
+    await avancar.executar({ avId });
+    await avancar.executar({ avId: outra });
+    await ajustarPrazosDeExemplo(prazos, '2026-10-07'); // quarta
+    const limites = (await prazos.listarAbertos()).map((prazo) => prazo.dataLimite).sort();
+    expect(limites).toEqual(['2026-10-02', '2026-10-07']); // atrasado desde sexta; vence hoje
   });
 });

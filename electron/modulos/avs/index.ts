@@ -67,6 +67,7 @@ import { RepositorioGruposAvSqlite } from './infraestrutura/repositorio-grupos-a
 import { RepositorioHistoricoAvSqlite } from './infraestrutura/repositorio-historico-av-sqlite';
 import { RepositorioConfigPrazosSqlite, RepositorioPrazosAreaSqlite } from './infraestrutura/repositorio-prazos-area-sqlite';
 import { HistoricoComPrazos } from './aplicacao/prazos/historico-com-prazos';
+import { ajustarPrazosDeExemplo } from './aplicacao/prazos/prazos-de-exemplo';
 import { RepositorioPerfisAvSqlite } from './infraestrutura/repositorio-perfis-av-sqlite';
 import { RepositorioSecaoCustoSqlite } from './infraestrutura/repositorio-secao-custo-sqlite';
 import { RepositorioSecaoPcpSqlite } from './infraestrutura/repositorio-secao-pcp-sqlite';
@@ -100,6 +101,8 @@ export interface ModuloAvs {
     /** Cria a AV de vitrine completa e a leva até o PRO (exige sessão de administrador). */
     gerarVitrine(): ReturnType<GerarAvVitrine['executar']>;
     listar(): Promise<{ id: string; numero: string; etapa: number; descricao: string }[]>;
+    /** Deixa um prazo de área atrasado e outro vencendo hoje (faixa "Prazos das áreas" com os três estados). */
+    ajustarPrazosDeExemplo(hoje: string): Promise<void>;
   };
   rotinas: {
     /** Avisa o responsável da etapa atual quando o prazo do cliente está a 5 dias ou venceu. */
@@ -351,6 +354,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
           descricao: av.descricao,
         }));
       },
+      ajustarPrazosDeExemplo: (hoje) => ajustarPrazosDeExemplo(repositorioPrazos, hoje),
     },
     rotinas: {
       verificarPrazosDoCliente: () => verificarPrazosDoCliente.executar(),

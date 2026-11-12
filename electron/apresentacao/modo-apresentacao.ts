@@ -98,6 +98,10 @@ export async function semearApresentacao(m: ModulosDaApresentacao): Promise<Rote
   const projetoDaVitrine = sdDaVitrine?.cronogramaId ?? null;
   if (projetoDaVitrine) await m.tarefas.apresentacao.semearProjetoDeVitrine(projetoDaVitrine, responsavelPorArea, hoje);
 
+  // Prazos das áreas: um atrasado e um vencendo hoje, e os avisos que o sino receberia na rotina horária.
+  await m.avs.apresentacao.ajustarPrazosDeExemplo(hoje);
+  await m.avs.rotinas.verificarPrazosDasAreas();
+
   const avs = await m.avs.apresentacao.listar();
   const naEtapa = (etapa: number) => avs.find((av) => av.etapa === etapa)?.id ?? null;
   const projeto = projetoDaVitrine ?? projetoDeExemplo;
