@@ -43,6 +43,7 @@ import { migracao0041 } from './0041-ia-conversas';
 import { migracao0042 } from './0042-historico-antes-do-multiusuario';
 import { migracao0043 } from './0043-ia-propostas';
 import { migracao0044 } from './0044-sd-lead-time';
+import { migracao0045 } from './0045-prazos-das-areas';
 
 export const MIGRACOES: readonly Migracao[] = [
   migracao0001,
@@ -89,4 +90,5 @@ export const MIGRACOES: readonly Migracao[] = [
   migracao0042,
   migracao0043,
   migracao0044,
+  migracao0045,
 ];

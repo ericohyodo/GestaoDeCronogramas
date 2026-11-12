@@ -61,6 +61,8 @@ import { RepositorioCatalogoCustoSqlite } from './infraestrutura/repositorio-cat
 import { RepositorioContatosAvSqlite } from './infraestrutura/repositorio-contatos-av-sqlite';
 import { RepositorioGruposAvSqlite } from './infraestrutura/repositorio-grupos-av-sqlite';
 import { RepositorioHistoricoAvSqlite } from './infraestrutura/repositorio-historico-av-sqlite';
+import { RepositorioConfigPrazosSqlite, RepositorioPrazosAreaSqlite } from './infraestrutura/repositorio-prazos-area-sqlite';
+import { HistoricoComPrazos } from './aplicacao/prazos/historico-com-prazos';
 import { RepositorioPerfisAvSqlite } from './infraestrutura/repositorio-perfis-av-sqlite';
 import { RepositorioSecaoCustoSqlite } from './infraestrutura/repositorio-secao-custo-sqlite';
 import { RepositorioSecaoPcpSqlite } from './infraestrutura/repositorio-secao-pcp-sqlite';
@@ -119,7 +121,15 @@ export interface ModuloAvs {
 export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
   const repositorio = new RepositorioAvsSqlite(deps.db);
   const repositorioPerfis = new RepositorioPerfisAvSqlite(deps.db);
-  const repositorioHistorico = new RepositorioHistoricoAvSqlite(deps.db);
+  const repositorioPrazos = new RepositorioPrazosAreaSqlite(deps.db);
+  const repositorioConfigPrazos = new RepositorioConfigPrazosSqlite(deps.db);
+  // Toda mudança de etapa passa pelo histórico: o decorador mantém os prazos das áreas em dia.
+  const repositorioHistorico = new HistoricoComPrazos(
+    new RepositorioHistoricoAvSqlite(deps.db),
+    repositorioPrazos,
+    repositorioConfigPrazos,
+    deps.geradorDeId,
+  );
   const repositorioSecaoCusto = new RepositorioSecaoCustoSqlite(deps.db);
   const repositorioCatalogoCusto = new RepositorioCatalogoCustoSqlite(deps.db);
   const repositorioSecaoProduto = new RepositorioSecaoProdutoSqlite(deps.db);
