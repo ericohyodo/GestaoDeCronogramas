@@ -43,6 +43,7 @@ export function paraSdDTO(listada: SdListada, nomes: Map<string, string>, versao
     leadTimeDias: sd.leadTimeDias,
     leadTimeObservacao: sd.leadTimeObservacao,
     prazoJustificativa: sd.prazoJustificativa,
+    especificacoes: { ...listada.especificacoes },
     versao,
   };
 }

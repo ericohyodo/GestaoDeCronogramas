@@ -165,7 +165,7 @@ describe('fluxo da SD', () => {
     expect(tiposDe('eng')).toEqual(['sd.aberta']);
 
     // Comercial não dá aceite; Engenharia sim.
-    const periodo = { id: sdId, dataInicio: '2026-11-15', dataFim: '2027-05-15' };
+    const periodo = { id: sdId, dataInicio: '2026-11-15', dataFim: '2027-05-14' }; // início + 180 dias
     await expect(aceitar.executar(periodo)).rejects.toThrow(/Gerente de Engenharia/);
     logado = engenharia;
     const aceita = await new UnidadeDeTrabalhoSqlite(db).executar(() => aceitar.executar(periodo));
@@ -223,6 +223,65 @@ describe('fluxo da SD', () => {
     await new AvancarSdDeExemplo(deps.repositorio, deps.versoes, deps.relogio, aceitarSemPapel).executar(avId, 'fechada', 'adm');
     const sd = db.prepare('SELECT status, lead_time_dias FROM sd WHERE id = ?').get(sdId);
     expect(sd).toEqual({ status: 'fechada', lead_time_dias: 180 });
+  });
+
+  it('aceite: término calculado dispensa justificativa; diferente exige; sem lead time aceita', async () => {
+    db.prepare("UPDATE av SET codigo = 'VX3-1', programa = 'VX-300', volume_anual = 48000 WHERE id = ?").run(avId);
+    logado = comercial;
+    await new SalvarSd(deps).executar({ id: sdId, dataEnvioCotacao: '2026-11-01', leadTimeDias: 180 });
+    await anexarPo();
+    const aberta = await new AbrirSd(deps).executar(sdId);
+    expect(aberta.especificacoes).toMatchObject({ codigo: 'VX3-1', programa: 'VX-300', volumeAnual: 48000 });
+
+    logado = engenharia;
+    const transacao = new UnidadeDeTrabalhoSqlite(db);
+    await expect(
+      transacao.executar(() => aceitar.executar({ id: sdId, dataInicio: '2026-11-12', dataFim: '2027-06-01' })),
+    ).rejects.toThrow(/Justifique a alteração/);
+    await expect(
+      transacao.executar(() =>
+        aceitar.executar({ id: sdId, dataInicio: '2026-11-12', dataFim: '2027-06-01', justificativaPrazo: 'curta' }),
+      ),
+    ).rejects.toThrow(/Justifique a alteração/);
+    expect(db.prepare('SELECT COUNT(*) FROM cronogramas').pluck().get()).toBe(0);
+
+    const aceita = await transacao.executar(() =>
+      aceitar.executar({
+        id: sdId,
+        dataInicio: '2026-11-12',
+        dataFim: '2027-06-01',
+        justificativaPrazo: 'Ferramental importado: +3 semanas',
+      }),
+    );
+    expect(aceita.prazoJustificativa).toBe('Ferramental importado: +3 semanas');
+    expect(db.prepare('SELECT data_fim FROM cronogramas WHERE id = ?').pluck().get(aceita.cronogramaId)).toBe('2027-06-01');
+  });
+
+  it('aceite com o término calculado não pede justificativa', async () => {
+    logado = comercial;
+    await new SalvarSd(deps).executar({ id: sdId, dataEnvioCotacao: '2026-11-01', leadTimeDias: 180 });
+    await anexarPo();
+    await new AbrirSd(deps).executar(sdId);
+    logado = engenharia;
+    const aceita = await new UnidadeDeTrabalhoSqlite(db).executar(() =>
+      aceitar.executar({ id: sdId, dataInicio: '2026-11-12', dataFim: '2027-05-11' }),
+    );
+    expect(aceita.prazoJustificativa).toBeNull();
+    expect(db.prepare('SELECT data_fim FROM cronogramas WHERE id = ?').pluck().get(aceita.cronogramaId)).toBe('2027-05-11');
+  });
+
+  it('SD aberta antes da 0.4.0 (sem lead time) aceita qualquer término sem justificativa', async () => {
+    logado = comercial;
+    await new SalvarSd(deps).executar({ id: sdId, dataEnvioCotacao: '2026-11-01', leadTimeDias: 180 });
+    await anexarPo();
+    await new AbrirSd(deps).executar(sdId);
+    db.prepare('UPDATE sd SET lead_time_dias = NULL WHERE id = ?').run(sdId);
+    logado = engenharia;
+    const aceita = await new UnidadeDeTrabalhoSqlite(db).executar(() =>
+      aceitar.executar({ id: sdId, dataInicio: '2026-11-12', dataFim: '2027-02-01' }),
+    );
+    expect(aceita.status).toBe('fechada');
+    expect(aceita.prazoJustificativa).toBeNull();
   });
 
   it('Engenharia devolve com motivo e o Comercial reabre', async () => {

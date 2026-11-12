@@ -16,6 +16,7 @@ import type { RepositorioAnexosSd, RepositorioSds } from '../../dominio/reposito
 import {
   abrirSd,
   aceitarSd,
+  exigirJustificativaDoPrazo,
   atualizarFormulario,
   devolverSd,
   trocarPrefixoDoNumero,
@@ -174,6 +175,13 @@ export class AceitarSd extends CasoDoFluxo implements CasoDeUso<AceitarSdEntrada
     if (atual.sd.status !== 'aberta') {
       throw new ErroDeDominio('SD_STATUS_INVALIDO', 'Só uma SD aberta pelo Comercial pode receber o aceite.');
     }
+    // Antes de criar o PRO: término diferente de início + lead time exige justificativa.
+    const justificativa = exigirJustificativaDoPrazo(
+      atual.sd,
+      entrada.dataInicio,
+      entrada.dataFim,
+      entrada.justificativaPrazo,
+    );
     const codigo = trocarPrefixoDoNumero(atual.avNumero, 'PRO');
     const projeto = await this.projetos.criar({
       nome: atual.descricao,
@@ -187,7 +195,7 @@ export class AceitarSd extends CasoDoFluxo implements CasoDeUso<AceitarSdEntrada
     });
     const agora = this.deps.relogio.agora();
     this.deps.versoes.confirmar(chaveDaSd(entrada.id));
-    await this.deps.repositorio.salvar(aceitarSd(atual.sd, usuario.id, agora, projeto.id, entrada.parecer));
+    await this.deps.repositorio.salvar(aceitarSd(atual.sd, usuario.id, agora, projeto.id, entrada.parecer, justificativa));
     await this.avs.concluirComProjeto({
       avId: atual.sd.avId,
       cronogramaId: projeto.id,
@@ -199,9 +207,14 @@ export class AceitarSd extends CasoDoFluxo implements CasoDeUso<AceitarSdEntrada
       excetoUsuarioId: usuario.id,
       tipo: 'sd.aceita',
       titulo: `${atual.sd.numero} aceita: projeto ${codigo} criado`,
-      mensagem: entrada.parecer?.trim()
-        ? `Parecer de ${usuario.nome}: ${entrada.parecer.trim()}`
-        : `Aceite de ${usuario.nome}. ${this.resumo(atual)}.`,
+      mensagem: [
+        entrada.parecer?.trim()
+          ? `Parecer de ${usuario.nome}: ${entrada.parecer.trim()}`
+          : `Aceite de ${usuario.nome}. ${this.resumo(atual)}.`,
+        justificativa && `Prazo alterado: ${justificativa}`,
+      ]
+        .filter(Boolean)
+        .join(' '),
       link: this.link(entrada.id),
     });
     return this.dto(entrada.id);

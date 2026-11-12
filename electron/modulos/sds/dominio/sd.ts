@@ -1,4 +1,5 @@
 import { ErroDeDominio, ErroDeValidacao } from '../../../nucleo/dominio/erro-de-dominio';
+import { somarDiasCorridos } from '../../../nucleo/dominio/calendario';
 import { normalizarTextoOpcional } from '../../../nucleo/dominio/texto';
 
 // =====================================================================================================
@@ -17,6 +18,8 @@ const TAMANHO_MAXIMO_MOTIVO = 500;
 const TAMANHO_MAXIMO_OBSERVACAO_PRAZO = 500;
 /** Lead time acordado com o cliente: de 1 dia a 5 anos (dias corridos). */
 const LEAD_TIME_MAXIMO = 1825;
+const TAMANHO_MINIMO_JUSTIFICATIVA = 10;
+const TAMANHO_MAXIMO_JUSTIFICATIVA = 1000;
 
 export interface Sd {
   id: string;
@@ -58,6 +61,16 @@ export function trocarPrefixoDoNumero(numeroAv: string, prefixo: 'SD' | 'PRO'): 
   return `${historico ? 'H-' : ''}${(historico ? numeroAv.slice(2) : numeroAv).replace(/^\S+/, prefixo)}`;
 }
 
+/** Dados do produto (da AV de origem) que a Engenharia confirma no aceite. */
+export interface EspecificacoesSd {
+  codigo: string | null;
+  programa: string | null;
+  volumeAnual: number | null;
+  complexidade: string | null;
+  linha: string | null;
+  familia: string | null;
+}
+
 /** Uma SD junto com os dados da AV de origem que as telas precisam mostrar. */
 export interface SdListada {
   sd: Sd;
@@ -70,6 +83,7 @@ export interface SdListada {
   codigoProjeto: string | null;
   /** Criada antes do uso multiusuário (migração 0042). */
   historico: boolean;
+  especificacoes: EspecificacoesSd;
 }
 
 /** SD recém-criada a partir da AV finalizada. */
@@ -185,6 +199,31 @@ export function abrirSd(sd: Sd, usuarioId: string, agora: Date, quantidadeDeEvid
   return { ...sd, status: 'aberta', abertaPor: usuarioId, abertaEm: agora };
 }
 
+/**
+ * Regra do término no aceite: o PRO termina em início + lead time. Se a Engenharia escolher outro término,
+ * precisa justificar (a SD antiga, sem lead time, não exige).
+ * @param sd SD aberta
+ * @param dataInicio início previsto do PRO (AAAA-MM-DD)
+ * @param dataFim término previsto do PRO (AAAA-MM-DD)
+ * @param justificativa texto da Engenharia, se houver
+ * @returns a justificativa normalizada, ou `null` quando não é necessária
+ */
+export function exigirJustificativaDoPrazo(
+  sd: Sd,
+  dataInicio: string,
+  dataFim: string,
+  justificativa?: string | null,
+): string | null {
+  if (sd.leadTimeDias === null || dataFim === somarDiasCorridos(dataInicio, sd.leadTimeDias)) return null;
+  const texto = limitar(justificativa, TAMANHO_MAXIMO_JUSTIFICATIVA, 'A justificativa do prazo');
+  if (!texto || texto.length < TAMANHO_MINIMO_JUSTIFICATIVA) {
+    throw new ErroDeValidacao(
+      `Justifique a alteração do prazo acordado (mínimo de ${TAMANHO_MINIMO_JUSTIFICATIVA} caracteres).`,
+    );
+  }
+  return texto;
+}
+
 /** Engenharia aceita: a SD fecha e passa a apontar para o projeto criado. */
 export function aceitarSd(
   sd: Sd,
@@ -192,6 +231,7 @@ export function aceitarSd(
   agora: Date,
   cronogramaId: string,
   parecer?: string | null,
+  justificativaPrazo?: string | null,
 ): Sd {
   exigirStatus(sd, 'aberta', 'dar o aceite');
   return {
@@ -201,6 +241,7 @@ export function aceitarSd(
     aceiteEm: agora,
     cronogramaId,
     parecerAceite: limitar(parecer, TAMANHO_MAXIMO_OBSERVACOES, 'O parecer'),
+    prazoJustificativa: justificativaPrazo ?? null,
   };
 }
 

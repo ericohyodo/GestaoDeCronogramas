@@ -33,12 +33,20 @@ interface LinhaSdListada extends LinhaSd {
   membro_comercial: string | null;
   codigo_projeto: string | null;
   historico: number;
+  av_codigo: string | null;
+  av_programa: string | null;
+  av_volume_anual: number | null;
+  av_complexidade: string | null;
+  av_linha: string | null;
+  av_familia: string | null;
 }
 
 // Junta a AV de origem e o projeto só para leitura; a SD nunca grava na AV por aqui.
 const SELECT_LISTADA = `
   SELECT sd.*, av.numero AS av_numero, av.cliente AS cliente, av.descricao AS descricao,
-         av.membro_comercial AS membro_comercial, c.codigo AS codigo_projeto
+         av.membro_comercial AS membro_comercial, c.codigo AS codigo_projeto,
+         av.codigo AS av_codigo, av.programa AS av_programa, av.volume_anual AS av_volume_anual,
+         av.complexidade AS av_complexidade, av.linha AS av_linha, av.familia AS av_familia
   FROM sd
   JOIN av ON av.id = sd.av_id
   LEFT JOIN cronogramas c ON c.id = sd.cronograma_id
@@ -158,6 +166,14 @@ function paraListada(linha: LinhaSdListada): SdListada {
     responsavelComercialId: linha.membro_comercial,
     codigoProjeto: linha.codigo_projeto,
     historico: linha.historico === 1,
+    especificacoes: {
+      codigo: linha.av_codigo,
+      programa: linha.av_programa,
+      volumeAnual: linha.av_volume_anual,
+      complexidade: linha.av_complexidade,
+      linha: linha.av_linha,
+      familia: linha.av_familia,
+    },
   };
 }
 

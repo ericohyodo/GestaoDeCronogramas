@@ -1,6 +1,16 @@
 export const STATUS_SD = ['pre_sd', 'aberta', 'fechada', 'cancelada'] as const;
 export type StatusSdDTO = (typeof STATUS_SD)[number];
 
+/** Dados do produto (da AV de origem) que a Engenharia confirma no aceite. */
+export interface EspecificacoesSdDTO {
+  codigo: string | null;
+  programa: string | null;
+  volumeAnual: number | null;
+  complexidade: string | null;
+  linha: string | null;
+  familia: string | null;
+}
+
 export interface SdDTO {
   id: string;
   /** Mesmo sequencial e ano da AV de origem: AV 26-007 → SD 26-007. */
@@ -39,6 +49,7 @@ export interface SdDTO {
   leadTimeObservacao: string | null;
   /** Justificativa da Engenharia quando o término do PRO difere de início + lead time. */
   prazoJustificativa: string | null;
+  especificacoes: EspecificacoesSdDTO;
   /** Versão lida (gravação otimista). */
   versao: number;
 }
@@ -61,6 +72,8 @@ export interface AceitarSdEntrada {
   dataFim: string;
   /** Parecer da Engenharia (observações, inconsistências). Opcional no aceite. */
   parecer?: string | null;
+  /** Obrigatória quando o término difere de início + lead time (10 a 1000 caracteres). */
+  justificativaPrazo?: string | null;
 }
 
 export interface DevolverSdEntrada {
