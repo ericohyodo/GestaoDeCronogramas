@@ -1,5 +1,31 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.5.1 — 18/11/2026
+
+### Novidades
+- **Carga de máquina (PCP) em peças por mês:** as colunas em % deram lugar a peças.
+  - O PCP informa **Pçs/hora** e **Carga atual (pç/mês)** na unidade da operação, e a **Conversão**: quantas
+    peças do produto final saem de uma unidade da operação (ex.: uma placa da fundição vira 8 peças → 8).
+  - **Carga futura (pç/mês)** é calculada: volume anual da aba Comercial ÷ 12 ÷ conversão (só o item novo).
+  - **Turnos** por dia, de hoje → com o item: carga ÷ (pçs/hora × horas por turno × dias produtivos). Acima de
+    3 turnos o valor fica em vermelho.
+  - O bloco só fica completo com o volume anual informado no Comercial.
+  - **Configurações → Capacidade do PCP (administrador):** horas por turno (padrão 8) e dias produtivos por mês
+    (padrão 22).
+  - Cargas em % gravadas antes desta versão não são convertidas: o PCP preenche de novo em peças.
+- **Pré-visualização de anexos:** abre num modal grande, com o X para fechar, e mostra PDFs de qualquer tamanho.
+- **Menu:** o item de reportes passa a se chamar "Erros e sugestões" e fica alinhado aos demais.
+
+### Correções
+- PDF do anexo abria em branco: o quadro era trocado para `about:blank` a cada atualização da tela e PDFs acima de
+  ~1,5 MB passavam do limite de URL do Chromium. Agora o arquivo é exibido por URL `blob:`.
+- O botão de fechar do modal às vezes travava ao sair de um PDF: o fechamento rodava duas vezes.
+
+### Técnico
+- Migração 0049: `carga_atual_pecas` e `conversao` em `av_pcp_cargas`; `av_capacidade_config` (linha única).
+- Canais IPC novos: `avs:obter-capacidade-config` (leitura) e `avs:salvar-capacidade-config` (administração).
+- CSP: `blob:` em `img-src` e `frame-src`; `data:` saiu do `frame-src`.
+
 ## 0.5.0 — 18/11/2026
 
 ### Novidades
