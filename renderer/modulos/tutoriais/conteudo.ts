@@ -50,6 +50,11 @@ export const TOPICOS: TopicoDoTutorial[] = [
           'Use "Erros e sugestões" no menu lateral. Descreva o que aconteceu (ou a sua ideia) e, se ajudar, anexe até 3 prints: tire com Win + Shift + S e cole com Ctrl + V. A tela em que você estava vai junto. Você recebe um aviso quando o reporte for resolvido.',
       },
       {
+        titulo: 'Meu perfil',
+        texto:
+          'Clique na sua foto ou no seu nome, na barra de título. Ali você inclui a foto, preenche cargo, departamento, e-mail, ramal, celular e "sobre mim", e redefine a senha (pede a senha atual).',
+      },
+      {
         titulo: 'Esqueci a senha',
         texto:
           'Peça ao administrador para marcar "Exigir novo primeiro acesso" no seu cadastro. No próximo login você cria uma senha nova.',
@@ -76,6 +81,11 @@ export const TOPICOS: TopicoDoTutorial[] = [
         titulo: 'Blocos da aba',
         texto:
           'Cada aba é dividida em blocos. O bloco em destaque ("Preencha agora") é o próximo a completar; os já preenchidos ganham o selo "Bloco completo" e os seguintes ficam esmaecidos até lá, mas continuam editáveis. O topo da aba mostra quantos blocos já foram preenchidos.',
+      },
+      {
+        titulo: 'Pasta da AV',
+        texto:
+          'Toda AV nova ganha uma pasta no Windows ("AV 26-036 - Cliente - Descrição") para as entradas do Comercial: e-mails, desenhos e orçamentos. No cabeçalho da AV, "Arquivos da AV" mostra o que há na pasta; clique num item para abrir. AVs antigas mostram "Criar pasta da AV".',
       },
       {
         titulo: 'Desenho do item',

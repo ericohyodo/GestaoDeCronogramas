@@ -1,5 +1,33 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.7.0 — 18/11/2026
+
+### Novidades
+- **Meu perfil:** clique na sua foto ou no seu nome, na barra de título.
+  - Inclua uma foto (o app recorta e reduz) e preencha cargo, departamento, e-mail, ramal, celular e "sobre mim".
+  - **Redefinir senha:** informe a senha atual e a nova (mínimo de 8 caracteres).
+  - Nome, usuário e perfil de acesso continuam sendo alterados pelo administrador.
+- **Pasta da AV no Windows:** ao criar uma AV, o app cria a pasta "AV 26-036 - Cliente - Descrição" dentro da pasta
+  raiz, para guardar as entradas do Comercial (e-mails, desenhos, orçamentos).
+  - **Configurações → Pasta das AVs (administrador):** define a pasta raiz (de preferência uma pasta de rede que
+    todos acessem). Sem raiz definida, nenhuma pasta é criada.
+  - **Arquivos da AV** (cabeçalho da AV): lista o que há na pasta, com subpastas. Clique num item para abrir no
+    programa padrão; "Abrir no Explorer" abre a pasta. Pasta vazia mostra "A pasta está vazia.".
+  - AV sem pasta (criada antes desta versão ou com a rede fora do ar) mostra **Criar pasta da AV**.
+  - O nome da pasta não muda depois, mesmo que cliente ou descrição mudem.
+
+### Técnico
+- Migrações:
+  - 0052: `usuarios_perfil` (cargo, ramal, celular, sobre, foto em base64);
+  - 0053: `av.pasta` e `av_pasta_config`.
+- A foto é conferida pela assinatura binária (JPG/PNG) no IPC e limitada a ~300 KB.
+- O visualizador lista até 3 níveis e 500 itens; caminhos relativos vindos da tela não saem da pasta da AV.
+- Canais IPC novos:
+  - `usuarios:obter-meu-perfil` e `usuarios:salvar-meu-perfil` (leitura);
+  - `avs:obter-pasta-config`, `avs:listar-arquivos-da-pasta` e `avs:abrir-da-pasta` (leitura);
+  - `avs:salvar-pasta-config` e `avs:selecionar-pasta-raiz` (administração);
+  - `avs:criar-pasta` (tarefas).
+
 ## 0.6.1 — 18/11/2026
 
 ### Novidades
