@@ -69,13 +69,15 @@ describe('Templates de AV', () => {
     });
     await repositorio.salvar({ ...base, id: 't3', tipo: 'custo_processo', nome: 'Suporte', itens: [] });
 
-    const operacoes = await repositorio.listar('operacoes');
+    // Os templates de referência (migração 0051) ficam de fora: o teste olha só os criados aqui.
+    const proprios = async () => (await repositorio.listar('operacoes')).filter((t) => !t.nome.endsWith('(referência)'));
+    const operacoes = await proprios();
     expect(operacoes).toHaveLength(1);
     expect(operacoes[0]).toMatchObject({ id: 't1', nome: 'SUPORTE' });
     expect(operacoes[0]!.itens).toHaveLength(2);
     expect(await repositorio.listar('custo_processo')).toHaveLength(1);
 
     await repositorio.excluir('t1');
-    expect(await repositorio.listar('operacoes')).toHaveLength(0);
+    expect(await proprios()).toHaveLength(0);
   });
 });

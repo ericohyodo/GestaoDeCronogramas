@@ -1,7 +1,7 @@
 {
   "name": "gestao-cronogramas",
   "productName": "Gestão de Novos Desenvolvimentos",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Gestão de novos desenvolvimentos: AV → SD → Projeto (PRO)",
   "private": true,
   "main": "dist-electron/main.js",

@@ -1,5 +1,24 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.6.1 — 18/11/2026
+
+### Novidades
+- **Templates de operações de referência (Eng. Processo):** 15 sequências prontas, condensadas das folhas de
+  processo do estudo de capacidade (bdFolhaProcesso de 10/11/2026). Aparecem na barra de templates da aba
+  Eng. Processo com "(referência)" no nome:
+  - Bases: forjada simples; forjada jateada e usinada; grande forjada (simples e jateada/usinada); com tubo
+    cravado; com tubo forjado.
+  - Venturi: com janela e rasgo; com janela; horizontal.
+  - Estamparia: capa esmaltada; capa esmaltada fosca; capa com pinos soldados; arremate esmaltado; espalhador
+    estampado; espalhador dobrado.
+  - Cada template traz o processo completo da família (preparação, operações externas e embalagem), com a máquina
+    mais usada e a mediana de pç/h das folhas como ponto de partida. Apague as etapas que não se aplicam e ajuste
+    o pç/h do item.
+
+### Técnico
+- Migração 0051: `INSERT OR IGNORE` dos templates em `av_templates` (tipo `operacoes`); um template de mesmo nome
+  criado antes por um usuário é mantido.
+
 ## 0.6.0 — 18/11/2026
 
 ### Novidades
