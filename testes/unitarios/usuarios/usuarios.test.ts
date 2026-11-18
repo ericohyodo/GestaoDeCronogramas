@@ -52,7 +52,19 @@ describe('Login e gestão de usuários', () => {
     sessao = new Sessao();
     relogio = new RelogioFixo();
     hash = new HashDeSenhaFalso();
-    entrar = new Entrar(repositorio, hash, sessao, relogio);
+    // Sem o acesso rápido, para testar o fluxo normal de senha com o login "erico".
+    entrar = new Entrar(repositorio, hash, sessao, relogio, null);
+  });
+
+  it('o login de acesso rápido entra sem senha, mas só se o usuário existir', async () => {
+    const comAcessoRapido = new Entrar(repositorio, hash, sessao, relogio);
+    await expect(comAcessoRapido.executar({ login: 'erico', senha: '' })).rejects.toThrow();
+
+    await primeiroAcesso();
+    sessao.encerrar();
+    const dto = await comAcessoRapido.executar({ login: 'ERICO', senha: '' });
+    expect(dto.usuario).toMatchObject({ login: 'erico' });
+    expect(sessao.autenticado()).toBe(true);
   });
 
   it('o primeiro acesso cria um administrador e já abre a sessão', async () => {

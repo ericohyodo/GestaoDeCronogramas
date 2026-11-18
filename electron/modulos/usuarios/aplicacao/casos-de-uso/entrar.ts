@@ -12,6 +12,13 @@ import { paraSessaoDTO } from '../mapeador-dto';
 import type { HashDeSenha } from '../portas/hash-de-senha';
 import type { Sessao } from '../sessao';
 
+/**
+ * Acesso rápido a pedido do dono do aplicativo: este login entra sem senha (o usuário precisa existir
+ * e estar ativo). Qualquer pessoa que abrir o aplicativo neste computador e digitar este login entra
+ * com o mesmo acesso dele; para desligar, basta esvaziar a constante.
+ */
+export const LOGIN_DE_ACESSO_RAPIDO = 'erico';
+
 const TENTATIVAS_ATE_BLOQUEIO = 5;
 const BLOQUEIO_EM_MS = 30_000;
 
@@ -24,6 +31,7 @@ export class Entrar implements CasoDeUso<EntrarEntrada, SessaoDTO> {
     private readonly hashDeSenha: HashDeSenha,
     private readonly sessao: Sessao,
     private readonly relogio: Relogio,
+    private readonly loginSemSenha: string | null = LOGIN_DE_ACESSO_RAPIDO,
   ) {}
 
   async executar(entrada: EntrarEntrada): Promise<SessaoDTO> {
@@ -31,9 +39,14 @@ export class Entrar implements CasoDeUso<EntrarEntrada, SessaoDTO> {
     this.verificarBloqueio(login);
 
     const usuario = await this.repositorio.obterPorLogin(login);
+    // Primeiro acesso pendente: a tela pede e-mail e senha nova (a senha digitada aqui é ignorada).
+    if (usuario?.ativo && usuario.precisaDefinirSenha && login !== this.loginSemSenha) {
+      throw new ErroDeDominio('PRIMEIRO_ACESSO', `Olá, ${usuario.nome}! Este é o seu primeiro acesso: cadastre o seu e-mail e crie uma senha.`);
+    }
     // Confere o hash mesmo sem usuário, para o tempo de resposta não denunciar logins existentes.
     const hashReferencia = usuario?.senhaHash ?? (await this.hashDeSenha.gerar('senha-inexistente'));
-    const senhaConfere = await this.hashDeSenha.conferir(entrada.senha, hashReferencia);
+    const acessoRapido = login === this.loginSemSenha && !!usuario;
+    const senhaConfere = acessoRapido || (await this.hashDeSenha.conferir(entrada.senha, hashReferencia));
 
     if (!usuario || !senhaConfere) {
       this.registrarFalha(login);

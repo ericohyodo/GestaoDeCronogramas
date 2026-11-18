@@ -29,12 +29,16 @@ export function paraAvResumoDTO(av: Av, nomesPorId: Map<string, string>): AvResu
     membros: paraMembros(av, nomesPorId),
     propostaEnviada: av.propostaEnviada,
     criadoEm: av.criadoEm.toISOString(),
+    grupo: av.grupoId ? { id: av.grupoId, nome: av.grupoNome ?? '' } : null,
+    historico: av.historico,
   };
 }
 
-export function paraAvDetalheDTO(av: Av, nomesPorId: Map<string, string>): AvDetalheDTO {
+export function paraAvDetalheDTO(av: Av, nomesPorId: Map<string, string>, versaoComercial: number): AvDetalheDTO {
   return {
     ...paraAvResumoDTO(av, nomesPorId),
+    camposPendentes: av.camposPendentes ?? [],
+    criadoPorNome: av.criadoPor ? (nomesPorId.get(av.criadoPor) ?? null) : null,
     codigo: av.codigo,
     solicitante: av.solicitante,
     desenhoClienteRef: av.desenhoClienteRef,
@@ -49,11 +53,13 @@ export function paraAvDetalheDTO(av: Av, nomesPorId: Map<string, string>): AvDet
     respAbertura: av.respAbertura,
     linha: av.linha,
     origemProjeto: av.origemProjeto,
+    familia: av.familia,
     localEntrega: av.localEntrega,
     conceitoLogistico: av.conceitoLogistico,
     respEmbalagem: av.respEmbalagem,
     infoComplementarComercial: av.infoComplementarComercial,
     dataProposta: av.dataProposta ? av.dataProposta.toISOString() : null,
     cronogramaId: av.cronogramaId,
+    versaoComercial,
   };
 }

@@ -2,7 +2,12 @@ import type { AreaAvDTO } from '@contratos/avs.contrato';
 import { ErroDeDominio } from '../../../nucleo/dominio/erro-de-dominio';
 import type { Av } from '../dominio/av';
 import { ErroSemPermissaoNaArea } from '../dominio/erros-av';
-import { perfilAvPadraoSemCompetencias, podeEditarArea } from '../dominio/papel-av';
+import {
+  perfilAvPadraoSemCompetencias,
+  podeDarAceiteDaSd,
+  podeEditarArea,
+  type PerfilAvUsuario,
+} from '../dominio/papel-av';
 import type { RepositorioPerfisAv } from '../dominio/repositorio-perfis-av';
 import type { ConsultaDeUsuarios, UsuarioAtualAv } from './portas';
 
@@ -43,7 +48,29 @@ export class AutorizacaoAv {
     return usuario;
   }
 
-  private async obterPerfilAv(usuarioId: string) {
+  /** Administrador global (gerencia perfis, papéis e dados de exemplo). */
+  exigirAdministrador(): UsuarioAtualAv {
+    const usuario = this.exigirAutenticado();
+    if (usuario.perfil !== 'administrador') {
+      throw new ErroDeDominio('SEM_PERMISSAO', 'Só o administrador pode fazer isto.');
+    }
+    return usuario;
+  }
+
+  /** Aceite/devolução da SD: só quem tem papel de Gerente de Engenharia ou Gestor de Programa. */
+  async exigirAceiteDaSd(): Promise<UsuarioAtualAv> {
+    const usuario = this.exigirAutenticado();
+    if (!podeDarAceiteDaSd(await this.obterPerfilAv(usuario.id))) {
+      throw new ErroDeDominio(
+        'SEM_PERMISSAO',
+        'Só o Gerente de Engenharia ou um Gestor de Programa pode dar o aceite da SD.',
+      );
+    }
+    return usuario;
+  }
+
+  /** Perfil AV/SD de alguém (padrão sem competências quando nunca foi configurado). */
+  async obterPerfilAv(usuarioId: string): Promise<PerfilAvUsuario> {
     return (await this.perfis.obterPerfil(usuarioId)) ?? perfilAvPadraoSemCompetencias(usuarioId);
   }
 }

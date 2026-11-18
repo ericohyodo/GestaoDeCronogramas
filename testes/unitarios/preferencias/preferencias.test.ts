@@ -6,13 +6,13 @@ import { ObterPreferencias } from '../../../electron/modulos/preferencias/aplica
 import { AplicadorDeTemaFalso, RepositorioPreferenciasEmMemoria } from '../../dubles/dubles';
 
 describe('Preferências de tema', () => {
-  it('usa "sistema" enquanto o usuário não escolhe', async () => {
+  it('usa o tema claro enquanto o usuário não escolhe', async () => {
     const repositorio = new RepositorioPreferenciasEmMemoria();
     const aplicador = new AplicadorDeTemaFalso();
 
-    expect(await new ObterPreferencias(repositorio).executar()).toEqual({ tema: 'sistema' });
+    expect(await new ObterPreferencias(repositorio).executar()).toEqual({ tema: 'claro' });
     await new AplicarTemaSalvo(repositorio, aplicador).executar();
-    expect(aplicador.aplicados).toEqual(['sistema']);
+    expect(aplicador.aplicados).toEqual(['claro']);
   });
 
   it('salva e aplica o tema escolhido', async () => {

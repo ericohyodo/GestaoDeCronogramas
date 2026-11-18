@@ -10,6 +10,10 @@ import type { RepositorioAvs } from '../../dominio/repositorio-avs';
 import type { AutorizacaoAv } from '../autorizacao';
 import { construirMapaDeNomes, paraAvDetalheDTO } from '../mapeador-dto';
 import type { ConsultaDeUsuarios } from '../portas';
+import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/aplicacao/portas/controle-de-versao';
+import { chaveDaSecao } from '../versoes';
+import { type Notificador, semNotificacao } from '../../../../nucleo/aplicacao/portas/notificador';
+import { equipeDaAv, linkDaAv } from '../notificacoes-av';
 
 /** Declinar é sempre uma decisão comercial: só o dono dessa área (ou administrador) pode encerrar a AV assim. */
 export class DeclinarAv implements CasoDeUso<DeclinarAvEntrada, AvDetalheDTO> {
@@ -20,6 +24,8 @@ export class DeclinarAv implements CasoDeUso<DeclinarAvEntrada, AvDetalheDTO> {
     private readonly relogio: Relogio,
     private readonly geradorDeId: GeradorDeId,
     private readonly usuarios: ConsultaDeUsuarios,
+    private readonly versoes: ControleDeVersao = versaoSemControle,
+    private readonly notificador: Notificador = semNotificacao,
   ) {}
 
   async executar(entrada: DeclinarAvEntrada): Promise<AvDetalheDTO> {
@@ -50,7 +56,15 @@ export class DeclinarAv implements CasoDeUso<DeclinarAvEntrada, AvDetalheDTO> {
       comentario,
       data: agora,
     });
+    await this.notificador.notificar({
+      usuarioIds: equipeDaAv(av),
+      excetoUsuarioId: usuario.id,
+      tipo: 'av.declinada',
+      titulo: `${av.numero} foi declinada (${destino.nome})`,
+      mensagem: comentario,
+      link: linkDaAv(av.id),
+    });
 
-    return paraAvDetalheDTO(av, construirMapaDeNomes(await this.usuarios.listarAtivos()));
+    return paraAvDetalheDTO(av, construirMapaDeNomes(await this.usuarios.listarAtivos()), this.versoes.obter(chaveDaSecao(av.id, 'comercial')));
   }
 }

@@ -25,6 +25,9 @@ app.userAgentFallback = app.userAgentFallback.normalize('NFD').replace(/[^\x20-\
 registrarEsquemaApp();
 
 // Uma instância por vez: duas escrevendo no mesmo arquivo .db causariam conflitos.
+// Identidade do app no Windows: os avisos de notificação aparecem com o nome e o ícone dele.
+app.setAppUserModelId('com.ferkoda.novosdesenvolvimentos');
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
@@ -65,7 +68,7 @@ async function iniciar(): Promise<void> {
 function falharAoIniciar(erro: unknown): void {
   console.error('[inicializacao]', erro);
   const mensagem = erro instanceof Error ? erro.message : String(erro);
-  dialog.showErrorBox('Gestão de Cronogramas — não foi possível iniciar', mensagem);
+  dialog.showErrorBox('Gestão de Novos Desenvolvimentos — não foi possível iniciar', mensagem);
   app.quit();
 }
 

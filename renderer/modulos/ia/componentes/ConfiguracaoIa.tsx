@@ -2,25 +2,27 @@
 
 import { CheckCircle2, KeyRound, Sparkles, Trash2 } from 'lucide-react';
 import { type FormEvent, useEffect, useState } from 'react';
-import { type ModeloIaDTO, type ProvedorIaDTO, provedorDoModelo } from '@contratos/ia.contrato';
+import {
+  type EscopoIaDTO,
+  MODELO_PADRAO,
+  type ModeloIaDTO,
+  type ProvedorIaDTO,
+  provedorDoModelo,
+} from '@contratos/ia.contrato';
 import { mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { Botao } from '@/compartilhado/ui/Botao';
 import { CampoTexto, Selecao } from '@/compartilhado/ui/Campos';
 import { DialogoConfirmacao } from '@/compartilhado/ui/DialogoConfirmacao';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
-import { useIaStore } from '../store/use-ia-store';
+import { usarStoreIa } from '../store/use-ia-store';
 
 const OPCOES_DE_MODELO: { valor: ModeloIaDTO; rotulo: string }[] = [
-  { valor: 'claude-opus-5', rotulo: 'Anthropic · Claude Opus 5 — análise mais completa' },
-  { valor: 'claude-sonnet-5', rotulo: 'Anthropic · Claude Sonnet 5 — mais econômico' },
-  { valor: 'gemini-3.8-flash', rotulo: 'Google · Gemini 3.8 Flash — tem plano gratuito' },
-  { valor: 'gemini-3.5-flash-lite', rotulo: 'Google · Gemini 3.5 Flash-Lite — mais leve, tem plano gratuito' },
-  { valor: 'openrouter/free', rotulo: 'OpenRouter · Roteador gratuito — escolhe um modelo :free disponível' },
-  { valor: 'nvidia/nemotron-3-super-120b-a12b:free', rotulo: 'OpenRouter · Nemotron 3 Super 120B — gratuito' },
-  { valor: 'qwen/qwen3.8-27b:free', rotulo: 'OpenRouter · Qwen 3.8 27B — gratuito' },
-  { valor: 'nex-agi/nex-n2.5-pro:free', rotulo: 'OpenRouter · Nex N2.5 Pro — gratuito' },
-  { valor: 'dots-studio/dots-3-note-preview:free', rotulo: 'OpenRouter · Dots3-Note Preview — gratuito' },
+  { valor: 'claude-opus-5-5', rotulo: 'Anthropic · Claude Opus 5.5 — análise mais completa' },
+  { valor: 'claude-sonnet-5-5', rotulo: 'Anthropic · Claude Sonnet 5.5 — equilíbrio entre qualidade e custo' },
+  { valor: 'claude-haiku-5-5', rotulo: 'Anthropic · Claude Haiku 5.5 — mais rápido e econômico' },
+  { valor: 'claude-opus-5', rotulo: 'Anthropic · Claude Opus 5 — geração anterior do Opus' },
+  { valor: 'claude-sonnet-5', rotulo: 'Anthropic · Claude Sonnet 5 — geração anterior do Sonnet' },
 ];
 
 const PROVEDOR: Record<
@@ -32,37 +34,19 @@ const PROVEDOR: Record<
     placeholder: 'sk-ant-…',
     ondeCriar: 'Crie a chave no Console da Anthropic (console.anthropic.com), em API Keys.',
     avisos: [
-      'Custo por uso, na conta da chave: algo em torno de US$ 0,10 a 0,20 por análise com o Opus 5, e cerca de metade com o Sonnet 5.',
+      'Custo por uso, na conta da chave: algo em torno de US$ 0,08 a 0,16 por análise com o Opus 5.5 (US$ 0,10 a 0,20 com o Opus 5), cerca de metade com os Sonnet e bem menos com o Haiku 5.5.',
       'Use uma chave de um workspace próprio para o app, com limite de gasto mensal no Console.',
-    ],
-  },
-  google: {
-    nome: 'Google',
-    placeholder: 'Chave do Google AI Studio',
-    ondeCriar: 'Crie a chave no Google AI Studio (aistudio.google.com), em "Get API key".',
-    avisos: [
-      'No plano gratuito da API Gemini, o Google informa na página de preços que o conteúdo enviado é usado para melhorar os produtos dele. Avalie se isso é aceitável para os dados dos projetos; com faturamento ativado no projeto do Google, confira os termos do plano pago.',
-      'O plano gratuito tem limites de uso por minuto e por dia: se várias pessoas analisarem ao mesmo tempo, algumas podem ter de tentar de novo.',
-    ],
-  },
-  openrouter: {
-    nome: 'OpenRouter',
-    placeholder: 'sk-or-v1-…',
-    ondeCriar: 'Crie a chave em openrouter.ai/settings/keys.',
-    avisos: [
-      'Os modelos gratuitos (":free") podem registrar e usar o conteúdo enviado para treinar os modelos, conforme a política de cada provedor. Avalie se isso é aceitável para os dados dos projetos.',
-      'O plano gratuito tem limite de requisições por minuto e por dia (maior com créditos comprados na conta). Se o limite for atingido, a análise falha até o limite renovar.',
-      'A qualidade varia entre os modelos gratuitos, e o roteador gratuito pode usar um modelo diferente a cada análise (o modelo usado aparece no relatório).',
     ],
   },
 };
 
 /** Seção "Inteligência artificial" da tela de Configurações (só administrador). */
-export function ConfiguracaoIa() {
-  const estado = useIaStore((store) => store.estado);
-  const carregar = useIaStore((store) => store.carregar);
-  const configurar = useIaStore((store) => store.configurar);
-  const removerChave = useIaStore((store) => store.removerChave);
+export function ConfiguracaoIa({ escopo = 'projetos' }: { escopo?: EscopoIaDTO }) {
+  const usarStore = usarStoreIa(escopo);
+  const estado = usarStore((store) => store.estado);
+  const carregar = usarStore((store) => store.carregar);
+  const configurar = usarStore((store) => store.configurar);
+  const removerChave = usarStore((store) => store.removerChave);
 
   const [chave, setChave] = useState('');
   const [modeloEscolhido, setModeloEscolhido] = useState<ModeloIaDTO | null>(null);
@@ -75,7 +59,7 @@ export function ConfiguracaoIa() {
     carregar().catch((falha: unknown) => setErro(mensagemDeErro(falha)));
   }, [carregar]);
 
-  const modelo = modeloEscolhido ?? estado?.modelo ?? 'claude-opus-5';
+  const modelo = modeloEscolhido ?? estado?.modelo ?? MODELO_PADRAO;
   const provedor = provedorDoModelo(modelo);
   const dados = PROVEDOR[provedor];
   const finalDaChave = estado?.chaves[provedor] ?? null;
@@ -107,8 +91,18 @@ export function ConfiguracaoIa() {
         <div>
           <h2 className="text-base font-semibold">Inteligência artificial</h2>
           <p className="mt-0.5 text-sm text-texto-secundario">
-            Libera o botão <strong>Analisar com IA</strong> nos cronogramas, para todos os usuários, com o
-            provedor e a chave escolhidos aqui.
+            {escopo === 'avs' ? (
+              <>
+                Libera a <strong>Análise com IA</strong> e o <strong>Chat</strong> do módulo de AVs, para todos os
+                usuários. O modelo escolhido vale só para as AVs; as chaves de API de cada provedor são as mesmas do
+                módulo de Projetos.
+              </>
+            ) : (
+              <>
+                Libera o botão <strong>Analisar com IA</strong> nos cronogramas, para todos os usuários, com o
+                provedor e a chave escolhidos aqui.
+              </>
+            )}
           </p>
         </div>
       </header>
@@ -175,9 +169,9 @@ export function ConfiguracaoIa() {
         <p className="font-medium text-texto">Antes de ativar</p>
         <ul className="mt-1 list-disc space-y-1 pl-4">
           <li>
-            Cada análise envia ao provedor ({dados.nome}) as atividades, datas, percentuais e nomes dos
-            responsáveis do cronograma. A evidência das tarefas não é enviada. Confira se a política da
-            empresa permite.
+            {escopo === 'avs'
+              ? `Cada análise ou pergunta envia ao provedor (${dados.nome}) o resumo das AVs: cliente, descrição, etapa, prazo, responsável, classificação do produto e valores consolidados. Confira se a política da empresa permite.`
+              : `Cada análise envia ao provedor (${dados.nome}) as atividades, datas, percentuais e nomes dos responsáveis do cronograma. A evidência das tarefas não é enviada. Confira se a política da empresa permite.`}
           </li>
           {dados.avisos.map((aviso) => (
             <li key={aviso}>{aviso}</li>

@@ -11,6 +11,12 @@ export interface PropsCronograma {
   descricao: string | null;
   periodo: Periodo;
   situacao: SituacaoCronograma;
+  /** Código do projeto (`PRO 26-001`) quando o cronograma nasceu do aceite de uma SD. */
+  codigo: string | null;
+  /** SD de origem (aceite da Engenharia), quando houver. */
+  sdId: string | null;
+  /** Criado antes do uso multiusuário (migração 0042): aba própria e fora dos contadores; segue editável. */
+  historico: boolean;
   criadoEm: Date;
   atualizadoEm: Date;
 }
@@ -20,6 +26,8 @@ export interface DadosNovoCronograma {
   nome: string;
   descricao?: string | null;
   periodo: Periodo;
+  codigo?: string | null;
+  sdId?: string | null;
   agora: Date;
 }
 
@@ -33,6 +41,9 @@ export class Cronograma {
       descricao: validarDescricao(dados.descricao),
       periodo: dados.periodo,
       situacao: 'planejado',
+      codigo: dados.codigo ?? null,
+      sdId: dados.sdId ?? null,
+      historico: false,
       criadoEm: dados.agora,
       atualizadoEm: dados.agora,
     });
@@ -57,6 +68,15 @@ export class Cronograma {
   }
   get situacao(): SituacaoCronograma {
     return this.props.situacao;
+  }
+  get codigo(): string | null {
+    return this.props.codigo;
+  }
+  get sdId(): string | null {
+    return this.props.sdId;
+  }
+  get historico(): boolean {
+    return this.props.historico;
   }
   get criadoEm(): Date {
     return this.props.criadoEm;

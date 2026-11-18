@@ -25,7 +25,7 @@ import type { ReordenarTarefas } from '../aplicacao/casos-de-uso/reordenar-taref
 
 export interface CasosDeUsoTarefas {
   obterEstrutura: ObterEstrutura;
-  criar: CriarTarefa;
+  criar: Pick<CriarTarefa, 'executar'>;
   atualizar: AtualizarTarefa;
   excluir: ExcluirTarefa;
   deslocarSucessoras: DeslocarSucessoras;
@@ -34,8 +34,8 @@ export interface CasosDeUsoTarefas {
   atualizarFase: AtualizarFase;
   excluirFase: ExcluirFase;
   reordenar: ReordenarTarefas;
-  duplicar: DuplicarTarefa;
-  copiarEstrutura: CopiarEstrutura;
+  duplicar: Pick<DuplicarTarefa, 'executar'>;
+  copiarEstrutura: Pick<CopiarEstrutura, 'executar'>;
   listarAgenda: ListarAgenda;
 }
 
@@ -47,6 +47,8 @@ const esquemaCriar = z.object({
   dataFim: esquemaData,
   faseId: esquemaId.nullish(),
   responsavelId: esquemaId.nullish(),
+  inserirApos: esquemaId.nullish(),
+  inserirNoInicio: z.boolean().optional(),
 });
 
 const esquemaAtualizar = z.object({

@@ -1,12 +1,14 @@
 'use client';
 
 import clsx from 'clsx';
-import { Eraser, Loader2, MessageSquareText, SendHorizonal } from 'lucide-react';
-import { type FormEvent, type KeyboardEvent, useEffect, useRef, useState } from 'react';
+import { Loader2, MessageSquareText, SendHorizonal } from 'lucide-react';
+import { type FormEvent, type KeyboardEvent, useCallback, useEffect, useRef, useState } from 'react';
 import {
   LIMITE_DE_CARACTERES_DA_PERGUNTA,
   LIMITE_DE_MENSAGENS_DO_CHAT,
   type MensagemDoChatDTO,
+  type PropostaDeAlteracaoDTO,
+  type ResumoDeConversaDTO,
 } from '@contratos/ia.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { Botao } from '@/compartilhado/ui/Botao';
@@ -14,8 +16,10 @@ import { CabecalhoPagina } from '@/compartilhado/ui/CabecalhoPagina';
 import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
-import { useIaStore } from '../store/use-ia-store';
+import { usarStoreIa } from '../store/use-ia-store';
 import { DESTINO_DOS_DADOS, IaNaoConfigurada, nomeDoModelo } from './comum';
+import { CartaoDaProposta } from './CartaoDaProposta';
+import { HistoricoDoChat } from './HistoricoDoChat';
 
 const SUGESTOES = [
   'Quais tarefas estão atrasadas, por projeto?',
@@ -24,16 +28,61 @@ const SUGESTOES = [
   'Quais tarefas foram concluídas com atraso?',
 ];
 
-/** Uma fala na tela; a da IA guarda também o modelo que respondeu. */
-type Fala = MensagemDoChatDTO & { modelo?: string };
+/** Para quem pode editar: exemplos do que o agente faz (ele propõe; a pessoa aplica). */
+const SUGESTOES_DO_AGENTE = [
+  'Dê baixa nas tarefas que concluí hoje no projeto …',
+  'Crie a atividade "…" na fase … depois de …',
+  'Arrume a sequência cronológica das atividades do projeto …',
+];
+
+const SUGESTOES_DAS_AVS = [
+  'Quais AVs estão atrasadas e com quem estão?',
+  'Quais AVs estão paradas há mais tempo na mesma etapa?',
+  'Qual o investimento total e o custo por peça das AVs em Mapa de Custo?',
+  'Quantas AVs há em cada etapa?',
+];
+
+const TEXTOS = {
+  projetos: {
+    descricao:
+      'Pergunte sobre os cronogramas em andamento ou peça alterações: dar baixa, criar atividades, ajustar datas e a sequência. A IA propõe; nada muda sem você clicar em Aplicar.',
+    vazio: 'A IA responde com base nas atividades, datas, percentuais e responsáveis de todos os cronogramas em andamento.',
+    consultando: 'Consultando os cronogramas… pode levar até 1 minuto.',
+    envio: (destino: string) =>
+      `A cada pergunta, as atividades, datas, percentuais e responsáveis dos cronogramas em andamento são enviados ${destino}; a evidência das tarefas não é enviada. Confira as respostas antes de decidir.`,
+  },
+  avs: {
+    descricao:
+      'Pergunte sobre as AVs: etapas, prazos, atrasos, responsáveis, investimentos e custos. A IA só consulta; nada é alterado.',
+    vazio: 'A IA responde com base na etapa, prazo, responsável, classificação e valores consolidados de todas as AVs.',
+    consultando: 'Consultando as AVs… pode levar até 1 minuto.',
+    envio: (destino: string) =>
+      `A cada pergunta, o resumo das AVs (etapa, prazo, responsável, classificação e valores consolidados) é enviado ${destino}. Confira as respostas antes de decidir.`,
+  },
+} as const;
+
+/** Uma fala na tela; a da IA guarda também o modelo que respondeu e a proposta do agente, se houver. */
+type Fala = MensagemDoChatDTO & { modelo?: string; proposta?: PropostaDeAlteracaoDTO | null };
 
 /**
- * Chat de perguntas e respostas sobre todos os cronogramas em andamento. Só consulta: não altera
- * nada. A conversa fica só na tela (não é gravada) e some ao sair ou ao iniciar uma nova.
+ * Chat com IA (Projetos ou AVs). Em Projetos, para quem edita tarefas, a IA também propõe alterações nos
+ * cronogramas (cartão com Aplicar/Descartar). Cada conversa fica guardada para o próprio usuário (barra à
+ * esquerda) e pode ser retomada ou excluída.
+ * @param podeEditarTarefas libera o "Aplicar" das propostas (só no escopo Projetos)
  */
-export function ChatIa() {
-  const estado = useIaStore((store) => store.estado);
-  const carregar = useIaStore((store) => store.carregar);
+export function ChatIa({
+  escopo = 'projetos',
+  podeEditarTarefas = false,
+}: {
+  escopo?: 'projetos' | 'avs';
+  podeEditarTarefas?: boolean;
+}) {
+  const usarStore = usarStoreIa(escopo);
+  const estado = usarStore((store) => store.estado);
+  const carregar = usarStore((store) => store.carregar);
+  const textos = TEXTOS[escopo];
+  const sugestoes = escopo === 'avs' ? SUGESTOES_DAS_AVS : SUGESTOES;
+  const sugestoesDoAgente = escopo === 'projetos' && podeEditarTarefas ? SUGESTOES_DO_AGENTE : [];
 
   const [falas, setFalas] = useState<Fala[]>([]);
   const [texto, setTexto] = useState('');
@@ -41,6 +90,56 @@ export function ChatIa() {
   const [erro, setErro] = useState<string | null>(null);
   const [erroDeCarga, setErroDeCarga] = useState<string | null>(null);
   const fim = useRef<HTMLDivElement>(null);
+  // Histórico: a conversa aberta (`null` = nova) e a lista do usuário neste escopo.
+  const [conversaId, setConversaId] = useState<string | null>(null);
+  const [conversas, setConversas] = useState<ResumoDeConversaDTO[]>([]);
+
+  const recarregarConversas = useCallback(
+    () =>
+      clienteDesktop.ia
+        .listarConversas(escopo)
+        .then(setConversas)
+        .catch(() => undefined), // sem lista: o chat continua funcionando
+    [escopo],
+  );
+
+  useEffect(() => {
+    clienteDesktop.ia
+      .listarConversas(escopo)
+      .then(setConversas)
+      .catch(() => undefined);
+  }, [escopo]);
+
+  const novaConversa = () => {
+    setFalas([]);
+    setConversaId(null);
+    setErro(null);
+  };
+
+  const abrirConversa = async (id: string) => {
+    setErro(null);
+    try {
+      const conversa = await clienteDesktop.ia.obterConversa(id);
+      setFalas(
+        conversa.mensagens.map(({ papel, texto: conteudo, modelo, proposta }) => ({
+          papel,
+          texto: conteudo,
+          modelo: modelo ?? undefined,
+          proposta,
+        })),
+      );
+      setConversaId(conversa.id);
+    } catch (falha) {
+      setErro(mensagemDeErro(falha));
+      void recarregarConversas();
+    }
+  };
+
+  const excluirConversa = async (id: string) => {
+    await clienteDesktop.ia.excluirConversa(id);
+    if (id === conversaId) novaConversa();
+    await recarregarConversas();
+  };
 
   useEffect(() => {
     carregar().catch((falha: unknown) => setErroDeCarga(mensagemDeErro(falha)));
@@ -60,12 +159,17 @@ export function ChatIa() {
     setErro(null);
     setEnviando(true);
     try {
-      const resposta = await clienteDesktop.ia.conversar({
+      const entrada = {
         mensagens: historico
           .slice(-LIMITE_DE_MENSAGENS_DO_CHAT)
           .map(({ papel, texto: conteudo }) => ({ papel, texto: conteudo })),
-      });
-      setFalas([...historico, { papel: 'ia', texto: resposta.texto, modelo: resposta.modelo }]);
+        conversaId,
+      };
+      const resposta =
+        escopo === 'avs' ? await clienteDesktop.ia.conversarAvs(entrada) : await clienteDesktop.ia.conversar(entrada);
+      setFalas([...historico, { papel: 'ia', texto: resposta.texto, modelo: resposta.modelo, proposta: resposta.proposta }]);
+      if (resposta.conversaId) setConversaId(resposta.conversaId);
+      void recarregarConversas();
     } catch (falha) {
       setErro(mensagemDeErro(falha));
       // A pergunta volta para a caixa, para tentar de novo sem digitar tudo outra vez.
@@ -92,22 +196,7 @@ export function ChatIa() {
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-5 p-6">
-      <CabecalhoPagina
-        titulo="Chat com IA"
-        descricao="Pergunte sobre os cronogramas em andamento: prazos, atrasos, responsáveis, datas efetivas. A IA só consulta; nada é alterado."
-        acoes={
-          <Botao
-            icone={Eraser}
-            onClick={() => {
-              setFalas([]);
-              setErro(null);
-            }}
-            disabled={falas.length === 0 || enviando}
-          >
-            Nova conversa
-          </Botao>
-        }
-      />
+      <CabecalhoPagina titulo="Chat com IA" descricao={textos.descricao} />
 
       {erroDeCarga && <MensagemErro mensagem={erroDeCarga} aoFechar={() => setErroDeCarga(null)} />}
 
@@ -116,6 +205,15 @@ export function ChatIa() {
           <IaNaoConfigurada />
         </PainelVidro>
       ) : (
+        <div className="flex min-h-0 flex-1 gap-4">
+        <HistoricoDoChat
+          conversas={conversas}
+          atual={conversaId}
+          bloqueado={enviando}
+          aoNova={novaConversa}
+          aoAbrir={(id) => void abrirConversa(id)}
+          aoExcluir={excluirConversa}
+        />
         <PainelVidro className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto p-5" aria-live="polite">
             {falas.length === 0 ? (
@@ -123,10 +221,10 @@ export function ChatIa() {
                 <EstadoVazio
                   icone={MessageSquareText}
                   titulo="Faça uma pergunta"
-                  descricao="A IA responde com base nas atividades, datas, percentuais e responsáveis de todos os cronogramas em andamento."
+                  descricao={textos.vazio}
                 />
                 <ul className="flex flex-wrap justify-center gap-2">
-                  {SUGESTOES.map((sugestao) => (
+                  {sugestoes.map((sugestao) => (
                     <li key={sugestao}>
                       <button
                         type="button"
@@ -139,9 +237,28 @@ export function ChatIa() {
                     </li>
                   ))}
                 </ul>
+                {sugestoesDoAgente.length > 0 && (
+                  <div className="flex flex-col items-center gap-2">
+                    <p className="text-xs font-medium text-texto-sutil">Ou peça uma alteração (complete os “…”):</p>
+                    <ul className="flex flex-wrap justify-center gap-2">
+                      {sugestoesDoAgente.map((sugestao) => (
+                        <li key={sugestao}>
+                          <button
+                            type="button"
+                            onClick={() => setTexto(sugestao)}
+                            disabled={enviando || !estado}
+                            className="rounded-full border border-dashed border-primaria/50 px-3 py-1.5 text-xs text-primaria transition-colors hover:bg-primaria/8 disabled:opacity-50"
+                          >
+                            {sugestao}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             ) : (
-              <ol className="mx-auto flex max-w-3xl flex-col gap-4">
+              <ol className="selecionavel mx-auto flex max-w-3xl flex-col gap-4">
                 {falas.map((fala, indice) => (
                   <li key={indice} className={clsx('flex', fala.papel === 'usuario' && 'justify-end')}>
                     <div
@@ -151,6 +268,19 @@ export function ChatIa() {
                       )}
                     >
                       {fala.texto}
+                      {fala.proposta && (
+                        <div className="whitespace-normal">
+                          <CartaoDaProposta
+                            proposta={fala.proposta}
+                            podeAplicar={podeEditarTarefas}
+                            aoDecidir={(decidida) =>
+                              setFalas((atuais) =>
+                                atuais.map((atual) => (atual.proposta?.id === decidida.id ? { ...atual, proposta: decidida } : atual)),
+                              )
+                            }
+                          />
+                        </div>
+                      )}
                       {fala.modelo && (
                         <p className="mt-1.5 text-[11px] text-texto-sutil">{nomeDoModelo(fala.modelo)}</p>
                       )}
@@ -160,7 +290,7 @@ export function ChatIa() {
                 {enviando && (
                   <li className="flex items-center gap-2 text-xs text-texto-sutil">
                     <Loader2 aria-hidden className="size-4 animate-spin text-primaria" />
-                    Consultando os cronogramas… pode levar até 1 minuto.
+                    {textos.consultando}
                   </li>
                 )}
               </ol>
@@ -192,12 +322,12 @@ export function ChatIa() {
             </div>
             {destino && (
               <p className="mx-auto mt-2 max-w-3xl text-[11px] text-texto-sutil">
-                A cada pergunta, as atividades, datas, percentuais e responsáveis dos cronogramas em andamento são
-                enviados {destino}; a evidência das tarefas não é enviada. Confira as respostas antes de decidir.
+                {textos.envio(destino)}
               </p>
             )}
           </form>
         </PainelVidro>
+        </div>
       )}
     </div>
   );

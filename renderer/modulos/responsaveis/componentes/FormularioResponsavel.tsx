@@ -1,10 +1,10 @@
 'use client';
 
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import type { ResponsavelDTO } from '@contratos/responsaveis.contrato';
-import { mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
+import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { Botao } from '@/compartilhado/ui/Botao';
-import { CampoTexto } from '@/compartilhado/ui/Campos';
+import { CampoTexto, Selecao } from '@/compartilhado/ui/Campos';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { Modal, RodapeModal } from '@/compartilhado/ui/Modal';
 import { useResponsaveisStore } from '../store/use-responsaveis-store';
@@ -36,6 +36,15 @@ function ConteudoFormulario({ responsavel, aoFechar }: PropsFormularioResponsave
   const [nome, setNome] = useState(responsavel?.nome ?? '');
   const [funcao, setFuncao] = useState(responsavel?.funcao ?? '');
   const [email, setEmail] = useState(responsavel?.email ?? '');
+  const [usuarioId, setUsuarioId] = useState(responsavel?.usuarioId ?? '');
+  // Usuários ativos do sistema, para o vínculo que leva as notificações das tarefas à pessoa certa.
+  const [usuarios, setUsuarios] = useState<{ id: string; nome: string }[]>([]);
+  useEffect(() => {
+    clienteDesktop.avs
+      .listarMembros()
+      .then(setUsuarios)
+      .catch(() => setUsuarios([]));
+  }, []);
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -44,7 +53,7 @@ function ConteudoFormulario({ responsavel, aoFechar }: PropsFormularioResponsave
     setSalvando(true);
     setErro(null);
     try {
-      const dados = { nome, funcao: funcao || null, email: email || null };
+      const dados = { nome, funcao: funcao || null, email: email || null, usuarioId: usuarioId || null };
       if (responsavel) await atualizar({ id: responsavel.id, ...dados });
       else await criar(dados);
       aoFechar();
@@ -78,6 +87,19 @@ function ConteudoFormulario({ responsavel, aoFechar }: PropsFormularioResponsave
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="opcional"
+      />
+      <Selecao
+        rotulo="Usuário do sistema"
+        ajuda="Quem é esta pessoa no aplicativo. Com o vínculo, ela recebe no sino as notificações das tarefas: atribuída, liberada, deslocada, vencendo e atrasada."
+        value={usuarioId}
+        onChange={(e) => setUsuarioId(e.target.value)}
+        opcoes={[
+          { valor: '', rotulo: '— sem vínculo —' },
+          ...usuarios.map((usuario) => ({ valor: usuario.id, rotulo: usuario.nome })),
+          ...(usuarioId && !usuarios.some((usuario) => usuario.id === usuarioId)
+            ? [{ valor: usuarioId, rotulo: '(usuário desativado)' }]
+            : []),
+        ]}
       />
       {erro && <MensagemErro mensagem={erro} />}
       <RodapeModal>

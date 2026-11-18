@@ -1,6 +1,6 @@
-appId: com.gestaocronogramas.desktop
-productName: Gestão de Cronogramas
-executableName: GestaoDeCronogramas
+appId: com.ferkoda.novosdesenvolvimentos
+productName: Gestão de Novos Desenvolvimentos
+executableName: GestaoNovosDesenvolvimentos
 copyright: Copyright © 2026
 
 directories:
@@ -12,6 +12,8 @@ files:
   - "!dist-electron/**/*.map"
   - renderer/out/**
   - package.json
+  # Ícone da janela (barra de tarefas); o do executável vem de win.icon.
+  - recursos/icon.png
   # better-sqlite3 traz binários de todas as plataformas; empacotamos só o do Windows x64.
   - "!node_modules/better-sqlite3/{src,deps}/**"
   - "!node_modules/better-sqlite3/binding.gyp"
@@ -27,9 +29,10 @@ asarUnpack:
 npmRebuild: false
 
 win:
+  icon: recursos/icon.ico
   target:
     - target: portable
       arch: [x64]
 
 portable:
-  artifactName: GestaoDeCronogramas-${version}-portatil.${ext}
+  artifactName: GestaoNovosDesenvolvimentos-${version}-portatil.${ext}

@@ -6,8 +6,8 @@ import type { ReactNode } from 'react';
 import { AppShell } from './app-shell';
 
 export const metadata: Metadata = {
-  title: 'Gestão de Cronogramas',
-  description: 'Aplicativo desktop para gestão de cronogramas',
+  title: 'Gestão de Novos Desenvolvimentos (AV-SD-PRO)',
+  description: 'Gestão de novos desenvolvimentos: AV → SD → Projeto',
 };
 
 export default function LayoutRaiz({ children }: { children: ReactNode }) {

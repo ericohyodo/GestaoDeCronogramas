@@ -6,6 +6,16 @@ export interface Migracao {
   sql: string;
 }
 
+/** Há migrações ainda não aplicadas? Usado para fazer backup antes de alterar o esquema. */
+export function haMigracoesPendentes(db: BancoDeDados, migracoes: readonly Migracao[]): boolean {
+  const existe = db
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'migracoes_aplicadas'")
+    .get();
+  if (!existe) return migracoes.length > 0;
+  const aplicadas = new Set(db.prepare('SELECT versao FROM migracoes_aplicadas').pluck().all() as number[]);
+  return migracoes.some((migracao) => !aplicadas.has(migracao.versao));
+}
+
 /** Aplica, em ordem e cada uma em sua transação, as migrações ainda não registradas. */
 export function executarMigracoes(db: BancoDeDados, migracoes: readonly Migracao[]): string[] {
   db.exec(`

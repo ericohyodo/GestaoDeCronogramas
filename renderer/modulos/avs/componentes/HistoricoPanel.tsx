@@ -1,5 +1,6 @@
 'use client';
 
+import { formatarDataHora } from '@/compartilhado/formatacao';
 import { History } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { HistoricoAvItemDTO } from '@contratos/avs.contrato';
@@ -7,10 +8,7 @@ import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desk
 import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
-
-function formatarDataHora(iso: string): string {
-  return new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
-}
+import { TituloSecao } from './SecaoAv';
 
 export function HistoricoPanel({ avId }: { avId: string }) {
   const [itens, setItens] = useState<HistoricoAvItemDTO[] | null>(null);
@@ -25,7 +23,7 @@ export function HistoricoPanel({ avId }: { avId: string }) {
 
   return (
     <PainelVidro className="flex flex-col gap-3 p-5">
-      <p className="text-xs font-medium text-texto-sutil">Histórico de etapas</p>
+      <TituloSecao>Histórico de etapas</TituloSecao>
       {erro && <MensagemErro mensagem={erro} />}
       {itens && itens.length === 0 && (
         <EstadoVazio icone={History} titulo="Sem transições ainda" className="py-6" />

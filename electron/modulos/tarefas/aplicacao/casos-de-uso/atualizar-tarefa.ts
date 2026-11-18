@@ -9,6 +9,7 @@ import {
   sucessorasTransitivas,
   validarSemCiclo,
 } from '../../dominio/servicos/calculo-do-cronograma';
+import { estaConcluida, type AvisosDeTarefas } from '../avisos-de-tarefas';
 import { paraTarefaDTO } from '../mapeador-dto';
 import type { ConsultaDeResponsaveis } from '../portas/consulta-de-responsaveis';
 
@@ -17,6 +18,7 @@ export class AtualizarTarefa implements CasoDeUso<AtualizarTarefaEntrada, Atuali
     private readonly repositorio: RepositorioTarefas,
     private readonly consultaDeResponsaveis: ConsultaDeResponsaveis,
     private readonly relogio: Relogio,
+    private readonly avisos?: AvisosDeTarefas,
   ) {}
 
   async executar(entrada: AtualizarTarefaEntrada): Promise<AtualizarTarefaSaida> {
@@ -25,6 +27,8 @@ export class AtualizarTarefa implements CasoDeUso<AtualizarTarefaEntrada, Atuali
 
     const irmas = await this.repositorio.listarPorCronograma(tarefa.cronogramaId);
     const fimAnterior = tarefa.periodo.fim;
+    const responsavelAnterior = tarefa.responsavelId;
+    const concluidaAntes = estaConcluida(tarefa);
     const agora = this.relogio.agora();
 
     if (entrada.titulo !== undefined) tarefa.renomear(entrada.titulo, agora);
@@ -61,6 +65,10 @@ export class AtualizarTarefa implements CasoDeUso<AtualizarTarefaEntrada, Atuali
     }
 
     await this.repositorio.salvar(tarefa);
+
+    // Notificações: novo responsável e sucessoras liberadas pela conclusão desta tarefa.
+    if (tarefa.responsavelId && tarefa.responsavelId !== responsavelAnterior) await this.avisos?.atribuida(tarefa);
+    if (!concluidaAntes && estaConcluida(tarefa)) await this.avisos?.liberouSucessoras(tarefa, irmas);
 
     return { tarefa: paraTarefaDTO(tarefa), impacto: this.calcularImpacto(tarefa, irmas, fimAnterior) };
   }

@@ -1,10 +1,5 @@
 import { create } from 'zustand';
-import type {
-  EntrarEntrada,
-  PermissaoDTO,
-  PrimeiroAcessoEntrada,
-  SessaoDTO,
-} from '@contratos/sessao.contrato';
+import type { ConcluirPrimeiroAcessoEntrada, EntrarEntrada, PermissaoDTO, PrimeiroAcessoEntrada, SessaoDTO } from '@contratos/sessao.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 
 interface EstadoSessao {
@@ -14,6 +9,8 @@ interface EstadoSessao {
   carregar(): Promise<void>;
   entrar(entrada: EntrarEntrada): Promise<void>;
   primeiroAcesso(entrada: PrimeiroAcessoEntrada): Promise<void>;
+  /** Usuário criado sem senha: cadastra e-mail, cria a senha e entra. */
+  concluirPrimeiroAcesso(entrada: ConcluirPrimeiroAcessoEntrada): Promise<void>;
   sair(): Promise<void>;
 }
 
@@ -35,6 +32,10 @@ export const useSessaoStore = create<EstadoSessao>()((set) => ({
 
   async entrar(entrada) {
     set({ sessao: await clienteDesktop.sessao.entrar(entrada), erro: null });
+  },
+
+  async concluirPrimeiroAcesso(entrada) {
+    set({ sessao: await clienteDesktop.sessao.concluirPrimeiroAcesso(entrada), erro: null });
   },
 
   async primeiroAcesso(entrada) {

@@ -9,7 +9,7 @@ export class ObterCronograma implements CasoDeUso<string, CronogramaDTO> {
 
   async executar(id: string): Promise<CronogramaDTO> {
     const cronograma = await this.repositorio.obterPorId(id);
-    if (!cronograma) throw new ErroNaoEncontrado('Cronograma');
+    if (!cronograma) throw new ErroNaoEncontrado('Projeto');
     return paraCronogramaDTO(cronograma);
   }
 }

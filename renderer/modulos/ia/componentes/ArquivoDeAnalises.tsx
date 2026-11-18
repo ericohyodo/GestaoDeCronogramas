@@ -21,28 +21,40 @@ const TODAS = 'todas';
 const PORTFOLIO = 'portfolio';
 
 /** Todas as análises geradas, para consultar sem chamar a IA de novo e exportar em PDF. */
-export function ArquivoDeAnalises({ podeExcluir }: { podeExcluir: boolean }) {
+export function ArquivoDeAnalises({
+  podeExcluir,
+  escopo = 'projetos',
+}: {
+  podeExcluir: boolean;
+  /** Cada módulo vê só as análises dele: Projetos (cronograma e portfólio) ou AVs. */
+  escopo?: 'projetos' | 'avs';
+}) {
   const [resumos, setResumos] = useState<ResumoDeAnaliseDTO[] | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [filtro, setFiltro] = useState(TODAS);
   const [selecionadaId, setSelecionadaId] = useState<string | null>(null);
   const [excluindo, setExcluindo] = useState<ResumoDeAnaliseDTO | null>(null);
 
+  const doEscopo = useCallback(
+    (lista: ResumoDeAnaliseDTO[]) => lista.filter((resumo) => (resumo.tipo === 'avs') === (escopo === 'avs')),
+    [escopo],
+  );
+
   const carregar = useCallback(async () => {
     setErro(null);
     try {
-      setResumos(await clienteDesktop.ia.listarAnalises());
+      setResumos(doEscopo(await clienteDesktop.ia.listarAnalises()));
     } catch (falha) {
       setErro(mensagemDeErro(falha));
     }
-  }, []);
+  }, [doEscopo]);
 
   useEffect(() => {
     clienteDesktop.ia
       .listarAnalises()
-      .then(setResumos)
+      .then((lista) => setResumos(doEscopo(lista)))
       .catch((falha: unknown) => setErro(mensagemDeErro(falha)));
-  }, []);
+  }, [doEscopo]);
 
   // Um item por projeto analisado, com o nome da análise mais recente (o projeto pode ter sido renomeado).
   const opcoesDoFiltro = useMemo(() => {
@@ -83,16 +95,22 @@ export function ArquivoDeAnalises({ podeExcluir }: { podeExcluir: boolean }) {
     <div className="flex h-full min-h-0 flex-col gap-5 p-6">
       <CabecalhoPagina
         titulo="Análises"
-        descricao="Toda análise gerada com IA fica salva aqui. Consulte, compare com as anteriores e exporte em PDF sem gerar de novo."
+        descricao={
+          escopo === 'avs'
+            ? 'Toda análise das AVs gerada com IA fica salva aqui. Consulte, compare com as anteriores e exporte em PDF sem gerar de novo.'
+            : 'Toda análise gerada com IA fica salva aqui. Consulte, compare com as anteriores e exporte em PDF sem gerar de novo.'
+        }
         acoes={
           <>
-            <Selecao
-              rotulo="Mostrar"
-              opcoes={opcoesDoFiltro}
-              value={filtro}
-              onChange={(evento) => setFiltro(evento.target.value)}
-              classeContainer="w-60 [&>label]:sr-only"
-            />
+            {escopo === 'projetos' && (
+              <Selecao
+                rotulo="Mostrar"
+                opcoes={opcoesDoFiltro}
+                value={filtro}
+                onChange={(evento) => setFiltro(evento.target.value)}
+                classeContainer="w-60 [&>label]:sr-only"
+              />
+            )}
             <Botao icone={RefreshCw} onClick={() => void carregar()}>
               Atualizar
             </Botao>
@@ -113,7 +131,11 @@ export function ArquivoDeAnalises({ podeExcluir }: { podeExcluir: boolean }) {
           <EstadoVazio
             icone={FileClock}
             titulo="Nenhuma análise ainda"
-            descricao='Use "Analisar com IA" em um cronograma, ou "Analisar portfólio com IA" na tela inicial. Cada análise gerada aparece aqui.'
+            descricao={
+              escopo === 'avs'
+                ? 'Use "Analisar AVs com IA" na tela de AVs. Cada análise gerada aparece aqui.'
+                : 'Use "Analisar com IA" em um cronograma, ou "Analisar portfólio com IA" na tela inicial. Cada análise gerada aparece aqui.'
+            }
           />
         </PainelVidro>
       ) : (
@@ -229,7 +251,11 @@ function Detalhe({
       <header className="flex flex-wrap items-start justify-between gap-3 border-b border-borda/60 px-6 py-4">
         <div className="min-w-0">
           <p className="text-xs font-medium uppercase tracking-wider text-texto-sutil">
-            {resumo.tipo === 'portfolio' ? 'Análise do portfólio' : 'Análise do cronograma'}
+            {resumo.tipo === 'avs'
+              ? 'Análise das AVs'
+              : resumo.tipo === 'portfolio'
+                ? 'Análise do portfólio'
+                : 'Análise do cronograma'}
           </p>
           <h2 className="truncate text-lg font-semibold">{resumo.titulo}</h2>
           <p className="text-xs text-texto-sutil">

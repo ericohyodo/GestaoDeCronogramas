@@ -7,9 +7,23 @@ import type { CasoDeUso } from '../../../../nucleo/aplicacao/caso-de-uso';
 import { ErroNaoEncontrado } from '../../../../nucleo/aplicacao/erros';
 import type { GeradorDeId } from '../../../../nucleo/aplicacao/portas/gerador-de-id';
 import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
+import { ErroDeValidacao } from '../../../../nucleo/dominio/erro-de-dominio';
 import type { RepositorioResponsaveis } from '../../dominio/repositorio-responsaveis';
 import { Responsavel } from '../../dominio/responsavel';
 import { paraResponsavelDTO } from '../mapeador-dto';
+
+/** Um usuário do sistema responde por no máximo um recurso. */
+async function exigirUsuarioLivre(
+  repositorio: RepositorioResponsaveis,
+  usuarioId: string | null | undefined,
+  responsavelId: string | null,
+): Promise<void> {
+  if (!usuarioId) return;
+  const outro = await repositorio.obterPorUsuario(usuarioId);
+  if (outro && outro.id !== responsavelId) {
+    throw new ErroDeValidacao(`Este usuário já está vinculado ao recurso "${outro.nome}".`);
+  }
+}
 
 export class ListarResponsaveis implements CasoDeUso<void, ResponsavelDTO[]> {
   constructor(private readonly repositorio: RepositorioResponsaveis) {}
@@ -27,11 +41,13 @@ export class CriarResponsavel implements CasoDeUso<CriarResponsavelEntrada, Resp
   ) {}
 
   async executar(entrada: CriarResponsavelEntrada): Promise<ResponsavelDTO> {
+    await exigirUsuarioLivre(this.repositorio, entrada.usuarioId, null);
     const responsavel = Responsavel.criar({
       id: this.geradorDeId.gerar(),
       nome: entrada.nome,
       email: entrada.email,
       funcao: entrada.funcao,
+      usuarioId: entrada.usuarioId ?? null,
       agora: this.relogio.agora(),
     });
     await this.repositorio.salvar(responsavel);
@@ -57,6 +73,10 @@ export class AtualizarResponsavel implements CasoDeUso<AtualizarResponsavelEntra
         entrada.funcao !== undefined ? entrada.funcao : responsavel.funcao,
         agora,
       );
+    }
+    if (entrada.usuarioId !== undefined) {
+      await exigirUsuarioLivre(this.repositorio, entrada.usuarioId, responsavel.id);
+      responsavel.vincularUsuario(entrada.usuarioId ?? null, agora);
     }
     if (entrada.ativo !== undefined) responsavel.definirAtivo(entrada.ativo, agora);
 

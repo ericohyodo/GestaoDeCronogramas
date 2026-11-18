@@ -1,4 +1,4 @@
-import type { InstrucoesIaDTO, SalvarInstrucoesIaEntrada } from '@contratos/ia.contrato';
+import type { EscopoIaDTO, InstrucoesIaDTO, SalvarInstrucoesIaEntrada } from '@contratos/ia.contrato';
 import type { CasoDeUso } from '../../../nucleo/aplicacao/caso-de-uso';
 import type { Relogio } from '../../../nucleo/aplicacao/portas/relogio';
 import { ErroDeValidacao } from '../../../nucleo/dominio/erro-de-dominio';
@@ -10,31 +10,44 @@ import {
   LIMITE_DE_ORIENTACOES,
   LIMITE_POR_ITEM,
 } from './instrucoes';
+import { CHECKLIST_PADRAO_AVS, INSTRUCOES_FIXAS_DA_ANALISE_AVS } from './instrucoes-avs';
 import type { RepositorioDeInstrucoesIa } from './portas';
 
 /** Instruções em vigor: as salvas pela equipe ou, antes da primeira gravação, o padrão. */
+const checklistPadrao = (escopo: EscopoIaDTO) => (escopo === 'avs' ? CHECKLIST_PADRAO_AVS : CHECKLIST_PADRAO);
+
 export async function lerInstrucoes(
   repositorio: RepositorioDeInstrucoesIa,
+  escopo: EscopoIaDTO = 'projetos',
 ): Promise<{ checklist: ItemDaChecklist[]; orientacoes: string; atualizadoEm: Date | null }> {
-  const salvas = await repositorio.obterInstrucoes();
-  return salvas ?? { checklist: CHECKLIST_PADRAO.map((item) => ({ ...item })), orientacoes: '', atualizadoEm: null };
+  const salvas = await repositorio.obterInstrucoes(escopo);
+  return (
+    salvas ?? {
+      checklist: checklistPadrao(escopo).map((item) => ({ ...item })),
+      orientacoes: '',
+      atualizadoEm: null,
+    }
+  );
 }
 
-async function paraDTO(repositorio: RepositorioDeInstrucoesIa): Promise<InstrucoesIaDTO> {
-  const atuais = await lerInstrucoes(repositorio);
+async function paraDTO(repositorio: RepositorioDeInstrucoesIa, escopo: EscopoIaDTO): Promise<InstrucoesIaDTO> {
+  const atuais = await lerInstrucoes(repositorio, escopo);
   return {
     checklist: atuais.checklist,
     orientacoes: atuais.orientacoes,
     atualizadoEm: atuais.atualizadoEm?.toISOString() ?? null,
-    instrucoesFixas: INSTRUCOES_FIXAS,
+    instrucoesFixas: escopo === 'avs' ? INSTRUCOES_FIXAS_DA_ANALISE_AVS : INSTRUCOES_FIXAS,
   };
 }
 
 export class ObterInstrucoesIa implements CasoDeUso<void, InstrucoesIaDTO> {
-  constructor(private readonly repositorio: RepositorioDeInstrucoesIa) {}
+  constructor(
+    private readonly repositorio: RepositorioDeInstrucoesIa,
+    private readonly escopo: EscopoIaDTO = 'projetos',
+  ) {}
 
   executar(): Promise<InstrucoesIaDTO> {
-    return paraDTO(this.repositorio);
+    return paraDTO(this.repositorio, this.escopo);
   }
 }
 
@@ -42,6 +55,7 @@ export class SalvarInstrucoesIa implements CasoDeUso<SalvarInstrucoesIaEntrada, 
   constructor(
     private readonly repositorio: RepositorioDeInstrucoesIa,
     private readonly relogio: Relogio,
+    private readonly escopo: EscopoIaDTO = 'projetos',
   ) {}
 
   async executar(entrada: SalvarInstrucoesIaEntrada): Promise<InstrucoesIaDTO> {
@@ -60,25 +74,32 @@ export class SalvarInstrucoesIa implements CasoDeUso<SalvarInstrucoesIaEntrada, 
       throw new ErroDeValidacao(`As orientações podem ter até ${LIMITE_DE_ORIENTACOES} caracteres.`);
     }
 
-    await this.repositorio.salvarInstrucoes({ checklist, orientacoes, atualizadoEm: this.relogio.agora() });
-    return paraDTO(this.repositorio);
+    await this.repositorio.salvarInstrucoes(
+      { checklist, orientacoes, atualizadoEm: this.relogio.agora() },
+      this.escopo,
+    );
+    return paraDTO(this.repositorio, this.escopo);
   }
 }
 
-/** Volta a checklist ao padrão APQP, mantendo as orientações da empresa. */
+/** Volta a checklist ao padrão do módulo (APQP nos projetos, viabilidade nas AVs), mantendo as orientações. */
 export class RestaurarChecklistIa implements CasoDeUso<void, InstrucoesIaDTO> {
   constructor(
     private readonly repositorio: RepositorioDeInstrucoesIa,
     private readonly relogio: Relogio,
+    private readonly escopo: EscopoIaDTO = 'projetos',
   ) {}
 
   async executar(): Promise<InstrucoesIaDTO> {
-    const atuais = await lerInstrucoes(this.repositorio);
-    await this.repositorio.salvarInstrucoes({
-      checklist: CHECKLIST_PADRAO.map((item) => ({ ...item })),
-      orientacoes: atuais.orientacoes,
-      atualizadoEm: this.relogio.agora(),
-    });
-    return paraDTO(this.repositorio);
+    const atuais = await lerInstrucoes(this.repositorio, this.escopo);
+    await this.repositorio.salvarInstrucoes(
+      {
+        checklist: checklistPadrao(this.escopo).map((item) => ({ ...item })),
+        orientacoes: atuais.orientacoes,
+        atualizadoEm: this.relogio.agora(),
+      },
+      this.escopo,
+    );
+    return paraDTO(this.repositorio, this.escopo);
   }
 }

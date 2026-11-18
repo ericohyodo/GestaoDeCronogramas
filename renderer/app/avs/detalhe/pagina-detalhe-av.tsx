@@ -49,7 +49,7 @@ export function PaginaDetalheAv() {
 
   return (
     <div className="p-6">
-      <AvDetalhe av={av} />
+      <AvDetalhe key={av.id} av={av} />
     </div>
   );
 }

@@ -32,6 +32,8 @@ const POLITICA_DE_CONTEUDO = [
   "img-src 'self' data:",
   "font-src 'self' data:",
   "connect-src 'self'",
+  // data: para o PDF de anexos, exibido em <iframe> na pré-visualização de evidências.
+  "frame-src 'self' data:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

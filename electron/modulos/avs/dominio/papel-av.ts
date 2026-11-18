@@ -6,14 +6,24 @@ export type PapelAv = (typeof PAPEIS_AV)[number];
 /** Espelha o perfil global de `contratos/sessao.contrato.ts`, sem importar daquele módulo. */
 export type PerfilGlobalAv = 'administrador' | 'gestor' | 'usuario' | 'visualizador';
 
+export const PAPEIS_ESPECIAIS = ['gerente_engenharia', 'gestor_programa'] as const;
+/** Papel organizacional, além da área: quem pode dar o aceite da SD. */
+export type PapelEspecial = (typeof PAPEIS_ESPECIAIS)[number];
+
 export interface PerfilAvUsuario {
   usuarioId: string;
   papelAv: PapelAv;
   competencias: Area[];
+  papeisEspeciais: PapelEspecial[];
 }
 
 export function perfilAvPadraoSemCompetencias(usuarioId: string): PerfilAvUsuario {
-  return { usuarioId, papelAv: 'padrao', competencias: [] };
+  return { usuarioId, papelAv: 'padrao', competencias: [], papeisEspeciais: [] };
+}
+
+/** Só o Gerente de Engenharia e os Gestores de Programa dão (ou recusam) o aceite da SD. */
+export function podeDarAceiteDaSd(perfilAv: PerfilAvUsuario): boolean {
+  return perfilAv.papeisEspeciais.length > 0;
 }
 
 /**

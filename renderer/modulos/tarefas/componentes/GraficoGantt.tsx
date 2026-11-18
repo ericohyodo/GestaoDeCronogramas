@@ -185,7 +185,7 @@ export function GraficoGantt({
   const mostrarHoje = hoje >= inicioComMargem && hoje <= fimComMargem;
 
   return (
-    <div ref={container} className="min-w-0">
+    <div ref={container} data-tour="gantt" className="min-w-0">
       {largura > 0 && (
         <>
           <div

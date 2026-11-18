@@ -5,21 +5,24 @@ import { ClipboardList } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import type { AvResumoDTO } from '@contratos/avs.contrato';
-import { formatarData } from '@/compartilhado/formatacao';
+import { formatarDataLocal } from '@/compartilhado/formatacao';
 import { CampoTexto } from '@/compartilhado/ui/Campos';
 import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
 import { CelulaCabecalho, CelulaTabela, LinhaTabela, Tabela } from '@/compartilhado/ui/Tabela';
 import { EtapaBadge } from './EtapaBadge';
 
-type Aba = 'andamento' | 'concluidas' | 'declinadas';
+type Aba = 'andamento' | 'concluidas' | 'declinadas' | 'historico';
 
 const ABAS: { chave: Aba; rotulo: string }[] = [
   { chave: 'andamento', rotulo: 'Em andamento' },
   { chave: 'concluidas', rotulo: 'Concluídas' },
   { chave: 'declinadas', rotulo: 'Declinadas' },
+  // AVs de antes do uso multiusuário (prefixo H-): continuam editáveis, mas ficam à parte.
+  { chave: 'historico', rotulo: 'Histórico' },
 ];
 
 function situacaoDaAv(av: AvResumoDTO): Aba {
+  if (av.historico) return 'historico';
   if (av.etapaAtual.chave === 'projeto_criado') return 'concluidas';
   if (av.etapaAtual.chave === 'declinada_cliente' || av.etapaAtual.chave === 'declinada_empresa') {
     return 'declinadas';
@@ -37,14 +40,14 @@ export function ListaAvs({ itens }: { itens: AvResumoDTO[] }) {
       .filter((av) => situacaoDaAv(av) === aba)
       .filter((av) => {
         if (!termo) return true;
-        return [av.numero, av.cliente, av.descricao]
+        return [av.numero, av.cliente, av.descricao, av.grupo?.nome]
           .filter(Boolean)
           .some((campo) => campo!.toLowerCase().includes(termo));
       });
   }, [itens, aba, busca]);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div data-tour="lista-avs" className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex gap-1 rounded-lg bg-texto/5 p-1">
           {ABAS.map(({ chave, rotulo }) => (
@@ -98,12 +101,13 @@ export function ListaAvs({ itens }: { itens: AvResumoDTO[] }) {
                 <CelulaTabela className="max-w-sm">
                   <p className="truncate font-medium">{av.cliente ?? '—'}</p>
                   <p className="truncate text-xs text-texto-secundario">{av.descricao}</p>
+                  {av.grupo && <p className="truncate text-xs text-titulo-secao">Grupo: {av.grupo.nome}</p>}
                 </CelulaTabela>
                 <CelulaTabela>
                   <EtapaBadge etapa={av.etapaAtual} />
                 </CelulaTabela>
                 <CelulaTabela className="pr-5 text-texto-secundario tabular-nums">
-                  {formatarData(av.criadoEm.slice(0, 10))}
+                  {formatarDataLocal(av.criadoEm)}
                 </CelulaTabela>
               </LinhaTabela>
             ))}

@@ -6,7 +6,7 @@ import type { AnaliseArquivadaDTO } from '@contratos/ia.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { Botao } from '@/compartilhado/ui/Botao';
 import { Modal } from '@/compartilhado/ui/Modal';
-import { useIaStore } from '../store/use-ia-store';
+import { usarStoreIa } from '../store/use-ia-store';
 import { Analisando, dataEHora, FalhaNaAnalise, IaNaoConfigurada, MolduraDoRelatorio } from './comum';
 import { RelatorioDaAnalise } from './RelatorioDaAnalise';
 
@@ -19,8 +19,10 @@ type Situacao =
   | { tipo: 'pronto'; arquivada: AnaliseArquivadaDTO; recemGerada: boolean };
 
 interface PropsModalDeAnalise {
-  /** `null`: análise do portfólio. */
+  /** `null`: análise do portfólio (ou das AVs, com `escopo="avs"`). */
   cronogramaId: string | null;
+  /** Módulo dono da análise; padrão: projetos. */
+  escopo?: 'projetos' | 'avs';
   rotuloDoBotao: string;
   titulo: string;
   /** O que vai para o provedor, mostrado enquanto a IA trabalha. */
@@ -31,9 +33,10 @@ interface PropsModalDeAnalise {
  * Botão + modal. Abre a última análise salva (sem chamar a IA); "Gerar nova análise" pede outra,
  * que também fica no arquivo. A IA só lê: nada nos cronogramas é alterado.
  */
-export function ModalDeAnalise({ cronogramaId, rotuloDoBotao, titulo, oQueVai }: PropsModalDeAnalise) {
-  const estado = useIaStore((store) => store.estado);
-  const carregar = useIaStore((store) => store.carregar);
+export function ModalDeAnalise({ cronogramaId, escopo = 'projetos', rotuloDoBotao, titulo, oQueVai }: PropsModalDeAnalise) {
+  const usarStore = usarStoreIa(escopo);
+  const estado = usarStore((store) => store.estado);
+  const carregar = usarStore((store) => store.carregar);
   const [situacao, setSituacao] = useState<Situacao>({ tipo: 'fechado' });
 
   useEffect(() => {
@@ -49,9 +52,11 @@ export function ModalDeAnalise({ cronogramaId, rotuloDoBotao, titulo, oQueVai }:
     setSituacao({ tipo: 'analisando' });
     try {
       const nova =
-        cronogramaId === null
-          ? await clienteDesktop.ia.analisarPortfolio()
-          : await clienteDesktop.ia.analisar(cronogramaId);
+        escopo === 'avs'
+          ? await clienteDesktop.ia.analisarAvs()
+          : cronogramaId === null
+            ? await clienteDesktop.ia.analisarPortfolio()
+            : await clienteDesktop.ia.analisar(cronogramaId);
       const arquivada = await clienteDesktop.ia.obterAnalise(nova.id);
       setSituacao({ tipo: 'pronto', arquivada, recemGerada: true });
     } catch (falha) {
@@ -59,10 +64,19 @@ export function ModalDeAnalise({ cronogramaId, rotuloDoBotao, titulo, oQueVai }:
     }
   };
 
+  /** A análise de AVs mais recente, já no formato do arquivo (com título, saúde e autor). */
+  const ultimaDasAvs = async () => {
+    const ultima = await clienteDesktop.ia.ultimaAnaliseAvs();
+    return ultima ? clienteDesktop.ia.obterAnalise(ultima.id) : null;
+  };
+
   const abrir = async () => {
     setSituacao({ tipo: 'abrindo' });
     try {
-      const ultima = await clienteDesktop.ia.ultimaAnalise({ cronogramaId });
+      const ultima =
+        escopo === 'avs'
+          ? await ultimaDasAvs()
+          : await clienteDesktop.ia.ultimaAnalise({ cronogramaId });
       if (ultima) setSituacao({ tipo: 'pronto', arquivada: ultima, recemGerada: false });
       else await analisar();
     } catch (falha) {
@@ -95,7 +109,7 @@ export function ModalDeAnalise({ cronogramaId, rotuloDoBotao, titulo, oQueVai }:
             aviso={
               situacao.recemGerada
                 ? null
-                : `Última análise salva, de ${dataEHora(situacao.arquivada.geradaEm)}. Se o cronograma mudou desde então, gere uma nova.`
+                : `Última análise salva, de ${dataEHora(situacao.arquivada.geradaEm)}. ${escopo === 'avs' ? 'Se as AVs mudaram desde então' : 'Se o cronograma mudou desde então'}, gere uma nova.`
             }
             aoGerarDeNovo={() => void analisar()}
             aoFechar={fechar}

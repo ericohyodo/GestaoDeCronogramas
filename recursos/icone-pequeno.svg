@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <!-- Versão simplificada do ícone "Fluxo" para 16–32 px: traços e marcos mais grossos, sem o "check". -->
+  <rect width="256" height="256" rx="48" fill="#14305c"/>
+  <path d="M64 188 L192 68" fill="none" stroke="#7aa6e2" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="64" cy="188" r="34" fill="#ffffff"/>
+  <circle cx="128" cy="128" r="34" fill="#ffffff"/>
+  <circle cx="192" cy="68" r="42" fill="#2dd4bf"/>
+</svg>

@@ -186,7 +186,7 @@ export function PaginaRelatorios({ podeMarcar }: { podeMarcar: boolean }) {
           <EstadoVazio
             icone={ClipboardList}
             titulo="Nenhuma tarefa ainda"
-            descricao="Os relatórios reúnem as tarefas dos cronogramas não arquivados. Crie tarefas em um cronograma para vê-las aqui."
+            descricao="Os relatórios reúnem as tarefas dos projetos não arquivados. Crie tarefas em um projeto para vê-las aqui."
           />
         </PainelVidro>
       ) : (

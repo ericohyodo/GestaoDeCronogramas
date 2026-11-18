@@ -62,8 +62,8 @@ export function DetalheCronograma() {
         <PainelVidro>
           <EstadoVazio
             icone={SearchX}
-            titulo="Cronograma não encontrado"
-            descricao={erro ?? 'Nenhum cronograma foi informado.'}
+            titulo="Projeto não encontrado"
+            descricao={erro ?? 'Nenhum projeto foi informado.'}
             acao={
               <Link href="/projetos/" className={classeBotao()}>
                 Voltar para cronogramas

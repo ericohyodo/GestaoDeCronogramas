@@ -11,6 +11,8 @@ interface PropsDialogoConfirmacao {
   titulo: string;
   mensagem: string;
   rotuloConfirmar?: string;
+  rotuloProcessando?: string;
+  variante?: 'perigo' | 'primario';
   aoConfirmar: () => Promise<void>;
   aoFechar: () => void;
 }
@@ -20,6 +22,8 @@ export function DialogoConfirmacao({
   titulo,
   mensagem,
   rotuloConfirmar = 'Excluir',
+  rotuloProcessando = 'Excluindo…',
+  variante = 'perigo',
   aoConfirmar,
   aoFechar,
 }: PropsDialogoConfirmacao) {
@@ -52,8 +56,8 @@ export function DialogoConfirmacao({
         <Botao variante="fantasma" onClick={fechar} disabled={processando}>
           Cancelar
         </Botao>
-        <Botao variante="perigo" onClick={confirmar} disabled={processando}>
-          {processando ? 'Excluindo…' : rotuloConfirmar}
+        <Botao variante={variante} onClick={confirmar} disabled={processando}>
+          {processando ? rotuloProcessando : rotuloConfirmar}
         </Botao>
       </RodapeModal>
     </Modal>

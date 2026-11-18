@@ -6,12 +6,11 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { Periodo } from '../../electron/nucleo/dominio/periodo';
 import { abrirConexao, type BancoDeDados } from '../../electron/nucleo/infraestrutura/banco/conexao-sqlite';
 import { executarMigracoes } from '../../electron/nucleo/infraestrutura/banco/migrador';
-import { MIGRACOES } from '../../electron/nucleo/infraestrutura/banco/migracoes';
+import { MIGRACOES } from '../dubles/migracoes-de-teste';
 import { Cronograma } from '../../electron/modulos/cronogramas/dominio/cronograma';
 import { RepositorioCronogramasSqlite } from '../../electron/modulos/cronogramas/infraestrutura/repositorio-cronogramas-sqlite';
 import { ConfiguracaoIaSqlite } from '../../electron/modulos/ia/infraestrutura/configuracao-ia-sqlite';
 import { RepositorioDeAnalisesSqlite } from '../../electron/modulos/ia/infraestrutura/repositorio-de-analises-sqlite';
-import { RepositorioPreferenciasSqlite } from '../../electron/modulos/preferencias/infraestrutura/repositorio-preferencias-sqlite';
 import { Responsavel } from '../../electron/modulos/responsaveis/dominio/responsavel';
 import { RepositorioResponsaveisSqlite } from '../../electron/modulos/responsaveis/infraestrutura/repositorio-responsaveis-sqlite';
 import { Fase } from '../../electron/modulos/tarefas/dominio/fase';
@@ -149,19 +148,18 @@ describe('Banco SQLite', () => {
 
     expect(await configuracao.obter('anthropic')).toBeNull();
     await configuracao.salvar('anthropic', chave);
-    await configuracao.salvar('google', 'AQ.outra-chave-de-teste-google-0000000000');
-    await configuracao.salvarModelo('gemini-3.8-flash');
+    await configuracao.salvarModelo('claude-sonnet-5-5');
 
     const bruto = db.prepare('SELECT group_concat(valor) FROM ia_configuracao').pluck().get() as string;
     expect(bruto).not.toContain('segredo-de-teste');
-    expect(bruto).not.toContain('outra-chave');
     expect(await new ConfiguracaoIaSqlite(db).obter('anthropic')).toBe(chave);
-    expect(await configuracao.obter('google')).toBe('AQ.outra-chave-de-teste-google-0000000000');
-    expect(await configuracao.obterModelo()).toBe('gemini-3.8-flash');
+    expect(await configuracao.obterModelo()).toBe('claude-sonnet-5-5');
+    // Modelo que saiu da lista (ex.: um Gemini salvo antes) é ignorado: vale o padrão.
+    db.prepare("UPDATE ia_configuracao SET valor = 'gemini-3.8-flash' WHERE chave = 'modelo'").run();
+    expect(await configuracao.obterModelo()).toBeNull();
 
     await configuracao.remover('anthropic');
     expect(await configuracao.obter('anthropic')).toBeNull();
-    expect(await configuracao.obter('google')).not.toBeNull();
 
     expect(await configuracao.obterInstrucoes()).toBeNull();
     const checklist = [
@@ -179,7 +177,7 @@ describe('Banco SQLite', () => {
   it('arquiva as análises da IA e acha a mais recente de cada cronograma', async () => {
     const arquivo = new RepositorioDeAnalisesSqlite(db);
     const conteudo = {
-      modelo: 'gemini-3.5-flash-lite',
+      modelo: 'claude-haiku-5-5',
       saude: 'atencao' as const,
       resumo: 'ok',
       riscos: [],
@@ -307,13 +305,5 @@ describe('Banco SQLite', () => {
       agora,
     });
     await expect(repositorio.salvar(repetido)).rejects.toThrow(/UNIQUE/);
-  });
-
-  it('guarda o tema como preferência chave/valor', async () => {
-    const repositorio = new RepositorioPreferenciasSqlite(db);
-    expect(await repositorio.obterTema()).toBeNull();
-    await repositorio.salvarTema('claro');
-    await repositorio.salvarTema('escuro');
-    expect(await repositorio.obterTema()).toBe('escuro');
   });
 });

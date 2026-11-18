@@ -6,6 +6,7 @@ import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
 import type { RepositorioFases } from '../../dominio/repositorio-fases';
 import type { RepositorioTarefas } from '../../dominio/repositorio-tarefas';
 import { Tarefa } from '../../dominio/tarefa';
+import { abrirEspacoNaOrdem } from '../abrir-espaco-na-ordem';
 import { paraTarefaDTO } from '../mapeador-dto';
 
 /**
@@ -24,19 +25,13 @@ export class DuplicarTarefa implements CasoDeUso<string, TarefaDTO> {
     const original = await this.repositorioTarefas.obterPorId(id);
     if (!original) throw new ErroNaoEncontrado('Tarefa');
 
-    const abaixo = (item: { ordem: number }) => item.ordem > original.ordem;
-    const umaPosicaoAbaixo = (item: { id: string; ordem: number }) => ({ id: item.id, ordem: item.ordem + 1 });
-
-    const irmas = (await this.repositorioTarefas.listarPorCronograma(original.cronogramaId)).filter(
-      (tarefa) => tarefa.faseId === original.faseId && abaixo(tarefa),
+    await abrirEspacoNaOrdem(
+      this.repositorioTarefas,
+      this.repositorioFases,
+      original.cronogramaId,
+      original.faseId,
+      original.ordem + 1,
     );
-    await this.repositorioTarefas.atualizarOrdens(irmas.map(umaPosicaoAbaixo));
-
-    // Tarefas soltas dividem a numeração de topo com as fases: as fases abaixo descem também.
-    if (original.faseId === null) {
-      const fases = await this.repositorioFases.listarPorCronograma(original.cronogramaId);
-      await this.repositorioFases.atualizarOrdens(fases.filter(abaixo).map(umaPosicaoAbaixo));
-    }
 
     const agora = this.relogio.agora();
     const copia = Tarefa.criar({

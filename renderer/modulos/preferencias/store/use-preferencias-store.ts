@@ -11,7 +11,7 @@ interface EstadoPreferencias {
 }
 
 export const usePreferenciasStore = create<EstadoPreferencias>()((set, get) => ({
-  tema: 'sistema',
+  tema: 'claro',
   carregado: false,
   erro: null,
 

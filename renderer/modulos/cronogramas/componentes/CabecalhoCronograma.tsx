@@ -37,10 +37,10 @@ export function CabecalhoCronograma({ cronograma, podeEditar, acoesExtras }: Pro
             className="mb-2 inline-flex items-center gap-1.5 rounded-md text-xs font-medium text-texto-secundario hover:text-texto"
           >
             <ArrowLeft aria-hidden className="size-3.5" />
-            Cronogramas
+            Projetos
           </Link>
         }
-        titulo={cronograma.nome}
+        titulo={cronograma.codigo ? `${cronograma.codigo} · ${cronograma.nome}` : cronograma.nome}
         descricao={
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <Etiqueta tom={TOM_SITUACAO[cronograma.situacao]}>
@@ -83,7 +83,7 @@ export function CabecalhoCronograma({ cronograma, podeEditar, acoesExtras }: Pro
       />
       <DialogoConfirmacao
         aberto={excluindo}
-        titulo="Excluir cronograma"
+        titulo="Excluir projeto"
         mensagem={`"${cronograma.nome}" e todas as suas tarefas serão excluídos definitivamente.`}
         aoConfirmar={async () => {
           await excluir(cronograma.id);

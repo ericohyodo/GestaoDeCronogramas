@@ -37,6 +37,11 @@ export interface PropsTabelaEstrutura {
   aoExcluirFase: (linha: LinhaEstruturaDTO) => void;
   aoAjustarDatasDaFase: (linha: LinhaEstruturaDTO) => void;
   aoAdicionarTarefa: (faseId: string) => void;
+  /**
+   * "Inserir linha" estilo Word: alça ⊕ na borda inferior esquerda de cada linha. Abaixo de uma tarefa
+   * insere logo depois dela; abaixo do título da fase insere como primeira tarefa da fase.
+   */
+  aoInserirTarefa?: (posicao: { apos: LinhaEstruturaDTO } | { inicioDaFase: string }) => void;
   aoReordenarTarefas: (ordens: { id: string; ordem: number }[]) => void;
   aoAbrirEvidencia: (linha: LinhaEstruturaDTO) => void;
   /** Só exibição: as tarefas dessas fases somem da lista (e do Gantt, que usa o mesmo filtro). */
@@ -75,6 +80,7 @@ export function TabelaEstrutura({
   aoExcluirFase,
   aoAjustarDatasDaFase,
   aoAdicionarTarefa,
+  aoInserirTarefa,
   aoReordenarTarefas,
   aoAbrirEvidencia,
   fasesRecolhidas,
@@ -102,6 +108,8 @@ export function TabelaEstrutura({
   };
 
   const [arrastando, setArrastando] = useState<string | null>(null);
+  // Linha sob a alça ⊕: mostra a linha-guia azul onde a nova tarefa vai entrar.
+  const [guiaApos, setGuiaApos] = useState<string | null>(null);
   const [sobreId, setSobreId] = useState<string | null>(null);
 
   const encerrarArrasto = () => {
@@ -136,7 +144,7 @@ export function TabelaEstrutura({
   } as CSSProperties;
 
   return (
-    <table style={alturas} className="w-full table-fixed border-separate border-spacing-0 text-sm">
+    <table data-tour="tabela-tarefas" style={alturas} className="w-full table-fixed border-separate border-spacing-0 text-sm">
       <colgroup>
         {larguras.map((largura, indice) => (
           <col key={indice} className={largura || undefined} />
@@ -197,9 +205,28 @@ export function TabelaEstrutura({
                 arrastando === linha.id && 'opacity-40',
                 // Borda em <tr> some no modelo `border-separate`; a sombra nas células faz o papel.
                 alvoDoArrasto && '[&>td]:shadow-[inset_0_2px_0_var(--primaria)]',
+                guiaApos === linha.id && '[&>td]:shadow-[inset_0_-2px_0_var(--primaria)]',
               )}
             >
-              <Celula>
+              <Celula className="relative">
+                {podeEditarTarefas && aoInserirTarefa && !recolhida && (
+                  <button
+                    type="button"
+                    aria-label={ehFase ? `Inserir tarefa no início de ${linha.titulo}` : `Inserir tarefa abaixo de ${linha.titulo}`}
+                    title={ehFase ? 'Inserir tarefa no início da fase' : 'Inserir tarefa abaixo'}
+                    onMouseEnter={() => setGuiaApos(linha.id)}
+                    onMouseLeave={() => setGuiaApos(null)}
+                    onFocus={() => setGuiaApos(linha.id)}
+                    onBlur={() => setGuiaApos(null)}
+                    onClick={() => {
+                      setGuiaApos(null);
+                      aoInserirTarefa(ehFase ? { inicioDaFase: linha.id } : { apos: linha });
+                    }}
+                    className="absolute -bottom-2 -left-1.5 z-10 flex size-4 items-center justify-center rounded-full border border-primaria bg-superficie-solida text-primaria opacity-0 shadow-sm transition-opacity hover:bg-primaria hover:text-white focus-visible:opacity-100 group-hover/linha:opacity-100"
+                  >
+                    <Plus aria-hidden className="size-3" strokeWidth={3} />
+                  </button>
+                )}
                 {arrastavel && (
                   <GripVertical
                     aria-hidden

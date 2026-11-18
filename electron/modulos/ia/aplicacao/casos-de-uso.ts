@@ -3,11 +3,13 @@ import {
   type AnalisePortfolioDTO,
   type ConfigurarIaEntrada,
   type ConversarComIaEntrada,
+  type EscopoIaDTO,
   LIMITE_DE_CARACTERES_DA_PERGUNTA,
   LIMITE_DE_MENSAGENS_DO_CHAT,
   type RespostaDoChatDTO,
   type EstadoIaDTO,
   type ModeloIaDTO,
+  MODELO_PADRAO,
   PROVEDORES_IA,
   type ProvedorIaDTO,
   provedorDoModelo,
@@ -27,19 +29,28 @@ import {
   serializarContextoDoChat,
 } from './contexto-do-chat';
 import { montarContextoDoPortfolio } from './contexto-do-portfolio';
-import { montarInstrucoes, montarInstrucoesDoChat, montarInstrucoesDoPortfolio } from './instrucoes';
+import {
+  comApresentacao,
+  montarApresentacaoDoUsuario,
+  montarInstrucoes,
+  montarInstrucoesDoChat,
+  montarInstrucoesDoPortfolio,
+  INSTRUCOES_DO_AGENTE,
+} from './instrucoes';
+import { AgenteDeCronogramas, type DependenciasDoAgente, paraPropostaDTO } from './agente-de-cronogramas';
+import { conferirConversa, type DependenciasDasConversas, guardarNaConversa } from './conversas';
 import type {
   CofreDeChave,
+  ConsultaDeAvs,
   ConsultaDeCronograma,
   ConsultaDeEstrutura,
   ModeloDeAnalise,
   QuemEstaUsando,
   RepositorioDeAnalises,
   RepositorioDeConfiguracaoIa,
+  RepositorioDeConversas,
   RepositorioDeInstrucoesIa,
 } from './portas';
-
-export const MODELO_PADRAO: ModeloIaDTO = 'claude-opus-5';
 
 /** Formato esperado de cada chave, só para barrar colagens incompletas antes de chamar a API. */
 const FORMATO_DA_CHAVE: Record<ProvedorIaDTO, { regra: RegExp; dica: string }> = {
@@ -47,22 +58,14 @@ const FORMATO_DA_CHAVE: Record<ProvedorIaDTO, { regra: RegExp; dica: string }> =
     regra: /^sk-ant-[A-Za-z0-9_-]{20,}$/,
     dica: 'A chave da Anthropic começa com "sk-ant-". Copie-a inteira do Console da Anthropic.',
   },
-  // Chaves antigas começam com "AIza"; as novas do AI Studio têm pontos (ex.: "AQ.…").
-  google: {
-    regra: /^[A-Za-z0-9._-]{30,}$/,
-    dica: 'Chave do Google incompleta. Copie-a inteira do Google AI Studio.',
-  },
-  openrouter: {
-    regra: /^sk-or-[A-Za-z0-9_-]{20,}$/,
-    dica: 'A chave do OpenRouter começa com "sk-or-". Copie-a inteira da página Keys do OpenRouter.',
-  },
 };
 
 async function lerEstado(
   cofre: CofreDeChave,
   configuracao: RepositorioDeConfiguracaoIa,
+  escopo: EscopoIaDTO = 'projetos',
 ): Promise<EstadoIaDTO> {
-  const modelo = (await configuracao.obterModelo()) ?? MODELO_PADRAO;
+  const modelo = (await configuracao.obterModelo(escopo)) ?? MODELO_PADRAO;
   const provedor = provedorDoModelo(modelo);
   const chaves = {} as EstadoIaDTO['chaves'];
   for (const cada of PROVEDORES_IA) {
@@ -76,10 +79,12 @@ export class ObterEstadoIa implements CasoDeUso<void, EstadoIaDTO> {
   constructor(
     private readonly cofre: CofreDeChave,
     private readonly configuracao: RepositorioDeConfiguracaoIa,
+    /** Cada módulo escolhe o seu modelo; as chaves de API são comuns. */
+    private readonly escopo: EscopoIaDTO = 'projetos',
   ) {}
 
   executar(): Promise<EstadoIaDTO> {
-    return lerEstado(this.cofre, this.configuracao);
+    return lerEstado(this.cofre, this.configuracao, this.escopo);
   }
 }
 
@@ -89,6 +94,7 @@ export class ConfigurarIa implements CasoDeUso<ConfigurarIaEntrada, EstadoIaDTO>
     private readonly cofre: CofreDeChave,
     private readonly configuracao: RepositorioDeConfiguracaoIa,
     private readonly modelo: ModeloDeAnalise,
+    private readonly escopo: EscopoIaDTO = 'projetos',
   ) {}
 
   async executar(entrada: ConfigurarIaEntrada): Promise<EstadoIaDTO> {
@@ -104,8 +110,8 @@ export class ConfigurarIa implements CasoDeUso<ConfigurarIaEntrada, EstadoIaDTO>
       if (!chaveSalva) throw new ErroDeValidacao('Informe a chave da API deste provedor.');
       await this.modelo.testar(chaveSalva, entrada.modelo);
     }
-    await this.configuracao.salvarModelo(entrada.modelo);
-    return lerEstado(this.cofre, this.configuracao);
+    await this.configuracao.salvarModelo(entrada.modelo, this.escopo);
+    return lerEstado(this.cofre, this.configuracao, this.escopo);
   }
 }
 
@@ -114,12 +120,13 @@ export class RemoverChaveIa implements CasoDeUso<void, EstadoIaDTO> {
   constructor(
     private readonly cofre: CofreDeChave,
     private readonly configuracao: RepositorioDeConfiguracaoIa,
+    private readonly escopo: EscopoIaDTO = 'projetos',
   ) {}
 
   async executar(): Promise<EstadoIaDTO> {
-    const modelo = (await this.configuracao.obterModelo()) ?? MODELO_PADRAO;
+    const modelo = (await this.configuracao.obterModelo(this.escopo)) ?? MODELO_PADRAO;
     await this.cofre.remover(provedorDoModelo(modelo));
-    return lerEstado(this.cofre, this.configuracao);
+    return lerEstado(this.cofre, this.configuracao, this.escopo);
   }
 }
 
@@ -130,19 +137,44 @@ export interface DependenciasDaAnalise {
   modelo: ModeloDeAnalise;
   consultaDeCronograma: ConsultaDeCronograma;
   consultaDeEstrutura: ConsultaDeEstrutura;
+  consultaDeAvs: ConsultaDeAvs;
   instrucoes: RepositorioDeInstrucoesIa;
   arquivo: RepositorioDeAnalises;
   quemEstaUsando: QuemEstaUsando;
   geradorDeId: GeradorDeId;
   relogio: Relogio;
+  /** Histórico do chat; sem ele, as conversas não são guardadas (testes). */
+  conversas?: RepositorioDeConversas;
+  /** Agente do chat de Projetos (propor e aplicar alterações); sem ele, o chat só consulta. */
+  agente?: Pick<DependenciasDoAgente, 'recursos' | 'propostas' | 'editor' | 'permissoes' | 'esquemas'>;
+}
+
+/** Dependências do histórico a partir das da análise (`null` sem repositório de conversas). */
+export function dependenciasDasConversas(deps: DependenciasDaAnalise): DependenciasDasConversas | null {
+  return deps.conversas
+    ? {
+        conversas: deps.conversas,
+        quemEstaUsando: deps.quemEstaUsando,
+        geradorDeId: deps.geradorDeId,
+        relogio: deps.relogio,
+        propostas: deps.agente?.propostas,
+      }
+    : null;
+}
+
+/** Quem está conversando (para a IA entender "eu" e "minhas tarefas") e o id dele para o histórico. */
+export async function quemPergunta(deps: DependenciasDaAnalise): Promise<{ apresentacao: string; usuarioId: string | null }> {
+  const perfil = (await deps.quemEstaUsando.perfilDoUsuarioAtual?.()) ?? null;
+  return { apresentacao: montarApresentacaoDoUsuario(perfil), usuarioId: perfil?.id ?? null };
 }
 
 export const TITULO_DO_PORTFOLIO = 'Portfólio';
 
-async function modeloEChave(
+export async function modeloEChave(
   deps: DependenciasDaAnalise,
+  escopo: EscopoIaDTO = 'projetos',
 ): Promise<{ modelo: ModeloIaDTO; chave: string }> {
-  const modelo = (await deps.configuracao.obterModelo()) ?? MODELO_PADRAO;
+  const modelo = (await deps.configuracao.obterModelo(escopo)) ?? MODELO_PADRAO;
   const chave = await deps.cofre.obter(provedorDoModelo(modelo));
   if (!chave) {
     throw new ErroNaIa('A análise com IA ainda não foi configurada. Peça ao administrador para informar a chave da API em Configurações.');
@@ -238,8 +270,8 @@ export class AnalisarPortfolio implements CasoDeUso<void, AnalisePortfolioDTO> {
 }
 
 /**
- * Chat de perguntas e respostas sobre todos os cronogramas em andamento. Só lê: a IA nunca altera
- * dados. As conversas não são guardadas; o histórico vem da tela a cada pergunta.
+ * Chat sobre todos os cronogramas em andamento. Para quem pode editar tarefas, a IA também propõe
+ * alterações (agente); ela nunca grava nada: a pessoa decide no cartão da proposta.
  */
 export class ConversarComIa implements CasoDeUso<ConversarComIaEntrada, RespostaDoChatDTO> {
   constructor(private readonly deps: DependenciasDaAnalise) {}
@@ -247,6 +279,9 @@ export class ConversarComIa implements CasoDeUso<ConversarComIaEntrada, Resposta
   async executar(entrada: ConversarComIaEntrada): Promise<RespostaDoChatDTO> {
     const mensagens = validarHistorico(entrada.mensagens);
     const { modelo, chave } = await modeloEChave(this.deps);
+    const { apresentacao, usuarioId } = await quemPergunta(this.deps);
+    const historico = dependenciasDasConversas(this.deps);
+    const conversaId = await conferirConversa(historico, usuarioId, 'projetos', entrada.conversaId);
 
     const itens = [];
     for (const id of await this.deps.consultaDeCronograma.listarIdsAtivos()) {
@@ -267,20 +302,36 @@ export class ConversarComIa implements CasoDeUso<ConversarComIaEntrada, Resposta
       );
     }
 
+    // Agente: só para quem pode editar tarefas. A IA propõe; a pessoa aplica no cartão da proposta.
+    const agente =
+      this.deps.agente && usuarioId && this.deps.agente.permissoes.podeEditarTarefas()
+        ? new AgenteDeCronogramas({ ...this.deps, ...this.deps.agente }, usuarioId)
+        : null;
+
     const { orientacoes } = await lerInstrucoes(this.deps.instrucoes);
+    const instrucoes = comApresentacao(montarInstrucoesDoChat(orientacoes), apresentacao);
     const resultado = await this.deps.modelo.conversar({
       chave,
       modelo,
-      instrucoes: montarInstrucoesDoChat(orientacoes),
+      instrucoes: agente ? `${instrucoes}\n\n${INSTRUCOES_DO_AGENTE}` : instrucoes,
       contexto,
       mensagens,
+      ferramentas: agente?.ferramentas(),
     });
-    return { texto: resultado.texto, modelo: resultado.modelo };
+    const proposta = agente?.propostaDoTurno ?? null;
+    const pergunta = mensagens.at(-1)!.texto;
+    const guardadaEm = await guardarNaConversa(historico, usuarioId, 'projetos', conversaId, pergunta, resultado, proposta?.id ?? null);
+    return {
+      texto: resultado.texto,
+      modelo: resultado.modelo,
+      conversaId: guardadaEm,
+      proposta: proposta ? paraPropostaDTO(proposta) : null,
+    };
   }
 }
 
 /** Mantém só as últimas falas, garante que comecem e terminem no usuário e que se alternem. */
-function validarHistorico(mensagens: ConversarComIaEntrada['mensagens']): ConversarComIaEntrada['mensagens'] {
+export function validarHistorico(mensagens: ConversarComIaEntrada['mensagens']): ConversarComIaEntrada['mensagens'] {
   const recentes = mensagens.slice(-LIMITE_DE_MENSAGENS_DO_CHAT);
   // Cortar o início pode deixar uma resposta da IA sem a pergunta que a originou.
   const historico = recentes[0]?.papel === 'ia' ? recentes.slice(1) : recentes;

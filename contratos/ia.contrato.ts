@@ -1,25 +1,21 @@
+/** Lista única para todos os módulos: só modelos da Anthropic. O primeiro é o padrão. */
 export const MODELOS_IA = [
+  'claude-opus-5-5',
+  'claude-sonnet-5-5',
+  'claude-haiku-5-5',
   'claude-opus-5',
   'claude-sonnet-5',
-  'gemini-3.8-flash',
-  'gemini-3.5-flash-lite',
-  // OpenRouter: só o roteador automático e modelos gratuitos (":free") que aceitam saída estruturada.
-  'openrouter/free',
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  'qwen/qwen3.8-27b:free',
-  'nex-agi/nex-n2.5-pro:free',
-  'dots-studio/dots-3-note-preview:free',
 ] as const;
 export type ModeloIaDTO = (typeof MODELOS_IA)[number];
+export const MODELO_PADRAO: ModeloIaDTO = MODELOS_IA[0];
 
-export const PROVEDORES_IA = ['anthropic', 'google', 'openrouter'] as const;
+export const PROVEDORES_IA = ['anthropic'] as const;
 export type ProvedorIaDTO = (typeof PROVEDORES_IA)[number];
 
 /** Cada provedor tem a sua chave: o modelo escolhido define qual delas é usada. */
 export function provedorDoModelo(modelo: ModeloIaDTO): ProvedorIaDTO {
-  if (modelo.startsWith('gemini')) return 'google';
   if (modelo.startsWith('claude')) return 'anthropic';
-  return 'openrouter';
+  throw new Error(`Modelo de IA sem provedor: ${modelo}`);
 }
 
 export interface EstadoIaDTO {
@@ -95,22 +91,89 @@ export interface MensagemDoChatDTO {
   texto: string;
 }
 
-/** Histórico da conversa (a última mensagem é a pergunta atual). O app não guarda conversas. */
+/** Histórico da conversa (a última mensagem é a pergunta atual). */
 export interface ConversarComIaEntrada {
   mensagens: MensagemDoChatDTO[];
+  /** Conversa do histórico que está sendo continuada; ausente numa conversa nova. */
+  conversaId?: string | null;
 }
 
 export interface RespostaDoChatDTO {
   texto: string;
-  /** Modelo que de fato respondeu (no roteador gratuito do OpenRouter, pode variar). */
+  /** Modelo que de fato respondeu (no fallback por recusa, pode ser outro). */
   modelo: string;
+  /** Conversa onde a pergunta e a resposta foram guardadas. */
+  conversaId: string | null;
+  /** Alterações que o agente propôs nesta resposta (só no chat de Projetos); nada muda sem "Aplicar". */
+  proposta: PropostaDeAlteracaoDTO | null;
 }
+
+/**
+ * - `pendente`: aguardando a decisão de quem pediu;
+ * - `aplicada` / `descartada`: decidida;
+ * - `desatualizada`: o cronograma mudou depois da proposta e ela não pôde ser aplicada.
+ */
+export type SituacaoDaPropostaDTO = 'pendente' | 'aplicada' | 'descartada' | 'desatualizada';
+
+/** Uma linha do cartão de proposta: o que muda, como está e como vai ficar. */
+export interface ItemDaPropostaDTO {
+  descricao: string;
+  antes: string | null;
+  depois: string;
+}
+
+/** Proposta do agente: uma lista de alterações num cronograma, aplicada só quando a pessoa confirma. */
+export interface PropostaDeAlteracaoDTO {
+  id: string;
+  cronogramaId: string;
+  cronogramaNome: string;
+  resumo: string;
+  itens: ItemDaPropostaDTO[];
+  situacao: SituacaoDaPropostaDTO;
+  criadaEm: string;
+  decididaEm: string | null;
+  /** Por que não foi aplicada (situação `desatualizada`). */
+  motivo: string | null;
+}
+
+/** Item da barra de histórico do chat. */
+export interface ResumoDeConversaDTO {
+  id: string;
+  titulo: string;
+  atualizadaEm: string;
+}
+
+/** Conversa guardada, para continuar de onde parou. */
+export interface ConversaDTO {
+  id: string;
+  titulo: string;
+  escopo: EscopoIaDTO;
+  mensagens: (MensagemDoChatDTO & { modelo: string | null; proposta: PropostaDeAlteracaoDTO | null })[];
+}
+
+/** Conversas sem uso há mais que isso são apagadas automaticamente. */
+export const DIAS_DE_GUARDA_DAS_CONVERSAS = 90;
 
 /** Limites do chat, iguais no app e no processo principal. */
 export const LIMITE_DE_MENSAGENS_DO_CHAT = 20;
 export const LIMITE_DE_CARACTERES_DA_PERGUNTA = 2000;
 
-export type TipoDeAnaliseDTO = 'cronograma' | 'portfolio';
+/** Cada módulo do app tem a sua IA: instruções, modelo, análises e chat separados. */
+export type EscopoIaDTO = 'projetos' | 'avs';
+
+/** Visão de todas as AVs. O texto segue seções fixas (RESUMO, PONTOS DE ATENÇÃO, GARGALOS, PRÓXIMAS AÇÕES). */
+export interface AnaliseAvsDTO {
+  id: string;
+  geradaEm: string;
+  geradaPor: string | null;
+  modelo: string;
+  quantidadeDeAvs: number;
+  /** Calculada pelos prazos das AVs (não pela IA). */
+  saude: SaudeDoCronogramaDTO;
+  texto: string;
+}
+
+export type TipoDeAnaliseDTO = 'cronograma' | 'portfolio' | 'avs';
 
 /** Linha do arquivo de análises (sem o conteúdo). */
 export interface ResumoDeAnaliseDTO {
@@ -128,7 +191,8 @@ export interface ResumoDeAnaliseDTO {
 
 export type AnaliseArquivadaDTO =
   | (ResumoDeAnaliseDTO & { tipo: 'cronograma'; analise: AnaliseCronogramaDTO })
-  | (ResumoDeAnaliseDTO & { tipo: 'portfolio'; analise: AnalisePortfolioDTO });
+  | (ResumoDeAnaliseDTO & { tipo: 'portfolio'; analise: AnalisePortfolioDTO })
+  | (ResumoDeAnaliseDTO & { tipo: 'avs'; analise: AnaliseAvsDTO });
 
 /** `cronogramaId` nulo: última análise de portfólio. */
 export interface UltimaAnaliseEntrada {

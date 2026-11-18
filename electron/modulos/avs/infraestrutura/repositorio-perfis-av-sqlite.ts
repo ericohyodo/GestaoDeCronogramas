@@ -1,6 +1,6 @@
 import type { BancoDeDados } from '../../../nucleo/infraestrutura/banco/conexao-sqlite';
 import type { Area } from '../dominio/area';
-import type { PapelAv, PerfilAvUsuario } from '../dominio/papel-av';
+import type { PapelAv, PapelEspecial, PerfilAvUsuario } from '../dominio/papel-av';
 import type { RepositorioPerfisAv } from '../dominio/repositorio-perfis-av';
 
 interface LinhaPerfil {
@@ -11,6 +11,11 @@ interface LinhaPerfil {
 interface LinhaCompetencia {
   usuario_id: string;
   area: Area;
+}
+
+interface LinhaPapelEspecial {
+  usuario_id: string;
+  papel: PapelEspecial;
 }
 
 export class RepositorioPerfisAvSqlite implements RepositorioPerfisAv {
@@ -33,6 +38,14 @@ export class RepositorioPerfisAvSqlite implements RepositorioPerfisAv {
         VALUES (?, ?, ?)
         ON CONFLICT (usuario_id) DO UPDATE SET papel_av = excluded.papel_av, atualizado_em = excluded.atualizado_em
       `),
+      listarPapeis: db.prepare<[], LinhaPapelEspecial>('SELECT usuario_id, papel FROM papeis_especiais'),
+      obterPapeis: db.prepare<[string], LinhaPapelEspecial>(
+        'SELECT usuario_id, papel FROM papeis_especiais WHERE usuario_id = ?',
+      ),
+      limparPapeis: db.prepare<[string]>('DELETE FROM papeis_especiais WHERE usuario_id = ?'),
+      inserirPapel: db.prepare<[string, PapelEspecial]>(
+        'INSERT INTO papeis_especiais (usuario_id, papel) VALUES (?, ?)',
+      ),
       limparCompetencias: db.prepare<[string]>('DELETE FROM av_competencias_usuario WHERE usuario_id = ?'),
       inserirCompetencia: db.prepare<[string, Area]>(
         'INSERT INTO av_competencias_usuario (usuario_id, area) VALUES (?, ?)',
@@ -42,9 +55,10 @@ export class RepositorioPerfisAvSqlite implements RepositorioPerfisAv {
 
   async obterPerfil(usuarioId: string): Promise<PerfilAvUsuario | null> {
     const perfil = this.sql.obterPerfil.get(usuarioId);
-    if (!perfil) return null;
+    const papeisEspeciais = this.sql.obterPapeis.all(usuarioId).map((linha) => linha.papel);
+    if (!perfil && papeisEspeciais.length === 0) return null;
     const competencias = this.sql.obterCompetencias.all(usuarioId).map((linha) => linha.area);
-    return { usuarioId: perfil.usuario_id, papelAv: perfil.papel_av, competencias };
+    return { usuarioId, papelAv: perfil?.papel_av ?? 'padrao', competencias, papeisEspeciais };
   }
 
   async listarPerfis(): Promise<PerfilAvUsuario[]> {
@@ -55,10 +69,17 @@ export class RepositorioPerfisAvSqlite implements RepositorioPerfisAv {
       lista.push(linha.area);
       competenciasPorUsuario.set(linha.usuario_id, lista);
     }
-    return perfis.map((perfil) => ({
-      usuarioId: perfil.usuario_id,
-      papelAv: perfil.papel_av,
-      competencias: competenciasPorUsuario.get(perfil.usuario_id) ?? [],
+    const papeisPorUsuario = new Map<string, PapelEspecial[]>();
+    for (const linha of this.sql.listarPapeis.all()) {
+      papeisPorUsuario.set(linha.usuario_id, [...(papeisPorUsuario.get(linha.usuario_id) ?? []), linha.papel]);
+    }
+    const ids = new Set([...perfis.map((perfil) => perfil.usuario_id), ...papeisPorUsuario.keys()]);
+    const papelPorUsuario = new Map(perfis.map((perfil) => [perfil.usuario_id, perfil.papel_av]));
+    return [...ids].map((usuarioId) => ({
+      usuarioId,
+      papelAv: papelPorUsuario.get(usuarioId) ?? 'padrao',
+      competencias: competenciasPorUsuario.get(usuarioId) ?? [],
+      papeisEspeciais: papeisPorUsuario.get(usuarioId) ?? [],
     }));
   }
 
@@ -70,6 +91,8 @@ export class RepositorioPerfisAvSqlite implements RepositorioPerfisAv {
       for (const area of perfil.competencias) {
         this.sql.inserirCompetencia.run(perfil.usuarioId, area);
       }
+      this.sql.limparPapeis.run(perfil.usuarioId);
+      for (const papel of perfil.papeisEspeciais) this.sql.inserirPapel.run(perfil.usuarioId, papel);
     })();
   }
 }

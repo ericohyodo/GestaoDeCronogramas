@@ -12,6 +12,10 @@ export interface UsuarioDTO {
   id: string;
   nome: string;
   login: string;
+  email: string | null;
+  departamento: string | null;
+  /** Primeiro acesso pendente (ainda não cadastrou e-mail e senha). */
+  precisaDefinirSenha: boolean;
   perfil: PerfilDTO;
   ativo: boolean;
   criadoEm: string;
@@ -30,8 +34,25 @@ export interface EntrarEntrada {
   senha: string;
 }
 
+/** Primeiro acesso de um usuário criado sem senha: ele mesmo cadastra o e-mail e cria a senha. */
+export interface ConcluirPrimeiroAcessoEntrada {
+  login: string;
+  email: string;
+  senha: string;
+}
+
 export interface PrimeiroAcessoEntrada {
   nome: string;
   login: string;
   senha: string;
+}
+
+export interface UsuarioOnlineDTO {
+  id: string;
+  nome: string;
+  perfil: PerfilDTO;
+  /** Desde quando está com o aplicativo aberto (a instância mais antiga da pessoa). */
+  desde: string;
+  /** Quantas instâncias do aplicativo a pessoa tem abertas agora. */
+  instancias: number;
 }

@@ -4,6 +4,7 @@ import { ShieldAlert } from 'lucide-react';
 import { CabecalhoPagina } from '@/compartilhado/ui/CabecalhoPagina';
 import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
+import { ConfiguracaoPrazosAreas } from '@/modulos/avs/componentes/ConfiguracaoPrazosAreas';
 import { ConfiguracaoIa } from '@/modulos/ia/componentes/ConfiguracaoIa';
 import { usePermissao } from '@/modulos/usuarios/store/use-sessao-store';
 
@@ -14,7 +15,10 @@ export default function Configuracoes() {
     <div className="flex flex-col gap-6 p-6">
       <CabecalhoPagina titulo="Configurações" descricao="Ajustes que valem para todos os usuários do aplicativo." />
       {ehAdministrador ? (
-        <ConfiguracaoIa />
+        <>
+          <ConfiguracaoIa />
+          <ConfiguracaoPrazosAreas />
+        </>
       ) : (
         <PainelVidro>
           <EstadoVazio

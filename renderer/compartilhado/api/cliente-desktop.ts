@@ -55,9 +55,13 @@ function grupo<G extends Grupo>(nome: G): ClienteDoGrupo<G> {
 
 /** Único ponto do renderer que conversa com o processo principal. */
 export const clienteDesktop = {
+  apresentacao: grupo('apresentacao'),
+  atualizacao: grupo('atualizacao'),
+  notificacoes: grupo('notificacoes'),
   sessao: grupo('sessao'),
   usuarios: grupo('usuarios'),
   responsaveis: grupo('responsaveis'),
+  sds: grupo('sds'),
   avs: grupo('avs'),
   cronogramas: grupo('cronogramas'),
   tarefas: grupo('tarefas'),

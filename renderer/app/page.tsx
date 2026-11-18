@@ -1,32 +1,44 @@
 'use client';
 
-import { CalendarRange, ClipboardCheck } from 'lucide-react';
+import { CalendarRange, ClipboardCheck, FileText } from 'lucide-react';
 import Link from 'next/link';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
+import { BotaoEntrarNaApresentacao } from '@/modulos/apresentacao/componentes/ControlesDaApresentacao';
+import { PainelDeAtualizacao } from '@/modulos/atualizacao/componentes/PainelDeAtualizacao';
+import { UsuariosOnline } from '@/modulos/usuarios/componentes/UsuariosOnline';
+import { usePermissao } from '@/modulos/usuarios/store/use-sessao-store';
 
 const MODULOS = [
+  {
+    href: '/avs/',
+    icone: ClipboardCheck,
+    titulo: 'Gestão AVs',
+    descricao: 'Análises de viabilidade, do intake comercial até a proposta.',
+  },
+  {
+    href: '/sds/',
+    icone: FileText,
+    titulo: 'Gestão SDs',
+    descricao: 'Passagem de bastão do Comercial para a Engenharia, com o aceite que cria o projeto.',
+  },
   {
     href: '/projetos/',
     icone: CalendarRange,
     titulo: 'Gestão de Projetos',
-    descricao: 'Cronogramas, fases, tarefas e relatórios de andamento.',
-  },
-  {
-    href: '/avs/',
-    icone: ClipboardCheck,
-    titulo: 'Gestão de AVs',
-    descricao: 'Análises de viabilidade, do intake comercial até a proposta.',
+    descricao: 'Projetos com fases, tarefas, Gantt e relatórios de andamento.',
   },
 ] as const;
 
 export default function Inicio() {
+  const administrador = usePermissao('administracao');
   return (
     <div className="flex min-h-full flex-col items-center justify-center gap-10 p-6">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">Gestão de Cronogramas</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Gestão de Novos Desenvolvimentos</h1>
+        <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-titulo-secao">AV · SD · PRO</p>
         <p className="mt-1 text-sm text-texto-secundario">Escolha uma área para continuar.</p>
       </div>
-      <div className="grid w-full max-w-3xl grid-cols-1 gap-5 sm:grid-cols-2">
+      <div data-tour="modulos" className="grid w-full max-w-5xl grid-cols-1 gap-5 md:grid-cols-3">
         {MODULOS.map((modulo) => (
           <Link key={modulo.href} href={modulo.href} className="group block">
             <PainelVidro className="flex h-full flex-col items-start gap-4 p-7 transition-shadow group-hover:shadow-[0_12px_40px_rgb(15_27_45/0.14)]">
@@ -40,6 +52,17 @@ export default function Inicio() {
             </PainelVidro>
           </Link>
         ))}
+      </div>
+      <div className="w-full max-w-5xl">
+        <UsuariosOnline />
+      </div>
+      {administrador && (
+        <div className="w-full max-w-5xl">
+          <PainelDeAtualizacao />
+        </div>
+      )}
+      <div className="flex w-full max-w-5xl justify-end">
+        <BotaoEntrarNaApresentacao />
       </div>
     </div>
   );

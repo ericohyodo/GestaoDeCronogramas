@@ -3,9 +3,12 @@
 import clsx from 'clsx';
 import {
   BarChart3,
+  Bell,
   CalendarRange,
   ClipboardCheck,
   FileClock,
+  FileText,
+  GraduationCap,
   Home,
   type LucideIcon,
   MessageSquareText,
@@ -28,7 +31,22 @@ interface ItemNavegacao {
   rotas?: string[];
   /** Quando definida, o item só aparece para quem tem a permissão. */
   permissao?: PermissaoDTO;
+  /** Mostra uma bolinha vermelha com este contador (ex.: notificações não lidas). */
+  contador?: keyof ContadoresDoMenu;
 }
+
+/** Contadores exibidos nos itens do menu, alimentados pela casca do app. */
+export interface ContadoresDoMenu {
+  notificacoes?: number;
+}
+
+const ITEM_NOTIFICACOES: ItemNavegacao = {
+  rotulo: 'Notificações',
+  icone: Bell,
+  href: '/notificacoes/',
+  rotas: ['/notificacoes'],
+  contador: 'notificacoes',
+};
 
 export interface NavegacaoLateral {
   titulo: string;
@@ -36,9 +54,9 @@ export interface NavegacaoLateral {
 }
 
 export const NAV_PROJETOS: NavegacaoLateral = {
-  titulo: 'Planejamento',
+  titulo: 'Gestão de Projetos',
   itens: [
-    { rotulo: 'Cronogramas', icone: CalendarRange, href: '/projetos/', rotas: ['/projetos', '/cronograma'] },
+    { rotulo: 'Projetos', icone: CalendarRange, href: '/projetos/', rotas: ['/projetos', '/cronograma'] },
     { rotulo: 'Recursos', icone: Users, href: '/recursos/', rotas: ['/recursos'] },
     { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
     { rotulo: 'Relatórios', icone: BarChart3, href: '/relatorios/', rotas: ['/relatorios'] },
@@ -58,41 +76,78 @@ export const NAV_PROJETOS: NavegacaoLateral = {
       rotas: ['/configuracoes'],
       permissao: 'administracao',
     },
+    { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
+    ITEM_NOTIFICACOES,
   ],
 };
 
+// Espelha NAV_PROJETOS, menos "Recursos": lá são as pessoas alocadas nas tarefas de um cronograma,
+// aqui todo mundo que participa de uma AV já é um usuário do sistema (ver equipe por área na AV).
 export const NAV_AVS: NavegacaoLateral = {
-  titulo: 'Análises de Viabilidade',
+  titulo: 'Gestão AVs',
   itens: [
     { rotulo: 'AVs', icone: ClipboardCheck, href: '/avs/', rotas: ['/avs'] },
     { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
-    { rotulo: 'Análises', icone: FileClock, href: '/analises/', rotas: ['/analises'] },
+    // Relatórios, análises, chat, instruções e configurações da IA são próprios do módulo de AVs.
+    { rotulo: 'Relatórios', icone: BarChart3, href: '/avs/relatorios/', rotas: ['/avs/relatorios'] },
+    { rotulo: 'Análises', icone: FileClock, href: '/avs/analises/', rotas: ['/avs/analises'] },
+    { rotulo: 'Chat com IA', icone: MessageSquareText, href: '/avs/chat/', rotas: ['/avs/chat'] },
+    {
+      rotulo: 'Instruções da IA',
+      icone: ScrollText,
+      href: '/avs/instrucoes-ia/',
+      rotas: ['/avs/instrucoes-ia'],
+      permissao: 'planejamento',
+    },
     {
       rotulo: 'Configurações',
       icone: Settings,
-      href: '/configuracoes/',
-      rotas: ['/configuracoes'],
+      href: '/avs/configuracoes/',
+      rotas: ['/avs/configuracoes'],
       permissao: 'administracao',
     },
+    { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
+    ITEM_NOTIFICACOES,
+  ],
+};
+
+// Só o que é realmente compartilhado (usuários); relatórios, análises e IA de cada módulo são separados.
+export const NAV_SDS: NavegacaoLateral = {
+  titulo: 'Gestão SDs',
+  itens: [
+    { rotulo: 'SDs', icone: FileText, href: '/sds/', rotas: ['/sds'] },
+    { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
+    { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
+    ITEM_NOTIFICACOES,
   ],
 };
 
 export function BarraLateral({
   navegacao,
   permissoes,
+  contadores = {},
   aoRetrair,
 }: {
   navegacao: NavegacaoLateral;
   permissoes: PermissaoDTO[];
+  contadores?: ContadoresDoMenu;
   aoRetrair: () => void;
 }) {
   const rotaAtual = usePathname();
-  const ehAtivo = (item: ItemNavegacao) =>
-    item.rotas?.some((rota) => (rota === '/' ? rotaAtual === '/' : rotaAtual.startsWith(rota)));
-
   const itensVisiveis = navegacao.itens.filter(
     (item) => !item.permissao || permissoes.includes(item.permissao),
   );
+
+  // Vale o item de prefixo mais longo: em /avs/relatorios/ só "Relatórios" fica ativo, não "AVs" (/avs).
+  const tamanhoDoMelhorPrefixo = (item: ItemNavegacao) =>
+    Math.max(
+      -1,
+      ...(item.rotas ?? []).map((rota) =>
+        (rota === '/' ? rotaAtual === '/' : rotaAtual.startsWith(rota)) ? rota.length : -1,
+      ),
+    );
+  const maiorPrefixo = Math.max(-1, ...itensVisiveis.map(tamanhoDoMelhorPrefixo));
+  const ehAtivo = (item: ItemNavegacao) => maiorPrefixo >= 0 && tamanhoDoMelhorPrefixo(item) === maiorPrefixo;
 
   return (
     <nav aria-label="Navegação principal" className="vidro flex w-56 shrink-0 flex-col rounded-2xl p-3">
@@ -135,6 +190,7 @@ export function BarraLateral({
               >
                 <item.icone aria-hidden className="size-4" />
                 {item.rotulo}
+                <Contador valor={item.contador ? contadores[item.contador] : undefined} />
               </Link>
             ) : (
               <span
@@ -153,10 +209,23 @@ export function BarraLateral({
       </ul>
 
       <div className="mt-auto rounded-xl border border-borda-vidro bg-texto/3 px-3 py-2.5 text-[11px] leading-relaxed text-texto-sutil">
-        Versão 0.1.0
+        Versão {process.env.NEXT_PUBLIC_VERSAO_DO_APP}
         <br />
         Dados salvos ao lado do executável.
       </div>
     </nav>
+  );
+}
+
+/** Bolinha vermelha com o número, no estilo dos apps de mensagem (some quando é zero). */
+function Contador({ valor }: { valor: number | undefined }) {
+  if (!valor) return null;
+  return (
+    <span
+      aria-label={`${valor} não lidas`}
+      className="ml-auto grid h-5 min-w-5 place-items-center rounded-full bg-perigo px-1.5 text-[11px] font-semibold leading-none text-white tabular-nums"
+    >
+      {valor > 99 ? '99+' : valor}
+    </span>
   );
 }

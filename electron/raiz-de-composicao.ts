@@ -1,14 +1,20 @@
+import os from 'node:os';
 import path from 'node:path';
-import { ipcMain } from 'electron';
+import { app, ipcMain } from 'electron';
 import type { AparenciaDTO } from '@contratos/aparencia.contrato';
 import { CANAIS } from '@contratos/canais';
 import { suportaVidroNativo } from './janela/aparencia';
+import { limparPastaDaApresentacao, registrarIpcApresentacao, semearApresentacao } from './apresentacao/modo-apresentacao';
+import { ehModoApresentacao } from './nucleo/infraestrutura/banco/caminho-do-banco';
+import { montarModuloAtualizacao } from './modulos/atualizacao';
 import { montarModuloAvs } from './modulos/avs';
 import { montarModuloCronogramas } from './modulos/cronogramas';
 import { montarModuloIa } from './modulos/ia';
 import { montarModuloImpressao } from './modulos/impressao';
+import { montarModuloNotificacoes } from './modulos/notificacoes';
 import { montarModuloPreferencias } from './modulos/preferencias';
 import { montarModuloResponsaveis } from './modulos/responsaveis';
+import { montarModuloSds } from './modulos/sds';
 import { montarModuloTarefas } from './modulos/tarefas';
 import { montarModuloUsuarios } from './modulos/usuarios';
 import type { ControleDeAcesso } from './nucleo/aplicacao/portas/controle-de-acesso';
@@ -16,9 +22,11 @@ import {
   garantirPastaGravavel,
   NOME_ARQUIVO_BANCO,
   resolverPastaDoBanco,
+  resolverPastaDosDadosReais,
 } from './nucleo/infraestrutura/banco/caminho-do-banco';
 import { abrirConexao } from './nucleo/infraestrutura/banco/conexao-sqlite';
-import { executarMigracoes } from './nucleo/infraestrutura/banco/migrador';
+import { fazerBackup } from './nucleo/infraestrutura/banco/backup';
+import { executarMigracoes, haMigracoesPendentes } from './nucleo/infraestrutura/banco/migrador';
 import { MIGRACOES } from './nucleo/infraestrutura/banco/migracoes';
 import { GeradorUuid } from './nucleo/infraestrutura/gerador-uuid';
 import { criarRegistradorIpc } from './nucleo/infraestrutura/ipc/registrador-ipc';
@@ -41,10 +49,30 @@ export async function montarAplicacao(opcoes: {
   caminhoDoPreload: string;
 }): Promise<Aplicacao> {
   const pasta = resolverPastaDoBanco();
+  limparPastaDaApresentacao(pasta);
   garantirPastaGravavel(pasta);
   const caminhoDoBanco = path.join(pasta, NOME_ARQUIVO_BANCO);
 
   const db = abrirConexao(caminhoDoBanco);
+  // Backup antes de mexer no esquema (sempre) ou, fora isso, um por dia. Uma falha no backup não
+  // impede o uso do app, mas impede aplicar migrações sem cópia de segurança.
+  const pendentes = haMigracoesPendentes(db, MIGRACOES);
+  let falhaNoBackup: string | null = null;
+  try {
+    const backup = await fazerBackup(db, pasta, new Date(), pendentes ? 'pre-migracao' : 'diario');
+    if (backup) console.info(`[banco] backup: ${backup}`);
+  } catch (erro) {
+    console.error('[banco] falha ao fazer backup:', erro);
+    falhaNoBackup = erro instanceof Error ? erro.message : String(erro);
+    if (pendentes) {
+      db.close();
+      throw new Error(
+        'Não foi possível fazer o backup do banco antes de atualizá-lo. Verifique o espaço e a permissão ' +
+          `de escrita na pasta:
+${pasta}`,
+      );
+    }
+  }
   const aplicadas = executarMigracoes(db, MIGRACOES);
   if (aplicadas.length > 0) console.info(`[banco] migrações aplicadas: ${aplicadas.join(', ')}`);
   console.info(`[banco] ${caminhoDoBanco}`);
@@ -69,6 +97,27 @@ export async function montarAplicacao(opcoes: {
   const usuarios = montarModuloUsuarios({ db, ipc, relogio, geradorDeId });
   controleDeAcesso = usuarios.controleDeAcesso;
 
+  const notificacoes = montarModuloNotificacoes({
+    db,
+    ipc,
+    relogio,
+    geradorDeId,
+    logado: { usuarioAtualId: () => usuarios.consultas.usuarioAtual()?.id ?? null },
+  });
+  const { notificador } = notificacoes;
+  if (falhaNoBackup) {
+    // Administradores ficam sabendo pelo sino: o app abriu, mas sem a cópia de segurança do dia.
+    const ativos = await usuarios.consultas.listarAtivos();
+    const perfis = await Promise.all(ativos.map((u) => usuarios.consultas.obterPerfilGlobal(u.id)));
+    await notificador.notificar({
+      usuarioIds: ativos.filter((_, i) => perfis[i] === 'administrador').map((u) => u.id),
+      tipo: 'sistema.backup_falhou',
+      titulo: 'Falha no backup automático do banco',
+      mensagem: `Verifique espaço e permissão na pasta do aplicativo. Detalhe: ${falhaNoBackup}`,
+      link: null,
+    });
+  }
+
   const responsaveis = montarModuloResponsaveis({ db, ipc, relogio, geradorDeId });
   const cronogramas = montarModuloCronogramas({ db, ipc, relogio, geradorDeId });
   const tarefas = montarModuloTarefas({
@@ -84,10 +133,34 @@ export async function montarAplicacao(opcoes: {
     consultaDeResponsaveis: {
       obterNomes: (ids) => responsaveis.consultas.obterNomes(ids),
       existe: (id) => responsaveis.consultas.existe(id),
+      obterUsuarios: (ids) => responsaveis.consultas.obterUsuarios(ids),
     },
+    notificador,
+    usuarioAtualId: () => usuarios.consultas.usuarioAtual()?.id ?? null,
   });
 
-  montarModuloAvs({
+  // SDs e AVs dependem um do outro (Pré-SD ↔ aceite): as referências a `avs` só são usadas em tempo de
+  // execução, depois de os dois módulos estarem montados.
+  const sds = montarModuloSds({
+    db,
+    ipc,
+    relogio,
+    geradorDeId,
+    acesso: {
+      usuarioAtual: () => {
+        const usuario = usuarios.consultas.usuarioAtual();
+        return usuario ? { id: usuario.id, nome: usuario.nome, administrador: usuario.perfil === 'administrador' } : null;
+      },
+      podeDarAceite: (usuarioId) => avs.consultas.podeDarAceite(usuarioId),
+      listarNomes: () => usuarios.consultas.listarAtivos(),
+      listarAprovadores: () => avs.consultas.listarAprovadores(),
+    },
+    avs: { concluirComProjeto: (entrada) => avs.comandos.concluirComProjeto(entrada) },
+    projetos: { criar: (entrada) => cronogramas.comandos.criarProjeto(entrada) },
+    notificador,
+  });
+
+  const avs = montarModuloAvs({
     db,
     ipc,
     relogio,
@@ -97,6 +170,9 @@ export async function montarAplicacao(opcoes: {
       listarAtivos: () => usuarios.consultas.listarAtivos(),
       obterPerfilGlobal: (id) => usuarios.consultas.obterPerfilGlobal(id),
     },
+    criadorDePreSd: { criar: (entrada) => sds.comandos.criarPreSd(entrada) },
+    notificador,
+    avancarSdDeExemplo: (avId, ate, usuarioId, textos) => sds.comandos.avancarSdDeExemplo(avId, ate, usuarioId, textos),
   });
 
   const ia = montarModuloIa({
@@ -110,7 +186,26 @@ export async function montarAplicacao(opcoes: {
         (await cronogramas.consultas.listar()).filter((c) => !c.arquivado).map((c) => c.id),
     },
     consultaDeEstrutura: { obterEstrutura: (id) => tarefas.consultas.obterEstrutura(id) },
-    quemEstaUsando: { nomeDoUsuarioAtual: () => usuarios.consultas.nomeDoUsuarioAtual() },
+    editorDeCronogramas: { aplicarAlteracoes: (entrada) => tarefas.comandos.aplicarAlteracoes(entrada) },
+    consultaDeRecursos: { listar: () => responsaveis.consultas.listar() },
+    permissoes: { podeEditarTarefas: () => controleDeAcesso.possuiPermissao('tarefas') },
+    consultaDeAvs: { relatorio: () => avs.consultas.relatorio() },
+    quemEstaUsando: {
+      nomeDoUsuarioAtual: () => usuarios.consultas.nomeDoUsuarioAtual(),
+      // Quem conversa com a IA: nome, departamento, papéis e o recurso vinculado (como aparece nas tarefas).
+      async perfilDoUsuarioAtual() {
+        const usuario = usuarios.consultas.usuarioAtual();
+        if (!usuario) return null;
+        return {
+          id: usuario.id,
+          nome: usuario.nome,
+          departamento: usuario.departamento,
+          perfil: usuario.perfil,
+          papeis: await avs.consultas.descreverPapeis(usuario.id),
+          nomeDoRecurso: await responsaveis.consultas.obterNomeDoRecursoDoUsuario(usuario.id),
+        };
+      },
+    },
   });
 
   montarModuloImpressao({
@@ -121,7 +216,7 @@ export async function montarAplicacao(opcoes: {
     consultaDeAnalises: { obterResumo: (id) => ia.consultas.obterResumoDaAnalise(id) },
   });
 
-  const preferencias = montarModuloPreferencias({ db, ipc });
+  const preferencias = montarModuloPreferencias({ ipc, pastaLocal: app.getPath('userData') });
   // Tema aplicado antes de a janela existir: sem troca de cores visível na abertura.
   await preferencias.aplicarTemaSalvo();
 
@@ -130,5 +225,73 @@ export async function montarAplicacao(opcoes: {
     evento.returnValue = aparencia;
   });
 
-  return { caminhoDoBanco, aparencia, encerrar: () => db.close() };
+  // Modo apresentação: dados fictícios no banco próprio (pasta recriada a cada entrada).
+  const roteiro = ehModoApresentacao()
+    ? await semearApresentacao({ usuarios, avs, sds, responsaveis, tarefas, notificador, relogio })
+    : null;
+  registrarIpcApresentacao(ipc, roteiro);
+
+  // Atualização do sistema: aviso de fechamento e lista de apps abertos, num quadro na pasta de rede dos
+  // dados reais (também lido no modo apresentação, que trava o mesmo .exe).
+  const atualizacao = montarModuloAtualizacao({
+    ipc,
+    relogio,
+    geradorDeId,
+    pastaDosDados: resolverPastaDosDadosReais(),
+    esteApp: {
+      instanciaId: geradorDeId.gerar(),
+      computador: os.hostname(),
+      usuarioDoWindows: usuarioDoWindows(),
+      versao: app.getVersion(),
+      modo: ehModoApresentacao() ? 'apresentacao' : 'normal',
+      desde: relogio.agora(),
+    },
+    logado: { nomeDoUsuarioAtual: () => usuarios.consultas.nomeDoUsuarioAtual() },
+    fecharApp: () => {
+      app.quit();
+      // Se algo segurar o fechamento normal, encerra mesmo assim: o .exe precisa ficar livre.
+      setTimeout(() => app.exit(0), 5_000).unref();
+    },
+  });
+  atualizacao.iniciar();
+
+  // Rotina de prazos (tarefas vencendo/atrasadas, prazo do cliente e prazos das áreas nas AVs): na abertura
+  // e a cada hora.
+  // Cada aviso sai uma vez só, mesmo com vários PCs rodando a rotina (deduplicação por chave no banco).
+  const verificarPrazos = async () => {
+    try {
+      const tarefasAvisadas = await tarefas.rotinas.verificarPrazos();
+      const avsAvisadas =
+        (await avs.rotinas.verificarPrazosDoCliente()) + (await avs.rotinas.verificarPrazosDasAreas());
+      const conversasApagadas = await ia.rotinas.limparConversasAntigas();
+      if (conversasApagadas > 0) console.info(`[chat] conversas sem uso há 90 dias apagadas: ${conversasApagadas}`);
+      if (tarefasAvisadas + avsAvisadas > 0) console.info(`[prazos] avisos verificados: ${tarefasAvisadas} tarefa(s), ${avsAvisadas} AV(s)`);
+    } catch (erro) {
+      console.error('[prazos] falha na verificação de prazos:', erro);
+    }
+  };
+  const primeiraVerificacao = setTimeout(() => void verificarPrazos(), 15_000);
+  const rotinaDePrazos = setInterval(() => void verificarPrazos(), 60 * 60 * 1000);
+
+  return {
+    caminhoDoBanco,
+    aparencia,
+    encerrar: () => {
+      clearTimeout(primeiraVerificacao);
+      clearInterval(rotinaDePrazos);
+      atualizacao.encerrar();
+      // Sai da lista de usuários online antes de fechar o banco (falha aqui não deve impedir o fechamento).
+      void usuarios.encerrar().catch(() => undefined);
+      db.close();
+    },
+  };
+}
+
+/** Login do Windows de quem abriu o app (identifica quem está na tela de login na lista de apps abertos). */
+function usuarioDoWindows(): string {
+  try {
+    return os.userInfo().username;
+  } catch {
+    return '?';
+  }
 }

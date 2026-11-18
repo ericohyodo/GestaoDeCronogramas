@@ -4,6 +4,22 @@ import { app } from 'electron';
 
 export const NOME_ARQUIVO_BANCO = 'gestao-cronogramas.db';
 
+/** Argumento de linha de comando que liga o modo apresentação (o app é reiniciado com ele). */
+export const ARGUMENTO_MODO_APRESENTACAO = '--modo-apresentacao';
+/**
+ * Pasta do modo apresentação: banco, anexos e backups próprios, recriados a cada entrada. Fica no computador
+ * local (pasta temporária do usuário do Windows), não na pasta de rede: cada PC tem a sua apresentação, sem
+ * conflito entre dois administradores apresentando ao mesmo tempo e sem depender da rede.
+ */
+export function pastaDoModoApresentacao(): string {
+  return path.join(app.getPath('temp'), 'gestao-novos-desenvolvimentos', 'apresentacao');
+}
+
+/** O app está em modo apresentação (dados fictícios, isolados dos reais)? */
+export function ehModoApresentacao(): boolean {
+  return process.argv.includes(ARGUMENTO_MODO_APRESENTACAO);
+}
+
 export class ErroPastaSemPermissao extends Error {
   constructor(readonly pasta: string) {
     super(
@@ -23,6 +39,13 @@ export class ErroPastaSemPermissao extends Error {
  * 3. Desenvolvimento: <repositório>/dados-dev.
  */
 export function resolverPastaDoBanco(): string {
+  // No modo apresentação tudo (banco, anexos, backups) vai para uma pasta local própria: os dados reais nunca
+  // são abertos nem tocados.
+  return ehModoApresentacao() ? pastaDoModoApresentacao() : resolverPastaDosDadosReais();
+}
+
+/** Pasta dos dados reais (ao lado do .exe), mesmo no modo apresentação: o aviso de atualização fica nela. */
+export function resolverPastaDosDadosReais(): string {
   const pastaPortatil = process.env.PORTABLE_EXECUTABLE_DIR;
   if (pastaPortatil) return pastaPortatil;
   if (app.isPackaged) return path.dirname(process.execPath);

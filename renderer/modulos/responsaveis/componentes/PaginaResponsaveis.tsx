@@ -63,6 +63,9 @@ export function PaginaResponsaveis({ podeEditar }: { podeEditar: boolean }) {
                 <CelulaCabecalho className="pl-5">Nome</CelulaCabecalho>
                 <CelulaCabecalho>Função</CelulaCabecalho>
                 <CelulaCabecalho>E-mail</CelulaCabecalho>
+                <CelulaCabecalho ajuda="Vinculado a um usuário, o recurso recebe as notificações das tarefas.">
+                  Notificações
+                </CelulaCabecalho>
                 <CelulaCabecalho>Situação</CelulaCabecalho>
                 <CelulaCabecalho className="w-24 pr-5">
                   <span className="sr-only">Ações</span>
@@ -78,6 +81,11 @@ export function PaginaResponsaveis({ podeEditar }: { podeEditar: boolean }) {
                   </CelulaTabela>
                   <CelulaTabela className="text-texto-secundario">
                     {responsavel.email ?? '—'}
+                  </CelulaTabela>
+                  <CelulaTabela>
+                    <Etiqueta tom={responsavel.usuarioId ? 'info' : 'neutro'}>
+                      {responsavel.usuarioId ? 'Vinculado' : 'Sem vínculo'}
+                    </Etiqueta>
                   </CelulaTabela>
                   <CelulaTabela>
                     <Etiqueta tom={responsavel.ativo ? 'sucesso' : 'neutro'}>

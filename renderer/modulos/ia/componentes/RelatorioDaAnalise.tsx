@@ -5,9 +5,11 @@ import type {
 } from '@contratos/ia.contrato';
 import { Etiqueta } from '@/compartilhado/ui/Etiqueta';
 import { descricaoDaGeracao, GRAVIDADE, Marcadores, SAUDE, Secao } from './comum';
+import { RelatorioDasAvs } from './RelatorioDasAvs';
 
 /** Conteúdo do relatório, igual no modal, no arquivo e no PDF. */
 export function RelatorioDaAnalise({ arquivada }: { arquivada: AnaliseArquivadaDTO }) {
+  if (arquivada.tipo === 'avs') return <RelatorioDasAvs analise={arquivada.analise} />;
   return arquivada.tipo === 'cronograma' ? (
     <RelatorioCronograma analise={arquivada.analise} />
   ) : (
@@ -18,7 +20,7 @@ export function RelatorioDaAnalise({ arquivada }: { arquivada: AnaliseArquivadaD
 export function RelatorioCronograma({ analise }: { analise: AnaliseCronogramaDTO }) {
   const saude = SAUDE[analise.saude];
   return (
-    <>
+    <div className="selecionavel">
       <div className="flex flex-wrap items-center gap-2">
         <Etiqueta tom={saude.tom}>{saude.rotulo}</Etiqueta>
         <span className="text-xs text-texto-sutil">{descricaoDaGeracao(analise)}</span>
@@ -56,14 +58,14 @@ export function RelatorioCronograma({ analise }: { analise: AnaliseCronogramaDTO
           </li>
         ))}
       </Secao>
-    </>
+    </div>
   );
 }
 
 export function RelatorioPortfolio({ analise }: { analise: AnalisePortfolioDTO }) {
   const saude = SAUDE[analise.saude];
   return (
-    <>
+    <div className="selecionavel">
       <div className="flex flex-wrap items-center gap-2">
         <Etiqueta tom={saude.tom}>{saude.rotulo}</Etiqueta>
         <span className="text-xs text-texto-sutil">
@@ -123,6 +125,6 @@ export function RelatorioPortfolio({ analise }: { analise: AnalisePortfolioDTO }
           </li>
         ))}
       </Secao>
-    </>
+    </div>
   );
 }

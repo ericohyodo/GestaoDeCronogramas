@@ -24,6 +24,7 @@ export interface CamposComerciaisAv {
   respAbertura: string | null;
   linha: string | null;
   origemProjeto: string | null;
+  familia: string | null;
   localEntrega: string | null;
   conceitoLogistico: string | null;
   respEmbalagem: string | null;
@@ -42,7 +43,17 @@ export interface PropsAv extends CamposComerciaisAv {
   cronogramaId: string | null;
   criadoPor: string | null;
   criadoEm: Date;
+  /** Grupo de AVs; só leitura aqui — quem muda o vínculo é o repositório de grupos. */
+  grupoId: string | null;
+  grupoNome: string | null;
+  /** Campos a preencher à mão depois de herdar dados do grupo; `null` = nunca herdou. */
+  camposPendentes: string[] | null;
+  /** Criada antes do uso multiusuário (migração 0042): aba própria e fora dos contadores; segue editável. */
+  historico: boolean;
 }
+
+/** Campos que mudam de produto para produto: não são herdados do grupo e ficam em alerta até serem preenchidos. */
+export const CAMPOS_DO_PRODUTO = ['descricao', 'codigo', 'volumeAnual', 'linha', 'programa'] as const;
 
 export interface DadosNovaAv {
   id: string;
@@ -87,6 +98,7 @@ export class Av {
       respAbertura: null,
       linha: null,
       origemProjeto: null,
+      familia: null,
       localEntrega: null,
       conceitoLogistico: null,
       respEmbalagem: null,
@@ -98,6 +110,10 @@ export class Av {
       cronogramaId: null,
       criadoPor: dados.criadoPor,
       criadoEm: dados.agora,
+      grupoId: null,
+      grupoNome: null,
+      camposPendentes: null,
+      historico: false,
     });
   }
 
@@ -171,6 +187,9 @@ export class Av {
   get origemProjeto(): string | null {
     return this.props.origemProjeto;
   }
+  get familia(): string | null {
+    return this.props.familia;
+  }
   get localEntrega(): string | null {
     return this.props.localEntrega;
   }
@@ -204,8 +223,52 @@ export class Av {
   get criadoEm(): Date {
     return this.props.criadoEm;
   }
+  get grupoId(): string | null {
+    return this.props.grupoId;
+  }
+  get grupoNome(): string | null {
+    return this.props.grupoNome;
+  }
+  get historico(): boolean {
+    return this.props.historico;
+  }
+  get camposPendentes(): string[] | null {
+    return this.props.camposPendentes ? [...this.props.camposPendentes] : null;
+  }
+
+  /**
+   * Chamado quando a AV recebe dados do grupo pela primeira vez: os campos do produto são esvaziados
+   * (a descrição fica, pois é obrigatória) e passam a constar como pendentes até serem preenchidos.
+   */
+  marcarHerdadoDoGrupo(): void {
+    this.props.codigo = null;
+    this.props.volumeAnual = null;
+    this.props.linha = null;
+    this.props.programa = null;
+    this.props.camposPendentes = [...CAMPOS_DO_PRODUTO];
+  }
+
+  /** Um campo pendente deixa de ser pendente quando recebe um valor diferente do atual. */
+  private resolverPendencias(campos: Partial<CamposComerciaisAv>): void {
+    const pendentes = this.props.camposPendentes;
+    if (!pendentes || pendentes.length === 0) return;
+    const atuais: Record<string, unknown> = {
+      descricao: this.props.descricao,
+      codigo: this.props.codigo,
+      volumeAnual: this.props.volumeAnual,
+      linha: this.props.linha,
+      programa: this.props.programa,
+    };
+    const texto = (valor: unknown) => (valor === null || valor === undefined ? '' : String(valor).trim());
+    this.props.camposPendentes = pendentes.filter((campo) => {
+      const novo = (campos as Record<string, unknown>)[campo];
+      if (novo === undefined) return true;
+      return texto(novo) === '' || texto(novo) === texto(atuais[campo]);
+    });
+  }
 
   atualizarComercial(campos: Partial<CamposComerciaisAv>): void {
+    this.resolverPendencias(campos);
     if (campos.descricao !== undefined) {
       this.props.descricao = exigirTexto(campos.descricao, 'A descrição', TAMANHO_MAXIMO_DESCRICAO);
     }
@@ -245,6 +308,7 @@ export class Av {
       this.props.respAbertura = normalizarTextoOpcional(campos.respAbertura);
     }
     if (campos.linha !== undefined) this.props.linha = normalizarTextoOpcional(campos.linha);
+    if (campos.familia !== undefined) this.props.familia = normalizarTextoOpcional(campos.familia);
     if (campos.origemProjeto !== undefined) {
       this.props.origemProjeto = normalizarTextoOpcional(campos.origemProjeto);
     }
@@ -276,6 +340,11 @@ export class Av {
     this.props.etapaAtual = numero;
   }
 
+  /** Aceite da SD: a AV passa a apontar para o projeto criado. */
+  vincularProjeto(cronogramaId: string): void {
+    this.props.cronogramaId = cronogramaId;
+  }
+
   marcarPropostaEnviada(agora: Date): void {
     this.props.propostaEnviada = true;
     this.props.dataProposta = agora;
@@ -302,9 +371,13 @@ function validarEmailOpcional(email: string | null | undefined): string | null {
   return texto;
 }
 
-/** Ex.: `AV 0007-26`. */
+/**
+ * Número da AV no formato unificado `AV AA-SSS` (ex.: `AV 26-001`). O mesmo sufixo acompanha a SD
+ * (`SD 26-001`) e o projeto (`PRO 26-001`). Acima de 999 AVs no ano o sequencial cresce para 4 dígitos.
+ * @param sequencial sequencial da AV dentro do ano (recomeça a cada ano)
+ * @param ano ano de abertura com 4 dígitos
+ */
 export function gerarNumeroAv(sequencial: number, ano: number): string {
-  const seq = String(sequencial).padStart(4, '0');
-  const anoCurto = String(ano).slice(-2);
-  return `AV ${seq}-${anoCurto}`;
+  const anoCurto = String(ano % 100).padStart(2, '0');
+  return `AV ${anoCurto}-${String(sequencial).padStart(3, '0')}`;
 }

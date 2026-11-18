@@ -137,6 +137,22 @@ export function PainelEstrutura({
     }).catch((falha: unknown) => definirErro(mensagemDeErro(falha)));
   };
 
+  /** Alça ⊕ da tabela: insere abaixo de uma tarefa (mesmas datas dela) ou no início de uma fase. */
+  const inserirTarefa = (posicao: { apos: LinhaEstruturaDTO } | { inicioDaFase: string }) => {
+    const fim = somarDias(periodo.inicio, 6);
+    const padrao = { inicio: periodo.inicio, fim: fim < periodo.fim ? fim : periodo.fim };
+    const referencia = 'apos' in posicao ? posicao.apos : null;
+    criarTarefa({
+      cronogramaId,
+      titulo: 'Nova tarefa',
+      dataInicio: referencia?.dataInicio ?? padrao.inicio,
+      dataFim: referencia?.dataFim ?? padrao.fim,
+      ...('apos' in posicao
+        ? { inserirApos: posicao.apos.id }
+        : { faseId: posicao.inicioDaFase, inserirNoInicio: true }),
+    }).catch((falha: unknown) => definirErro(mensagemDeErro(falha)));
+  };
+
   const linhas = estrutura?.linhas ?? [];
   const podeEditarAlgo = podeEditarTarefas || podeEditarFases;
 
@@ -236,6 +252,7 @@ export function PainelEstrutura({
               aoExcluirFase={setParaExcluir}
               aoAjustarDatasDaFase={setFaseParaAjustar}
               aoAdicionarTarefa={adicionarTarefa}
+              aoInserirTarefa={inserirTarefa}
               aoReordenarTarefas={(ordens) =>
                 reordenarTarefas({ cronogramaId, ordens }).catch(
                   (falha: unknown) => definirErro(mensagemDeErro(falha)),

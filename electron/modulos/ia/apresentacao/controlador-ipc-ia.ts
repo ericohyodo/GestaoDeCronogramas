@@ -3,6 +3,9 @@ import { CANAIS } from '@contratos/canais';
 import { LIMITE_DE_MENSAGENS_DO_CHAT, MODELOS_IA } from '@contratos/ia.contrato';
 import { esquemaId, esquemaSemEntrada } from '../../../nucleo/infraestrutura/ipc/esquemas';
 import type { RegistradorIpc } from '../../../nucleo/infraestrutura/ipc/registrador-ipc';
+import type { AnalisarAvs, ConversarSobreAvs, UltimaAnaliseAvs } from '../aplicacao/casos-de-uso-avs';
+import type { ExcluirConversa, ListarConversas, ObterConversa } from '../aplicacao/conversas';
+import type { AplicarProposta, DescartarProposta } from '../aplicacao/agente-de-cronogramas';
 import type {
   AnalisarCronograma,
   AnalisarPortfolio,
@@ -33,6 +36,21 @@ export interface CasosDeUsoIa {
   obterInstrucoes: ObterInstrucoesIa;
   salvarInstrucoes: SalvarInstrucoesIa;
   restaurarChecklist: RestaurarChecklistIa;
+  // IA do módulo de AVs
+  estadoAvs: ObterEstadoIa;
+  configurarAvs: ConfigurarIa;
+  removerChaveAvs: RemoverChaveIa;
+  analisarAvs: AnalisarAvs;
+  ultimaAnaliseAvs: UltimaAnaliseAvs;
+  conversarAvs: ConversarSobreAvs;
+  listarConversas: ListarConversas;
+  obterConversa: ObterConversa;
+  excluirConversa: ExcluirConversa;
+  aplicarProposta: AplicarProposta;
+  descartarProposta: DescartarProposta;
+  obterInstrucoesAvs: ObterInstrucoesIa;
+  salvarInstrucoesAvs: SalvarInstrucoesIa;
+  restaurarChecklistAvs: RestaurarChecklistIa;
   listarAnalises: ListarAnalises;
   obterAnalise: ObterAnalise;
   ultimaAnalise: UltimaAnalise;
@@ -52,6 +70,7 @@ const esquemaConversar = z.object({
     .array(z.object({ papel: z.enum(['usuario', 'ia']), texto: z.string().max(50000) }))
     .min(1)
     .max(LIMITE_DE_MENSAGENS_DO_CHAT * 2),
+  conversaId: esquemaId.nullish(),
 });
 
 // Limites de tamanho reais ficam no caso de uso; aqui só se barra lixo grosseiro.
@@ -101,4 +120,37 @@ export function registrarIpcIa(ipc: RegistradorIpc, casos: CasosDeUsoIa): void {
   ipc.registrar(CANAIS.ia.restaurarChecklist, 'planejamento', esquemaSemEntrada, () =>
     casos.restaurarChecklist.executar(),
   );
+  // IA do módulo de AVs: mesmas permissões dos equivalentes de projetos.
+  ipc.registrar(CANAIS.ia.estadoAvs, 'leitura', esquemaSemEntrada, () => casos.estadoAvs.executar());
+  ipc.registrar(CANAIS.ia.configurarAvs, 'administracao', esquemaConfigurar, (entrada) =>
+    casos.configurarAvs.executar(entrada),
+  );
+  ipc.registrar(CANAIS.ia.removerChaveAvs, 'administracao', esquemaSemEntrada, () =>
+    casos.removerChaveAvs.executar(),
+  );
+  ipc.registrar(CANAIS.ia.analisarAvs, 'leitura', esquemaSemEntrada, () => casos.analisarAvs.executar());
+  ipc.registrar(CANAIS.ia.ultimaAnaliseAvs, 'leitura', esquemaSemEntrada, () =>
+    casos.ultimaAnaliseAvs.executar(),
+  );
+  ipc.registrar(CANAIS.ia.conversarAvs, 'leitura', esquemaConversar, (entrada) =>
+    casos.conversarAvs.executar(entrada),
+  );
+  ipc.registrar(CANAIS.ia.obterInstrucoesAvs, 'planejamento', esquemaSemEntrada, () =>
+    casos.obterInstrucoesAvs.executar(),
+  );
+  ipc.registrar(CANAIS.ia.salvarInstrucoesAvs, 'planejamento', esquemaSalvarInstrucoes, (entrada) =>
+    casos.salvarInstrucoesAvs.executar(entrada),
+  );
+  ipc.registrar(CANAIS.ia.restaurarChecklistAvs, 'planejamento', esquemaSemEntrada, () =>
+    casos.restaurarChecklistAvs.executar(),
+  );
+  // Histórico do chat: cada usuário só lista, abre e exclui as próprias conversas (checado no caso de uso).
+  ipc.registrar(CANAIS.ia.listarConversas, 'leitura', z.enum(['projetos', 'avs']), (escopo) =>
+    casos.listarConversas.executar(escopo),
+  );
+  ipc.registrar(CANAIS.ia.obterConversa, 'leitura', esquemaId, (id) => casos.obterConversa.executar(id));
+  ipc.registrar(CANAIS.ia.excluirConversa, 'leitura', esquemaId, (id) => casos.excluirConversa.executar(id));
+  // Agente: aplicar mexe no cronograma (mesma permissão de editar tarefas na tela); descartar é só da proposta.
+  ipc.registrar(CANAIS.ia.aplicarProposta, 'tarefas', esquemaId, (id) => casos.aplicarProposta.executar(id));
+  ipc.registrar(CANAIS.ia.descartarProposta, 'leitura', esquemaId, (id) => casos.descartarProposta.executar(id));
 }

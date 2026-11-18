@@ -10,7 +10,7 @@ import { AreaTexto } from '@/compartilhado/ui/Campos';
 import { DialogoConfirmacao } from '@/compartilhado/ui/DialogoConfirmacao';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
-import { useIaStore } from '../store/use-ia-store';
+import { usarStoreIa } from '../store/use-ia-store';
 
 // Os mesmos limites do processo principal, para avisar antes de salvar.
 const LIMITE_DE_ITENS = 30;
@@ -21,11 +21,12 @@ const LIMITE_DE_ORIENTACOES = 4000;
  * O que a IA verifica nas análises: checklist e orientações da empresa, editáveis com o app
  * rodando. A parte fixa (formato da resposta, leitura dos dados) aparece só para consulta.
  */
-export function InstrucoesIa() {
-  const instrucoes = useIaStore((store) => store.instrucoes);
-  const carregarInstrucoes = useIaStore((store) => store.carregarInstrucoes);
-  const salvarInstrucoes = useIaStore((store) => store.salvarInstrucoes);
-  const restaurarChecklist = useIaStore((store) => store.restaurarChecklist);
+export function InstrucoesIa({ escopo = 'projetos' }: { escopo?: 'projetos' | 'avs' }) {
+  const usarStore = usarStoreIa(escopo);
+  const instrucoes = usarStore((store) => store.instrucoes);
+  const carregarInstrucoes = usarStore((store) => store.carregarInstrucoes);
+  const salvarInstrucoes = usarStore((store) => store.salvarInstrucoes);
+  const restaurarChecklist = usarStore((store) => store.restaurarChecklist);
 
   // Rascunho local: `null` enquanto espelha o que está salvo.
   const [rascunho, setRascunho] = useState<{ checklist: ItemDaChecklistDTO[]; orientacoes: string } | null>(null);
@@ -83,7 +84,9 @@ export function InstrucoesIa() {
             <div>
               <h2 className="text-base font-semibold">Checklist de verificação</h2>
               <p className="mt-0.5 text-sm text-texto-secundario">
-                Pontos que a IA verifica obrigatoriamente em cada análise de cronograma.{' '}
+                {escopo === 'avs'
+                  ? 'Pontos que a IA verifica obrigatoriamente em cada análise das AVs.'
+                  : 'Pontos que a IA verifica obrigatoriamente em cada análise de cronograma.'}{' '}
                 <span className="tabular-nums">{ativos}</span> ativo(s).
               </p>
             </div>
@@ -137,7 +140,7 @@ export function InstrucoesIa() {
       <PainelVidro className="p-6">
         <AreaTexto
           rotulo="Orientações da empresa"
-          dica={`Valem para a análise de cada cronograma e para a do portfólio. ${atual.orientacoes.length}/${LIMITE_DE_ORIENTACOES} caracteres.`}
+          dica={`${escopo === 'avs' ? 'Valem para a análise e para o chat das AVs.' : 'Valem para a análise de cada cronograma e para a do portfólio.'} ${atual.orientacoes.length}/${LIMITE_DE_ORIENTACOES} caracteres.`}
           value={atual.orientacoes}
           maxLength={LIMITE_DE_ORIENTACOES}
           rows={5}
@@ -186,7 +189,11 @@ export function InstrucoesIa() {
       <DialogoConfirmacao
         aberto={restaurando}
         titulo="Restaurar checklist padrão"
-        mensagem="A checklist volta aos pontos padrão de APQP. As orientações da empresa são mantidas."
+        mensagem={
+          escopo === 'avs'
+            ? 'A checklist volta aos pontos padrão de viabilidade. As orientações da empresa são mantidas.'
+            : 'A checklist volta aos pontos padrão de APQP. As orientações da empresa são mantidas.'
+        }
         rotuloConfirmar="Restaurar"
         aoConfirmar={async () => {
           await restaurarChecklist();

@@ -7,6 +7,7 @@ interface LinhaResponsavel {
   nome: string;
   email: string | null;
   funcao: string | null;
+  usuario_id: string | null;
   ativo: number;
   criado_em: string;
   atualizado_em: string;
@@ -22,16 +23,18 @@ export class RepositorioResponsaveisSqlite implements RepositorioResponsaveis {
       ),
       obterPorId: db.prepare<[string], LinhaResponsavel>('SELECT * FROM responsaveis WHERE id = ?'),
       salvar: db.prepare<[LinhaResponsavel]>(`
-        INSERT INTO responsaveis (id, nome, email, funcao, ativo, criado_em, atualizado_em)
-        VALUES (@id, @nome, @email, @funcao, @ativo, @criado_em, @atualizado_em)
+        INSERT INTO responsaveis (id, nome, email, funcao, usuario_id, ativo, criado_em, atualizado_em)
+        VALUES (@id, @nome, @email, @funcao, @usuario_id, @ativo, @criado_em, @atualizado_em)
         ON CONFLICT (id) DO UPDATE SET
           nome          = excluded.nome,
           email         = excluded.email,
           funcao        = excluded.funcao,
+          usuario_id    = excluded.usuario_id,
           ativo         = excluded.ativo,
           atualizado_em = excluded.atualizado_em
       `),
       excluir: db.prepare<[string]>('DELETE FROM responsaveis WHERE id = ?'),
+      obterPorUsuario: db.prepare<[string], LinhaResponsavel>('SELECT * FROM responsaveis WHERE usuario_id = ?'),
     };
   }
 
@@ -48,6 +51,11 @@ export class RepositorioResponsaveisSqlite implements RepositorioResponsaveis {
     this.sql.salvar.run(paraLinha(responsavel));
   }
 
+  async obterPorUsuario(usuarioId: string): Promise<Responsavel | null> {
+    const linha = this.sql.obterPorUsuario.get(usuarioId);
+    return linha ? paraEntidade(linha) : null;
+  }
+
   async excluir(id: string): Promise<void> {
     this.sql.excluir.run(id);
   }
@@ -59,6 +67,7 @@ function paraEntidade(linha: LinhaResponsavel): Responsavel {
     nome: linha.nome,
     email: linha.email,
     funcao: linha.funcao,
+    usuarioId: linha.usuario_id ?? null,
     ativo: linha.ativo === 1,
     criadoEm: new Date(linha.criado_em),
     atualizadoEm: new Date(linha.atualizado_em),
@@ -71,6 +80,7 @@ function paraLinha(responsavel: Responsavel): LinhaResponsavel {
     nome: responsavel.nome,
     email: responsavel.email,
     funcao: responsavel.funcao,
+    usuario_id: responsavel.usuarioId,
     ativo: responsavel.ativo ? 1 : 0,
     criado_em: responsavel.criadoEm.toISOString(),
     atualizado_em: responsavel.atualizadoEm.toISOString(),

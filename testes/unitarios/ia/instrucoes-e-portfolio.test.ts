@@ -186,11 +186,11 @@ describe('Portfólio', () => {
       },
     };
     const armazenamento = {
-      chaves: { anthropic: null, google: 'AQ.chaveFicticiaDeTesteParaOGemini0000000000' } as Record<ProvedorIaDTO, string | null>,
+      chaves: { anthropic: 'sk-ant-api03-chaveFicticiaDeTeste0000000000' } as Record<ProvedorIaDTO, string | null>,
       obter: async (provedor: ProvedorIaDTO) => armazenamento.chaves[provedor],
       salvar: async () => undefined,
       remover: async () => undefined,
-      obterModelo: async (): Promise<ModeloIaDTO> => 'gemini-3.5-flash-lite',
+      obterModelo: async (): Promise<ModeloIaDTO> => 'claude-haiku-5-5',
       salvarModelo: async () => undefined,
     };
     const instrucoes = new InstrucoesFalsas();
@@ -205,6 +205,7 @@ describe('Portfólio', () => {
       cofre: armazenamento,
       configuracao: armazenamento,
       modelo,
+      consultaDeAvs: { relatorio: async () => [] },
       consultaDeCronograma: {
         obterResumo: async (id) => resumo(id),
         listarIdsAtivos: async () => ['c1', 'c2'],
@@ -228,7 +229,7 @@ describe('Portfólio', () => {
     });
     expect(pedidos[0]!.contexto.projetos.map((projeto) => projeto.nome)).toEqual(['c1']);
     expect(pedidos[0]!.instrucoes).toContain('SOP é prioridade');
-    expect(pedidos[0]!.modelo).toBe('gemini-3.5-flash-lite');
+    expect(pedidos[0]!.modelo).toBe('claude-haiku-5-5');
   });
 
   it('sem projetos com atividades, explica em vez de chamar a IA', async () => {
@@ -245,6 +246,7 @@ describe('Portfólio', () => {
         cofre: armazenamento,
         configuracao: armazenamento,
         modelo,
+        consultaDeAvs: { relatorio: async () => [] },
         consultaDeCronograma: {
           obterResumo: async (id) => resumo(id),
           listarIdsAtivos: async () => ['c1'],

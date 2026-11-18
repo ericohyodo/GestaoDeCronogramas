@@ -1,11 +1,12 @@
 'use client';
 
-import { Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Layers, Plus } from 'lucide-react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Botao } from '@/compartilhado/ui/Botao';
 import { CabecalhoPagina } from '@/compartilhado/ui/CabecalhoPagina';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { DashboardAvPanel } from './DashboardAvPanel';
+import { GruposAvModal } from './GruposAvModal';
 import { ListaAvs } from './ListaAvs';
 import { NovaAvModal } from './NovaAvModal';
 import { useAvsStore } from '../store/use-avs-store';
@@ -15,9 +16,10 @@ import { useAvsStore } from '../store/use-avs-store';
  * comercial dentro do próprio módulo (ver `AutorizacaoAv.exigirCompetencia`), então o botão aparece
  * pra todo mundo logado e o backend recusa com uma mensagem clara quem não pode.
  */
-export function PaginaAvs() {
+export function PaginaAvs({ acoesExtras }: { acoesExtras?: ReactNode }) {
   const { itens, erro, carregar, limparErro } = useAvsStore();
   const [criando, setCriando] = useState(false);
+  const [gerenciandoGrupos, setGerenciandoGrupos] = useState(false);
 
   useEffect(() => {
     void carregar();
@@ -29,9 +31,15 @@ export function PaginaAvs() {
         titulo="Análises de Viabilidade"
         descricao="Do intake comercial até a proposta, uma etapa de cada vez."
         acoes={
-          <Botao variante="primario" icone={Plus} onClick={() => setCriando(true)}>
-            Nova AV
-          </Botao>
+          <>
+            {acoesExtras}
+            <Botao icone={Layers} onClick={() => setGerenciandoGrupos(true)}>
+              Grupos de AVs
+            </Botao>
+            <Botao variante="primario" icone={Plus} onClick={() => setCriando(true)}>
+              Nova AV
+            </Botao>
+          </>
         }
       />
 
@@ -40,6 +48,7 @@ export function PaginaAvs() {
       <DashboardAvPanel />
       <ListaAvs itens={itens} />
 
+      <GruposAvModal aberto={gerenciandoGrupos} aoFechar={() => setGerenciandoGrupos(false)} />
       <NovaAvModal aberto={criando} aoFechar={() => setCriando(false)} />
     </div>
   );

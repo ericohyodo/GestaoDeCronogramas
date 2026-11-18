@@ -7,6 +7,9 @@ interface LinhaUsuario {
   id: string;
   nome: string;
   login: string;
+  email: string | null;
+  departamento: string | null;
+  precisa_definir_senha: number;
   senha_hash: string;
   perfil: string;
   ativo: number;
@@ -34,12 +37,15 @@ export class RepositorioUsuariosSqlite implements RepositorioUsuarios {
         .pluck(),
       salvar: db.prepare<[LinhaUsuario]>(`
         INSERT INTO usuarios
-          (id, nome, login, senha_hash, perfil, ativo, criado_em, atualizado_em, ultimo_acesso_em)
+          (id, nome, login, email, departamento, precisa_definir_senha, senha_hash, perfil, ativo, criado_em, atualizado_em, ultimo_acesso_em)
         VALUES
-          (@id, @nome, @login, @senha_hash, @perfil, @ativo, @criado_em, @atualizado_em, @ultimo_acesso_em)
+          (@id, @nome, @login, @email, @departamento, @precisa_definir_senha, @senha_hash, @perfil, @ativo, @criado_em, @atualizado_em, @ultimo_acesso_em)
         ON CONFLICT (id) DO UPDATE SET
           nome             = excluded.nome,
           login            = excluded.login,
+          email            = excluded.email,
+          departamento     = excluded.departamento,
+          precisa_definir_senha = excluded.precisa_definir_senha,
           senha_hash       = excluded.senha_hash,
           perfil           = excluded.perfil,
           ativo            = excluded.ativo,
@@ -86,6 +92,9 @@ function paraEntidade(linha: LinhaUsuario): Usuario {
     id: linha.id,
     nome: linha.nome,
     login: linha.login,
+    email: linha.email ?? null,
+    departamento: linha.departamento ?? null,
+    precisaDefinirSenha: linha.precisa_definir_senha === 1,
     senhaHash: linha.senha_hash,
     perfil: linha.perfil as Perfil,
     ativo: linha.ativo === 1,
@@ -100,6 +109,9 @@ function paraLinha(usuario: Usuario): LinhaUsuario {
     id: usuario.id,
     nome: usuario.nome,
     login: usuario.login,
+    email: usuario.email,
+    departamento: usuario.departamento,
+    precisa_definir_senha: usuario.precisaDefinirSenha ? 1 : 0,
     senha_hash: usuario.senhaHash,
     perfil: usuario.perfil,
     ativo: usuario.ativo ? 1 : 0,

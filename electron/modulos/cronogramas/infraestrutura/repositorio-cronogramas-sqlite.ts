@@ -11,6 +11,10 @@ interface LinhaCronograma {
   data_inicio: string;
   data_fim: string;
   situacao: string;
+  codigo: string | null;
+  sd_id: string | null;
+  /** Só leitura: marcado pela migração 0042, nunca gravado pelo repositório. */
+  historico?: number;
   criado_em: string;
   atualizado_em: string;
 }
@@ -27,9 +31,9 @@ export class RepositorioCronogramasSqlite implements RepositorioCronogramas {
       existe: db.prepare<[string], number>('SELECT 1 FROM cronogramas WHERE id = ?').pluck(),
       salvar: db.prepare<[LinhaCronograma]>(`
         INSERT INTO cronogramas
-          (id, nome, descricao, data_inicio, data_fim, situacao, criado_em, atualizado_em)
+          (id, nome, descricao, data_inicio, data_fim, situacao, codigo, sd_id, criado_em, atualizado_em)
         VALUES
-          (@id, @nome, @descricao, @data_inicio, @data_fim, @situacao, @criado_em, @atualizado_em)
+          (@id, @nome, @descricao, @data_inicio, @data_fim, @situacao, @codigo, @sd_id, @criado_em, @atualizado_em)
         ON CONFLICT (id) DO UPDATE SET
           nome          = excluded.nome,
           descricao     = excluded.descricao,
@@ -71,6 +75,9 @@ function paraEntidade(linha: LinhaCronograma): Cronograma {
     descricao: linha.descricao,
     periodo: Periodo.criar(linha.data_inicio, linha.data_fim),
     situacao: linha.situacao as SituacaoCronograma,
+    codigo: linha.codigo,
+    sdId: linha.sd_id,
+    historico: linha.historico === 1,
     criadoEm: new Date(linha.criado_em),
     atualizadoEm: new Date(linha.atualizado_em),
   });
@@ -84,6 +91,8 @@ function paraLinha(cronograma: Cronograma): LinhaCronograma {
     data_inicio: cronograma.periodo.inicio,
     data_fim: cronograma.periodo.fim,
     situacao: cronograma.situacao,
+    codigo: cronograma.codigo,
+    sd_id: cronograma.sdId,
     criado_em: cronograma.criadoEm.toISOString(),
     atualizado_em: cronograma.atualizadoEm.toISOString(),
   };
