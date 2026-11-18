@@ -17,6 +17,7 @@ import { TourDaApresentacao } from '@/modulos/apresentacao/componentes/TourDaApr
 import { useApresentacaoStore } from '@/modulos/apresentacao/store/use-apresentacao-store';
 import { SinoDeNotificacoes } from '@/modulos/notificacoes/componentes/SinoDeNotificacoes';
 import { useNotificacoesStore } from '@/modulos/notificacoes/store/use-notificacoes-store';
+import { BotaoReportar } from '@/modulos/reportes/componentes/BotaoReportar';
 import { MenuDoUsuario } from '@/modulos/usuarios/componentes/MenuDoUsuario';
 import { useSessaoStore } from '@/modulos/usuarios/store/use-sessao-store';
 
@@ -144,6 +145,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                   permissoes={permissoes}
                   contadores={{ notificacoes: naoLidas }}
                   aoRetrair={() => setLateralRetraida(true)}
+                  extras={<BotaoReportar />}
                 />
               )}
               <main className="min-w-0 flex-1 overflow-y-auto rounded-2xl">

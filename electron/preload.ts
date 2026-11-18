@@ -53,6 +53,13 @@ const api: ApiDesktop = {
     atualizar: (entrada) => invocar(CANAIS.responsaveis.atualizar, entrada),
     excluir: (id) => invocar(CANAIS.responsaveis.excluir, id),
   },
+  reportes: {
+    criar: (entrada) => invocar(CANAIS.reportes.criar, entrada),
+    listar: (filtro) => invocar(CANAIS.reportes.listar, filtro),
+    obter: (id) => invocar(CANAIS.reportes.obter, id),
+    registrarAndamento: (entrada) => invocar(CANAIS.reportes.registrarAndamento, entrada),
+    obterImagem: (imagemId) => invocar(CANAIS.reportes.obterImagem, imagemId),
+  },
   sds: {
     listar: () => invocar(CANAIS.sds.listar),
     obterPorAv: (avId) => invocar(CANAIS.sds.obterPorAv, avId),

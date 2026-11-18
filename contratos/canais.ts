@@ -94,6 +94,13 @@ export const CANAIS = {
     salvarInstrucoesAvs: 'ia:salvar-instrucoes-avs',
     restaurarChecklistAvs: 'ia:restaurar-checklist-avs',
   },
+  reportes: {
+    criar: 'reportes:criar',
+    listar: 'reportes:listar',
+    obter: 'reportes:obter',
+    registrarAndamento: 'reportes:registrar-andamento',
+    obterImagem: 'reportes:obter-imagem',
+  },
   sds: {
     listar: 'sds:listar',
     obterPorAv: 'sds:obter-por-av',

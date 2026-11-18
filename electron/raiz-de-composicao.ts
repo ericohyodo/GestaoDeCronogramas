@@ -13,6 +13,7 @@ import { montarModuloIa } from './modulos/ia';
 import { montarModuloImpressao } from './modulos/impressao';
 import { montarModuloNotificacoes } from './modulos/notificacoes';
 import { montarModuloPreferencias } from './modulos/preferencias';
+import { montarModuloReportes } from './modulos/reportes';
 import { montarModuloResponsaveis } from './modulos/responsaveis';
 import { montarModuloSds } from './modulos/sds';
 import { montarModuloTarefas } from './modulos/tarefas';
@@ -117,6 +118,28 @@ ${pasta}`,
       link: null,
     });
   }
+
+  // Reportar erro / sugestão: qualquer usuário envia; os administradores acompanham e dão baixa.
+  montarModuloReportes({
+    db,
+    ipc,
+    relogio,
+    geradorDeId,
+    notificador,
+    versaoDoApp: app.getVersion(),
+    acesso: {
+      usuarioAtual: () => {
+        const usuario = usuarios.consultas.usuarioAtual();
+        return usuario ? { id: usuario.id, nome: usuario.nome, administrador: usuario.perfil === 'administrador' } : null;
+      },
+      listarNomes: () => usuarios.consultas.listarAtivos(),
+      listarAdministradores: async () => {
+        const ativos = await usuarios.consultas.listarAtivos();
+        const perfis = await Promise.all(ativos.map((u) => usuarios.consultas.obterPerfilGlobal(u.id)));
+        return ativos.filter((_, i) => perfis[i] === 'administrador').map((u) => u.id);
+      },
+    },
+  });
 
   const responsaveis = montarModuloResponsaveis({ db, ipc, relogio, geradorDeId });
   const cronogramas = montarModuloCronogramas({ db, ipc, relogio, geradorDeId });

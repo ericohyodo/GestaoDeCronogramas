@@ -7,6 +7,14 @@ import type {
 } from './atualizacao.contrato';
 import type { CaixaDeNotificacoesDTO } from './notificacoes.contrato';
 import type {
+  AndamentoReporteEntrada,
+  ConteudoImagemReporteDTO,
+  CriarReporteEntrada,
+  ReporteDetalheDTO,
+  ReporteResumoDTO,
+  StatusReporteDTO,
+} from './reportes.contrato';
+import type {
   AceitarSdEntrada,
   AnexoSdDTO,
   DevolverSdEntrada,
@@ -157,6 +165,16 @@ export interface ApiDesktop {
     criar(entrada: CriarResponsavelEntrada): Promise<Resultado<ResponsavelDTO>>;
     atualizar(entrada: AtualizarResponsavelEntrada): Promise<Resultado<ResponsavelDTO>>;
     excluir(id: string): Promise<Resultado<null>>;
+  };
+  reportes: {
+    /** Qualquer pessoa logada: envia um erro ou sugestão (até 3 prints). */
+    criar(entrada: CriarReporteEntrada): Promise<Resultado<{ id: string; numero: number }>>;
+    /** Administrador: lista, mais recentes primeiro. */
+    listar(filtro?: { status?: StatusReporteDTO }): Promise<Resultado<ReporteResumoDTO[]>>;
+    obter(id: string): Promise<Resultado<ReporteDetalheDTO>>;
+    /** Administrador: muda o status (dar baixa) ou comenta; tudo vai para o log. */
+    registrarAndamento(entrada: AndamentoReporteEntrada): Promise<Resultado<ReporteDetalheDTO>>;
+    obterImagem(imagemId: string): Promise<Resultado<ConteudoImagemReporteDTO>>;
   };
   sds: {
     listar(): Promise<Resultado<SdDTO[]>>;
