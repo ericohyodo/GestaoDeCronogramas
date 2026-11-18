@@ -66,6 +66,7 @@ interface LinhaNoEstrutura {
   descricao: string;
   quantidade: number | null;
   unidade: string | null;
+  pecas_por_embalagem: number | null;
 }
 
 const AREA = 'produto' as const;
@@ -86,8 +87,8 @@ export class RepositorioSecaoProdutoSqlite implements RepositorioSecaoProduto {
       ),
       excluirEstrutura: db.prepare<[string]>('DELETE FROM av_estrutura_produto WHERE av_id = ?'),
       inserirNoEstrutura: db.prepare<[LinhaNoEstrutura]>(`
-        INSERT INTO av_estrutura_produto (id, av_id, pai_id, ordem, tipo, codigo, descricao, quantidade, unidade)
-        VALUES (@id, @av_id, @pai_id, @ordem, @tipo, @codigo, @descricao, @quantidade, @unidade)
+        INSERT INTO av_estrutura_produto (id, av_id, pai_id, ordem, tipo, codigo, descricao, quantidade, unidade, pecas_por_embalagem)
+        VALUES (@id, @av_id, @pai_id, @ordem, @tipo, @codigo, @descricao, @quantidade, @unidade, @pecas_por_embalagem)
       `),
       salvarSecao: db.prepare<[LinhaSecaoProduto]>(`
         INSERT INTO av_secao_produto (
@@ -191,6 +192,7 @@ export class RepositorioSecaoProdutoSqlite implements RepositorioSecaoProduto {
           descricao: no.descricao,
           quantidade: no.quantidade,
           unidade: no.unidade,
+          pecas_por_embalagem: no.pecasPorEmbalagem,
         });
       }
       this.sql.excluirInvestimentos.run(avId, AREA);
@@ -212,6 +214,7 @@ function paraNoEntidade(linha: LinhaNoEstrutura): NoEstrutura {
     descricao: linha.descricao,
     quantidade: linha.quantidade,
     unidade: linha.unidade,
+    pecasPorEmbalagem: linha.pecas_por_embalagem,
   };
 }
 

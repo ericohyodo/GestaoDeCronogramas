@@ -6,6 +6,7 @@ import { Botao } from '@/compartilhado/ui/Botao';
 import { CampoTexto, Selecao } from '@/compartilhado/ui/Campos';
 import { Modal, RodapeModal } from '@/compartilhado/ui/Modal';
 import { IconeDeEstrutura } from './IconesDeEstrutura';
+import { formatarQuantidade, pecasValidas, quantidadeDasPecas } from '../quantidade-da-embalagem';
 
 /** Um item da estrutura na tela. A lista é plana; a árvore é montada a partir de `paiChave`. */
 export interface NoEditavel {
@@ -16,6 +17,8 @@ export interface NoEditavel {
   descricao: string;
   quantidade: string;
   unidade: string;
+  /** Só embalagens: peças por embalagem (texto da tela). Vazio = quantidade digitada à mão. */
+  pecasPorEmbalagem: string;
 }
 
 export type DadosDoItem = Omit<NoEditavel, 'chave'>;
@@ -45,6 +48,7 @@ export function profundidades(nos: readonly NoEditavel[]): Map<string, number> {
 }
 
 export const rotuloDoNivel = (nivel: number) => `${nivel}º nível`;
+
 
 const nomeDoItem = (no: Pick<NoEditavel, 'codigo' | 'descricao'>) =>
   [no.codigo.trim(), no.descricao.trim()].filter(Boolean).join(' — ') || '(sem descrição)';
@@ -112,6 +116,18 @@ function Conteudo({
   const [descricao, setDescricao] = useState(edicao?.descricao ?? '');
   const [quantidade, setQuantidade] = useState(edicao?.quantidade ?? '1');
   const [unidade, setUnidade] = useState(edicao?.unidade ?? 'un');
+  const [pecasPorEmbalagem, setPecasPorEmbalagem] = useState(edicao?.pecasPorEmbalagem ?? '');
+  const ehEmbalagem = tipo === 'embalagem';
+  // Embalagem nova exige as peças; uma antiga (só com quantidade) pode continuar sem, até alguém preencher.
+  const embalagemLegada = ehEmbalagem && !!edicao && edicao.pecasPorEmbalagem.trim() === '';
+  const pecasOk = !ehEmbalagem || pecasValidas(pecasPorEmbalagem) !== null || (embalagemLegada && pecasPorEmbalagem.trim() === '');
+
+  const mudarTipo = (novo: TipoNoEstruturaDTO) => {
+    setTipo(novo);
+    // Embalagem é contada por peça: a unidade padrão passa a ser a da embalagem (caixa).
+    if (novo === 'embalagem' && unidade === 'un') setUnidade('cx');
+    if (novo !== 'embalagem' && unidade === 'cx') setUnidade('un');
+  };
 
   // Um nível N > 1 existe quando há algum item de nível N-1 que aceita filhos.
   const maiorNivelPai = Math.max(0, ...nos.filter(podeReceber).map((no) => nivelDe.get(no.chave) ?? 1));
@@ -124,7 +140,8 @@ function Conteudo({
     setPaiChave(null);
   };
 
-  const podeInserir = !!descricao.trim() && (!!edicao || nivel === 1 || !!paiEscolhido);
+  const podeInserir = !!descricao.trim() && pecasOk && (!!edicao || nivel === 1 || !!paiEscolhido);
+  const pecasInformadas = ehEmbalagem ? pecasValidas(pecasPorEmbalagem) : null;
 
   const enviar = () => {
     if (!podeInserir) return;
@@ -133,8 +150,9 @@ function Conteudo({
       tipo,
       codigo: codigo.trim(),
       descricao: descricao.trim(),
-      quantidade,
+      quantidade: pecasInformadas !== null ? quantidadeDasPecas(pecasPorEmbalagem) : quantidade,
       unidade: unidade.trim(),
+      pecasPorEmbalagem: pecasInformadas !== null ? String(pecasInformadas) : '',
     });
     aoFechar();
   };
@@ -157,7 +175,7 @@ function Conteudo({
             rotulo="Tipo"
             ajuda="Conjunto: subconjunto montado. Componente: peça ou item fabricado/comprado. Matéria-prima: material bruto (barra, chapa, granulado). Componentes e matérias-primas vão para as matérias-primas do Mapa de Custo. Embalagem: embalagem do produto. Insumo: material consumido na fabricação."
             value={tipo}
-            onChange={(e) => setTipo(e.target.value as TipoNoEstruturaDTO)}
+            onChange={(e) => mudarTipo(e.target.value as TipoNoEstruturaDTO)}
             opcoes={TIPOS_NO_ESTRUTURA.map((valor) => ({ valor, rotulo: ROTULO_DO_TIPO[valor] }))}
           />
           <div className="flex items-center gap-2 rounded-lg border border-borda/60 px-3 py-2 text-sm">
@@ -184,8 +202,33 @@ function Conteudo({
           )}
         </>
       )}
+      {ehEmbalagem && (
+        <div className="flex flex-col gap-1">
+          <CampoTexto
+            rotulo="Peças por embalagem"
+            ajuda="Quantas peças do produto cabem nesta embalagem. A estrutura recebe a fração por peça: 50 peças por caixa = 0,02 caixa por peça."
+            type="number"
+            min={1}
+            step={1}
+            required={!embalagemLegada}
+            value={pecasPorEmbalagem}
+            onChange={(e) => setPecasPorEmbalagem(e.target.value)}
+          />
+          <p className="text-xs text-texto-secundario">
+            {pecasInformadas !== null
+              ? `Quantidade na estrutura: 1/${pecasInformadas} = ${formatarQuantidade(quantidadeDasPecas(pecasPorEmbalagem))} ${unidade.trim() || 'un'} por peça.`
+              : embalagemLegada
+                ? 'Embalagem antiga, com quantidade digitada. Informe as peças para calcular automaticamente.'
+                : 'Informe um número inteiro maior que zero.'}
+          </p>
+        </div>
+      )}
       <div className="grid grid-cols-3 gap-3">
-        <CampoTexto rotulo="Quantidade" type="number" min={0} step="any" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
+        {pecasInformadas !== null ? (
+          <CampoTexto rotulo="Quantidade" value={formatarQuantidade(quantidadeDasPecas(pecasPorEmbalagem))} readOnly disabled />
+        ) : (
+          <CampoTexto rotulo="Quantidade" type="number" min={0} step="any" value={quantidade} onChange={(e) => setQuantidade(e.target.value)} />
+        )}
         <CampoTexto rotulo="Unidade" value={unidade} onChange={(e) => setUnidade(e.target.value)} placeholder="un, kg, m…" />
         <CampoTexto rotulo="Código" value={codigo} onChange={(e) => setCodigo(e.target.value)} />
       </div>

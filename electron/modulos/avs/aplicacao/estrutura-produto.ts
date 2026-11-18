@@ -10,6 +10,19 @@ import type { NoEstrutura, TipoNoEstrutura } from '../dominio/estrutura-produto'
 export const LIMITE_DE_ITENS_DA_ESTRUTURA = 500;
 
 /**
+ * Quantidade de embalagem por peça a partir das peças que cabem na embalagem (50 pç/cx → 0,02).
+ * @param pecasPorEmbalagem inteiro ≥ 1
+ * @returns a fração 1/peças, sem arredondar (o arredondamento fica para a exibição)
+ * @throws ErroDeValidacao se o valor não for um inteiro positivo
+ */
+export function quantidadeDaEmbalagem(pecasPorEmbalagem: number): number {
+  if (!Number.isInteger(pecasPorEmbalagem) || pecasPorEmbalagem < 1) {
+    throw new ErroDeValidacao('As peças por embalagem devem ser um número inteiro maior que zero.');
+  }
+  return 1 / pecasPorEmbalagem;
+}
+
+/**
  * Valida a árvore enviada pela tela e a transforma em nós com ids próprios. A lista deve vir com o pai antes
  * dos filhos (ordem em profundidade); cada tipo só pode ficar sob os tipos permitidos (embalagens e insumos não têm filhos).
  */
@@ -44,6 +57,12 @@ export function montarEstrutura(
     if (item.quantidade != null && (!Number.isFinite(item.quantidade) || item.quantidade < 0)) {
       throw new ErroDeValidacao('A quantidade de um item da estrutura não pode ser negativa.');
     }
+    const pecasPorEmbalagem = item.pecasPorEmbalagem ?? null;
+    if (pecasPorEmbalagem !== null && item.tipo !== 'embalagem') {
+      throw new ErroDeValidacao('Peças por embalagem só valem para itens do tipo embalagem.');
+    }
+    // Com as peças informadas, o servidor é quem calcula a quantidade (a tela não é a fonte da verdade).
+    const quantidade = pecasPorEmbalagem !== null ? quantidadeDaEmbalagem(pecasPorEmbalagem) : (item.quantidade ?? null);
 
     const no: NoEstrutura = {
       id: gerarId(),
@@ -53,8 +72,9 @@ export function montarEstrutura(
       tipo: item.tipo,
       codigo: normalizarTextoOpcional(item.codigo),
       descricao: exigirTexto(item.descricao, 'A descrição do item da estrutura', 200),
-      quantidade: item.quantidade ?? null,
+      quantidade,
       unidade: normalizarTextoOpcional(item.unidade),
+      pecasPorEmbalagem,
     };
     porChave.set(item.chave, no);
     return no;

@@ -11,4 +11,6 @@ export interface NoEstrutura {
   descricao: string;
   quantidade: number | null;
   unidade: string | null;
+  /** Só embalagens: peças por embalagem (a quantidade é 1/peças). */
+  pecasPorEmbalagem: number | null;
 }

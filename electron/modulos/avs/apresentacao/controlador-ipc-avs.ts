@@ -248,6 +248,7 @@ const esquemaSalvarSecaoProduto = z.object({
         descricao: z.string(),
         quantidade: z.number().nullish(),
         unidade: z.string().nullish(),
+        pecasPorEmbalagem: z.number().int().min(1).max(10_000_000).nullish(),
       }),
     )
     .max(500),

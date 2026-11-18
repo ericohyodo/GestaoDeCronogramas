@@ -326,6 +326,8 @@ export interface NoEstruturaDTO {
   descricao: string;
   quantidade: number | null;
   unidade: string | null;
+  /** Só embalagens: peças por embalagem; a quantidade é 1/peças. `null` = quantidade digitada à mão. */
+  pecasPorEmbalagem: number | null;
 }
 
 /** `chave` identifica o item só dentro do envio; `paiChave` aponta para o pai (`null` na raiz). */
@@ -337,6 +339,8 @@ export interface NoEstruturaEntrada {
   descricao: string;
   quantidade?: number | null;
   unidade?: string | null;
+  /** Só embalagens: quando informado, o servidor grava `quantidade = 1 / pecasPorEmbalagem`. */
+  pecasPorEmbalagem?: number | null;
 }
 
 // --- Eng. Produto ---

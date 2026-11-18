@@ -130,6 +130,30 @@ describe('PCP e complexidade', () => {
     expect((await obterProduto.executar(avId)).estrutura).toEqual([]);
   });
 
+  it('embalagem com peças por embalagem grava a quantidade 1/peças calculada no servidor', async () => {
+    await salvarProduto.executar({
+      avId,
+      investimentos: [],
+      estrutura: [
+        // A tela manda uma quantidade qualquer: o servidor recalcula a partir das peças.
+        { chave: 'e', paiChave: null, tipo: 'embalagem', descricao: 'Caixa KLT', quantidade: 9, unidade: 'cx', pecasPorEmbalagem: 50 },
+        { chave: 'l', paiChave: null, tipo: 'embalagem', descricao: 'Saco antigo', quantidade: 0.5, unidade: 'un' },
+      ],
+    });
+    const [caixa, saco] = (await obterProduto.executar(avId)).estrutura;
+    expect(caixa).toMatchObject({ pecasPorEmbalagem: 50, quantidade: 0.02 });
+    expect(saco).toMatchObject({ pecasPorEmbalagem: null, quantidade: 0.5 });
+
+    const salvar = (estrutura: Parameters<typeof salvarProduto.executar>[0]['estrutura']) =>
+      salvarProduto.executar({ avId, investimentos: [], estrutura });
+    await expect(
+      salvar([{ chave: 'c', paiChave: null, tipo: 'componente', descricao: 'C', pecasPorEmbalagem: 10 }]),
+    ).rejects.toThrow(/só valem para itens do tipo embalagem/);
+    await expect(
+      salvar([{ chave: 'e', paiChave: null, tipo: 'embalagem', descricao: 'E', pecasPorEmbalagem: 2.5 }]),
+    ).rejects.toThrow(/inteiro maior que zero/);
+  });
+
   it('grava a opção N/A dos itens do checklist de entrada técnica', async () => {
     await salvarProduto.executar({
       avId,

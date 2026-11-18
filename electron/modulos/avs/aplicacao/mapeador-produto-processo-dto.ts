@@ -104,6 +104,7 @@ export function paraSecaoProdutoDTO(dados: DadosSecaoProduto | null, versao: num
       descricao: no.descricao,
       quantidade: no.quantidade,
       unidade: no.unidade,
+      pecasPorEmbalagem: no.pecasPorEmbalagem,
     })),
     investimentos: dados.investimentos.map(paraInvestimentoDTO),
     atualizadoEm: secao.atualizadoEm ? secao.atualizadoEm.toISOString() : null,
