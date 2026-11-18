@@ -125,6 +125,8 @@ export const CANAIS = {
     obterPrazosConfig: 'avs:obter-prazos-config',
     entregasNoPrazo: 'avs:entregas-no-prazo',
     salvarPrazosConfig: 'avs:salvar-prazos-config',
+    obterCapacidadeConfig: 'avs:obter-capacidade-config',
+    salvarCapacidadeConfig: 'avs:salvar-capacidade-config',
     avancarEtapa: 'avs:avancar-etapa',
     declinar: 'avs:declinar',
     listarHistorico: 'avs:listar-historico',

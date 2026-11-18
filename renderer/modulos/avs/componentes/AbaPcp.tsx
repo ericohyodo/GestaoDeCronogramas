@@ -2,7 +2,13 @@
 
 import { ListOrdered } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { AvDetalheDTO, CargaMaquinaEntrada, CustoLogisticoEntrada, OperacaoDTO } from '@contratos/avs.contrato';
+import type {
+  AvDetalheDTO,
+  CapacidadeConfigDTO,
+  CargaMaquinaEntrada,
+  CustoLogisticoEntrada,
+  OperacaoDTO,
+} from '@contratos/avs.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { Botao } from '@/compartilhado/ui/Botao';
 import { AreaTexto } from '@/compartilhado/ui/Campos';
@@ -10,7 +16,8 @@ import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
 import { AnexosGaleria } from './AnexosGaleria';
-import { blocoOuDeclarado, estadosDosBlocos, preenchido, tabelaObrigatoriaCompleta, todosPreenchidos } from '../blocos';
+import { blocoOuDeclarado, estadosDosBlocos, preenchido, tabelaObrigatoriaCompleta } from '../blocos';
+import { linhaDeCargaCompleta } from '../capacidade';
 import { CabecalhoDaSecao, CaixaSemAlteracoes, SecaoAv, ProgressoDaAba } from './SecaoAv';
 import { novaLinhaCarga, TabelaDeCargas, type LinhaCargaEditavel } from './TabelaDeCargas';
 import {
@@ -44,8 +51,8 @@ function cargasParaEnvio(linhas: LinhaCargaEditavel[]): CargaMaquinaEntrada[] {
       operacao: linha.operacao,
       maquina: linha.maquina.trim() || null,
       pecasHora: numeroOuNull(linha.pecasHora),
-      cargaAtual: numeroOuNull(linha.cargaAtual),
-      cargaFutura: numeroOuNull(linha.cargaFutura),
+      conversao: numeroOuNull(linha.conversao),
+      cargaAtualPecas: numeroOuNull(linha.cargaAtual),
     }));
 }
 
@@ -72,6 +79,8 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
   const [sugestoesOperacao, setSugestoesOperacao] = useState<string[]>([]);
   const [sugestoesMaquina, setSugestoesMaquina] = useState<string[]>([]);
   const [aviso, setAviso] = useState<string | null>(null);
+  // Horas por turno e dias produtivos por mês (Configurações); padrão até a leitura chegar.
+  const [capacidade, setCapacidade] = useState<CapacidadeConfigDTO>({ horasPorTurno: 8, diasProdutivosMes: 22 });
   const [erroSalvar, setErroSalvar] = useState<unknown>(null);
   // Anexos já gravados na seção (o bloco de anexos conta como completo com ao menos um).
   const [qtdAnexos, setQtdAnexos] = useState(0);
@@ -83,8 +92,10 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
       clienteDesktop.avs.obterSecaoPcp(av.id),
       clienteDesktop.avs.obterSecaoProcesso(av.id),
       clienteDesktop.avs.obterCatalogoCusto(),
+      clienteDesktop.avs.obterCapacidadeConfig(),
     ])
-      .then(([secao, processo, catalogo]) => {
+      .then(([secao, processo, catalogo, parametros]) => {
+        setCapacidade(parametros);
         setVersao(secao.versao);
         setObservacoes(secao.observacoes ?? '');
         setLayoutSemAlteracoes(secao.layoutSemAlteracoes);
@@ -99,8 +110,8 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
           operacao: carga.operacao,
           maquina: carga.maquina ?? '',
           pecasHora: textoDe(carga.pecasHora),
-          cargaAtual: textoDe(carga.cargaAtual),
-          cargaFutura: textoDe(carga.cargaFutura),
+          conversao: textoDe(carga.conversao),
+          cargaAtual: textoDe(carga.cargaAtualPecas),
         }));
         // Sem carga salva, já nasce com as operações definidas pela Eng. Processo.
         setCargas(salvas.length === 0 && processo.operacoes.length > 0 ? aplicarOperacoes([], processo.operacoes) : salvas);
@@ -143,14 +154,12 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
   if (carregando) return <PainelVidro className="p-5 text-sm text-texto-secundario">Carregando…</PainelVidro>;
   if (erroCarregamento) return <MensagemErro mensagem={erroCarregamento} />;
 
-  // Liberação fracionada: Cargas → Layout da fábrica → Custos logísticos → Observações. Os três últimos
-  // ficam completos com conteúdo OU com a declaração "Sem alterações significativas".
+  // Liberação fracionada: Cargas → Layout da fábrica → Custos logísticos → Observações. As cargas pedem o
+  // volume anual (aba Comercial) para calcular a futura; os três últimos ficam completos com conteúdo OU com
+  // a declaração "Sem alterações significativas".
+  const temVolumeAnual = av.volumeAnual != null && av.volumeAnual > 0;
   const estadosBlocos = estadosDosBlocos([
-    tabelaObrigatoriaCompleta(
-      cargas,
-      (carga) => preenchido(carga.operacao),
-      (carga) => todosPreenchidos(carga.cargaAtual, carga.cargaFutura),
-    ),
+    temVolumeAnual && tabelaObrigatoriaCompleta(cargas, (carga) => preenchido(carga.operacao), linhaDeCargaCompleta),
     blocoOuDeclarado(qtdAnexos > 0, layoutSemAlteracoes),
     blocoOuDeclarado(
       tabelaObrigatoriaCompleta(custos, (custo) => preenchido(custo.descricao), (custo) => preenchido(custo.valor)),
@@ -173,6 +182,8 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
           linhas={cargas}
           operacoes={sugestoesOperacao}
           maquinas={sugestoesMaquina}
+          volumeAnual={av.volumeAnual}
+          parametros={capacidade}
           aoLimpar={() => setCargas([])}
           aoAdicionar={() => setCargas((atual) => [...atual, novaLinhaCarga(chaveLocal())])}
           aoRemover={(chave) => setCargas((atual) => atual.filter((linha) => linha.chave !== chave))}

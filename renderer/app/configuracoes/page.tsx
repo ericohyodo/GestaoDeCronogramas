@@ -4,6 +4,7 @@ import { ShieldAlert } from 'lucide-react';
 import { CabecalhoPagina } from '@/compartilhado/ui/CabecalhoPagina';
 import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
+import { ConfiguracaoCapacidade } from '@/modulos/avs/componentes/ConfiguracaoCapacidade';
 import { ConfiguracaoPrazosAreas } from '@/modulos/avs/componentes/ConfiguracaoPrazosAreas';
 import { ConfiguracaoIa } from '@/modulos/ia/componentes/ConfiguracaoIa';
 import { usePermissao } from '@/modulos/usuarios/store/use-sessao-store';
@@ -18,6 +19,7 @@ export default function Configuracoes() {
         <>
           <ConfiguracaoIa />
           <ConfiguracaoPrazosAreas />
+          <ConfiguracaoCapacidade />
         </>
       ) : (
         <PainelVidro>

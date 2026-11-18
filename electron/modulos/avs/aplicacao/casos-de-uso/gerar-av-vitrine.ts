@@ -252,13 +252,14 @@ export class GerarAvVitrine {
     return {
       avId,
       observacoes:
-        'A célula robô 11 passa de 72% para 91% de ocupação: recomendado 2º turno parcial na solda a partir do lote piloto. ' +
-        'Prensas com folga. Estoque de segurança de 2 dias no cliente.',
+        'A célula robô 11 passa de 1,6 para 1,9 turno com o item: recomendado 2º turno parcial na solda a partir do lote ' +
+        'piloto. Prensas com folga. Estoque de segurança de 2 dias no cliente.',
+      // Carga atual em peças/mês (unidade da operação); a futura sai do volume anual (48.000 ÷ 12 = 4.000/mês).
       cargas: [
-        { operacao: 'Corte de blank', maquina: 'Prensa 160t – PR-018', pecasHora: 900, cargaAtual: 54, cargaFutura: 61 },
-        { operacao: 'Estampagem progressiva', maquina: 'Prensa 400t – PR-042', pecasHora: 480, cargaAtual: 68, cargaFutura: 79 },
-        { operacao: 'Solda MIG robotizada (reforço)', maquina: 'Célula robô 11', pecasHora: 75, cargaAtual: 72, cargaFutura: 91 },
-        { operacao: 'Montagem das buchas e inspeção final', maquina: 'Prensa pneumática – MT-07', pecasHora: 120, cargaAtual: 40, cargaFutura: 58 },
+        { operacao: 'Corte de blank', maquina: 'Prensa 160t – PR-018', pecasHora: 900, conversao: 1, cargaAtualPecas: 85_000 },
+        { operacao: 'Estampagem progressiva', maquina: 'Prensa 400t – PR-042', pecasHora: 480, conversao: 1, cargaAtualPecas: 60_000 },
+        { operacao: 'Solda MIG robotizada (reforço)', maquina: 'Célula robô 11', pecasHora: 75, conversao: 1, cargaAtualPecas: 21_000 },
+        { operacao: 'Montagem das buchas e inspeção final', maquina: 'Prensa pneumática – MT-07', pecasHora: 120, conversao: 1, cargaAtualPecas: 16_000 },
       ],
       custos: [
         { descricao: 'Frete milk run (por mês)', valor: 6_800 },

@@ -88,6 +88,11 @@ export const TOPICOS: TopicoDoTutorial[] = [
           'Na estrutura do produto (Eng. Produto), ao inserir uma embalagem, informe quantas peças cabem nela. A estrutura recebe a fração por peça: 50 peças por caixa = 0,02 caixa por peça (aparece como 1/50 na árvore).',
       },
       {
+        titulo: 'Carga de máquina (PCP)',
+        texto:
+          'Para cada operação, informe as peças por hora e a carga atual da máquina em peças por mês, na unidade da operação. A conversão diz quantas peças do produto saem de uma unidade (ex.: uma placa da fundição vira 8 peças → 8; use 1 quando for a própria peça). A carga futura vem do volume anual da aba Comercial ÷ 12 ÷ conversão, e o app mostra os turnos por dia de hoje → com o item (8 h por turno e 22 dias por mês, ajustáveis em Configurações).',
+      },
+      {
         titulo: 'PCP sem alterações',
         texto:
           'Na aba PCP, os blocos Layout da fábrica, Custos logísticos e Observações precisam de conteúdo ou da caixa "Sem alterações significativas", que só pode ser marcada com o bloco vazio.',

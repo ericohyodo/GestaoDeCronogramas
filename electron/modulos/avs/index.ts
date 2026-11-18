@@ -47,6 +47,7 @@ import { GarantirPrazosDasAreas } from './aplicacao/casos-de-uso/garantir-prazos
 import { VerificarPrazosDasAreas } from './aplicacao/casos-de-uso/verificar-prazos-das-areas';
 import { ObterEntregasNoPrazo } from './aplicacao/casos-de-uso/obter-entregas-no-prazo';
 import { ObterPrazosConfig, SalvarPrazosConfig } from './aplicacao/casos-de-uso/configurar-prazos-das-areas';
+import { ObterCapacidadeConfig, SalvarCapacidadeConfig } from './aplicacao/casos-de-uso/configurar-capacidade';
 import { podeDarAceiteDaSd } from './dominio/papel-av';
 import { ROTULO_DA_AREA } from './aplicacao/notificacoes-av';
 import { SalvarSecaoCusto } from './aplicacao/casos-de-uso/salvar-secao-custo';
@@ -71,7 +72,7 @@ import { HistoricoComPrazos } from './aplicacao/prazos/historico-com-prazos';
 import { ajustarPrazosDeExemplo } from './aplicacao/prazos/prazos-de-exemplo';
 import { RepositorioPerfisAvSqlite } from './infraestrutura/repositorio-perfis-av-sqlite';
 import { RepositorioSecaoCustoSqlite } from './infraestrutura/repositorio-secao-custo-sqlite';
-import { RepositorioSecaoPcpSqlite } from './infraestrutura/repositorio-secao-pcp-sqlite';
+import { RepositorioConfigCapacidadeSqlite, RepositorioSecaoPcpSqlite } from './infraestrutura/repositorio-secao-pcp-sqlite';
 import { RepositorioSecaoProcessoSqlite } from './infraestrutura/repositorio-secao-processo-sqlite';
 import { RepositorioSecaoProdutoSqlite } from './infraestrutura/repositorio-secao-produto-sqlite';
 import { RepositorioTemplatesAvSqlite } from './infraestrutura/repositorio-templates-av-sqlite';
@@ -133,6 +134,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
   const repositorioPerfis = new RepositorioPerfisAvSqlite(deps.db);
   const repositorioPrazos = new RepositorioPrazosAreaSqlite(deps.db);
   const repositorioConfigPrazos = new RepositorioConfigPrazosSqlite(deps.db);
+  const repositorioConfigCapacidade = new RepositorioConfigCapacidadeSqlite(deps.db);
   // Toda mudança de etapa passa pelo histórico: o decorador mantém os prazos das áreas em dia.
   const repositorioHistorico = new HistoricoComPrazos(
     new RepositorioHistoricoAvSqlite(deps.db),
@@ -277,6 +279,8 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     obterPrazosConfig: new ObterPrazosConfig(repositorioConfigPrazos),
     entregasNoPrazo: new ObterEntregasNoPrazo(repositorioPrazos, repositorio, deps.relogio),
     salvarPrazosConfig: new SalvarPrazosConfig(repositorioConfigPrazos, deps.consultaDeUsuarios, deps.relogio),
+    obterCapacidadeConfig: new ObterCapacidadeConfig(repositorioConfigCapacidade),
+    salvarCapacidadeConfig: new SalvarCapacidadeConfig(repositorioConfigCapacidade, deps.consultaDeUsuarios, deps.relogio),
     avancarEtapa: transacional(avancarEtapa, transacao),
     declinar: declinarAv,
     listarHistorico: new ListarHistoricoAv(repositorioHistorico, deps.consultaDeUsuarios),

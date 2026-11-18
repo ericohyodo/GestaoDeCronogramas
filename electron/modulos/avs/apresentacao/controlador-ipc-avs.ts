@@ -46,6 +46,7 @@ import type { ObterConteudoAnexo } from '../aplicacao/casos-de-uso/obter-conteud
 import type { ObterDashboard } from '../aplicacao/casos-de-uso/obter-dashboard';
 import type { ObterEntregasNoPrazo } from '../aplicacao/casos-de-uso/obter-entregas-no-prazo';
 import type { ObterPrazosConfig, SalvarPrazosConfig } from '../aplicacao/casos-de-uso/configurar-prazos-das-areas';
+import type { ObterCapacidadeConfig, SalvarCapacidadeConfig } from '../aplicacao/casos-de-uso/configurar-capacidade';
 import type { ObterSecaoCusto } from '../aplicacao/casos-de-uso/obter-secao-custo';
 import type { ObterSecaoProcesso } from '../aplicacao/casos-de-uso/obter-secao-processo';
 import type { ObterSecaoProduto } from '../aplicacao/casos-de-uso/obter-secao-produto';
@@ -68,6 +69,8 @@ export interface CasosDeUsoAvs {
   obterPrazosConfig: ObterPrazosConfig;
   entregasNoPrazo: ObterEntregasNoPrazo;
   salvarPrazosConfig: SalvarPrazosConfig;
+  obterCapacidadeConfig: ObterCapacidadeConfig;
+  salvarCapacidadeConfig: SalvarCapacidadeConfig;
   avancarEtapa: Pick<AvancarEtapa, 'executar'>;
   declinar: DeclinarAv;
   listarHistorico: ListarHistoricoAv;
@@ -296,6 +299,15 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
     casos.obterDashboard.executar(),
   );
   ipc.registrar(CANAIS.avs.obterPrazosConfig, 'leitura', esquemaSemEntrada, () => casos.obterPrazosConfig.executar());
+  ipc.registrar(CANAIS.avs.obterCapacidadeConfig, 'leitura', esquemaSemEntrada, () =>
+    casos.obterCapacidadeConfig.executar(),
+  );
+  ipc.registrar(
+    CANAIS.avs.salvarCapacidadeConfig,
+    'administracao',
+    z.object({ horasPorTurno: z.number().positive().max(24), diasProdutivosMes: z.number().int().min(1).max(31) }),
+    (entrada) => casos.salvarCapacidadeConfig.executar(entrada),
+  );
   ipc.registrar(CANAIS.avs.entregasNoPrazo, 'leitura', esquemaSemEntrada, () => casos.entregasNoPrazo.executar());
   const diasUteis = z.number().int().min(1).max(30);
   ipc.registrar(
@@ -392,9 +404,9 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
         z.object({
           operacao: z.string(),
           maquina: z.string().nullish(),
-          pecasHora: z.number().nullish(),
-          cargaAtual: z.number().nullish(),
-          cargaFutura: z.number().nullish(),
+          pecasHora: z.number().min(0).nullish(),
+          conversao: z.number().positive().nullish(),
+          cargaAtualPecas: z.number().min(0).nullish(),
         }),
       ),
       custos: z.array(z.object({ descricao: z.string(), valor: z.number().nullish() })),

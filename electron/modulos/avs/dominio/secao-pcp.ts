@@ -12,16 +12,23 @@ export interface SecaoPcp {
   atualizadoPor: string | null;
 }
 
-/** Carga de uma máquina numa operação: percentual de ocupação hoje e depois de implantar o item. */
+/**
+ * Carga de uma máquina numa operação, na unidade da operação (ex.: placas na fundição): o que ela produz hoje
+ * por mês e quantas peças do produto final saem de cada unidade (conversão). A carga futura não é gravada:
+ * sai do volume anual da AV ÷ 12 ÷ conversão.
+ */
 export interface CargaMaquina {
   id: string;
   avId: string;
   ordem: number;
   operacao: string;
   maquina: string | null;
+  /** Unidades da operação por hora. */
   pecasHora: number | null;
-  cargaAtual: number | null;
-  cargaFutura: number | null;
+  /** Peças do produto final por unidade da operação (1 = mesma unidade). */
+  conversao: number;
+  /** Carga atual da máquina, em unidades da operação por mês. */
+  cargaAtualPecas: number | null;
 }
 
 export interface CustoLogistico {
@@ -76,11 +83,31 @@ export function normalizarMaquinaDaCarga(maquina: string | null | undefined): st
   return normalizarTextoOpcional(maquina);
 }
 
-/** Percentuais não podem ser negativos; acima de 100 é permitido (a máquina ficaria sobrecarregada). */
-export function validarPercentual(valor: number | null | undefined, campo: string): number | null {
+/**
+ * Quantidades da carga (peças/hora, carga atual) não podem ser negativas.
+ * @param valor número informado ou vazio
+ * @param campo nome do campo para a mensagem
+ * @returns o valor, ou `null` quando vazio
+ * @throws ErroDeValidacao se negativo ou inválido
+ */
+export function validarQuantidadeDaCarga(valor: number | null | undefined, campo: string): number | null {
   if (valor === null || valor === undefined) return null;
   if (!Number.isFinite(valor) || valor < 0) {
-    throw new ErroDeValidacao(`${campo} deve ser um percentual igual ou maior que zero.`);
+    throw new ErroDeValidacao(`${campo} deve ser um número igual ou maior que zero.`);
+  }
+  return valor;
+}
+
+/**
+ * Conversão: peças do produto final por unidade da operação. Vazia vale 1.
+ * @param valor número informado ou vazio
+ * @returns a conversão (> 0)
+ * @throws ErroDeValidacao se zero, negativa ou inválida
+ */
+export function validarConversao(valor: number | null | undefined): number {
+  if (valor === null || valor === undefined) return 1;
+  if (!Number.isFinite(valor) || valor <= 0) {
+    throw new ErroDeValidacao('A conversão deve ser maior que zero (peças do produto por unidade da operação).');
   }
   return valor;
 }

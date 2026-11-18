@@ -581,23 +581,28 @@ export interface SalvarContatosAvEntrada {
 
 // --- PCP: carga de máquina, custos logísticos e observações ---
 
+/**
+ * Carga de máquina numa operação, na unidade da operação (ex.: placas na fundição). A carga futura não é
+ * gravada: a tela calcula volume anual ÷ 12 ÷ conversão.
+ */
 export interface CargaMaquinaDTO {
   id: string;
   operacao: string;
   maquina: string | null;
+  /** Unidades da operação por hora. */
   pecasHora: number | null;
-  /** Ocupação da máquina hoje, em %. */
-  cargaAtual: number | null;
-  /** Ocupação prevista depois de implantar o item, em %. */
-  cargaFutura: number | null;
+  /** Peças do produto final por unidade da operação (1 = mesma unidade). */
+  conversao: number;
+  /** Carga atual da máquina, em unidades da operação por mês. */
+  cargaAtualPecas: number | null;
 }
 
 export interface CargaMaquinaEntrada {
   operacao: string;
   maquina?: string | null;
   pecasHora?: number | null;
-  cargaAtual?: number | null;
-  cargaFutura?: number | null;
+  conversao?: number | null;
+  cargaAtualPecas?: number | null;
 }
 
 export interface CustoLogisticoDTO {
@@ -644,6 +649,12 @@ export interface AtualizarSecaoPcpEntrada {
 export type SituacaoAvDTO = 'em_andamento' | 'concluida' | 'declinada';
 
 /** Dias úteis que cada área da AV tem para preencher a sua aba (1 a 30). */
+/** Parâmetros do cálculo de turnos do PCP (administrador ajusta em Configurações). */
+export interface CapacidadeConfigDTO {
+  horasPorTurno: number;
+  diasProdutivosMes: number;
+}
+
 export interface PrazosConfigDTO {
   produto: number;
   processo: number;

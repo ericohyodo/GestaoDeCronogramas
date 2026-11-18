@@ -47,6 +47,7 @@ import { migracao0045 } from './0045-prazos-das-areas';
 import { migracao0046 } from './0046-estrutura-pecas-por-embalagem';
 import { migracao0047 } from './0047-pcp-sem-alteracoes';
 import { migracao0048 } from './0048-reportes';
+import { migracao0049 } from './0049-pcp-carga-em-pecas';
 
 export const MIGRACOES: readonly Migracao[] = [
   migracao0001,
@@ -97,4 +98,5 @@ export const MIGRACOES: readonly Migracao[] = [
   migracao0046,
   migracao0047,
   migracao0048,
+  migracao0049,
 ];

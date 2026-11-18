@@ -1,4 +1,5 @@
 import type { BancoDeDados } from '../../../nucleo/infraestrutura/banco/conexao-sqlite';
+import { CAPACIDADE_PADRAO, type ConfigCapacidade, type RepositorioConfigCapacidade } from '../dominio/capacidade';
 import type {
   CargaMaquina,
   CustoLogistico,
@@ -24,8 +25,8 @@ interface LinhaCarga {
   operacao: string;
   maquina: string | null;
   pecas_hora: number | null;
-  carga_atual: number | null;
-  carga_futura: number | null;
+  conversao: number;
+  carga_atual_pecas: number | null;
 }
 
 interface LinhaCusto {
@@ -36,13 +37,47 @@ interface LinhaCusto {
   valor: number | null;
 }
 
+/** Horas por turno e dias produtivos por mês (`av_capacidade_config`, linha única; padrão 8 h × 22 dias). */
+export class RepositorioConfigCapacidadeSqlite implements RepositorioConfigCapacidade {
+  private readonly sql;
+
+  constructor(db: BancoDeDados) {
+    this.sql = {
+      obter: db.prepare<[], { horas_por_turno: number; dias_produtivos_mes: number }>(
+        'SELECT horas_por_turno, dias_produtivos_mes FROM av_capacidade_config WHERE id = 1',
+      ),
+      salvar: db.prepare<[{ horas: number; dias: number; em: string; por: string }]>(`
+        INSERT INTO av_capacidade_config (id, horas_por_turno, dias_produtivos_mes, atualizado_em, atualizado_por)
+        VALUES (1, @horas, @dias, @em, @por)
+        ON CONFLICT (id) DO UPDATE SET
+          horas_por_turno = excluded.horas_por_turno,
+          dias_produtivos_mes = excluded.dias_produtivos_mes,
+          atualizado_em = excluded.atualizado_em,
+          atualizado_por = excluded.atualizado_por
+      `),
+    };
+  }
+
+  async obter(): Promise<ConfigCapacidade> {
+    const linha = this.sql.obter.get();
+    return linha ? { horasPorTurno: linha.horas_por_turno, diasProdutivosMes: linha.dias_produtivos_mes } : CAPACIDADE_PADRAO;
+  }
+
+  async salvar(valores: ConfigCapacidade, usuarioId: string, instante: Date): Promise<void> {
+    this.sql.salvar.run({ horas: valores.horasPorTurno, dias: valores.diasProdutivosMes, em: instante.toISOString(), por: usuarioId });
+  }
+}
+
 export class RepositorioSecaoPcpSqlite implements RepositorioSecaoPcp {
   private readonly sql;
 
   constructor(private readonly db: BancoDeDados) {
     this.sql = {
       obterSecao: db.prepare<[string], LinhaSecaoPcp>('SELECT * FROM av_secao_pcp WHERE av_id = ?'),
-      listarCargas: db.prepare<[string], LinhaCarga>('SELECT * FROM av_pcp_cargas WHERE av_id = ? ORDER BY ordem'),
+      // As colunas antigas em % (carga_atual, carga_futura) ficam de fora: legado da 0025.
+      listarCargas: db.prepare<[string], LinhaCarga>(
+        'SELECT id, av_id, ordem, operacao, maquina, pecas_hora, conversao, carga_atual_pecas FROM av_pcp_cargas WHERE av_id = ? ORDER BY ordem',
+      ),
       listarCustos: db.prepare<[string], LinhaCusto>('SELECT * FROM av_pcp_custos WHERE av_id = ? ORDER BY ordem'),
       salvarSecao: db.prepare<[LinhaSecaoPcp]>(`
         INSERT INTO av_secao_pcp (
@@ -63,8 +98,8 @@ export class RepositorioSecaoPcpSqlite implements RepositorioSecaoPcp {
       `),
       excluirCargas: db.prepare<[string]>('DELETE FROM av_pcp_cargas WHERE av_id = ?'),
       inserirCarga: db.prepare<[LinhaCarga]>(`
-        INSERT INTO av_pcp_cargas (id, av_id, ordem, operacao, maquina, pecas_hora, carga_atual, carga_futura)
-        VALUES (@id, @av_id, @ordem, @operacao, @maquina, @pecas_hora, @carga_atual, @carga_futura)
+        INSERT INTO av_pcp_cargas (id, av_id, ordem, operacao, maquina, pecas_hora, conversao, carga_atual_pecas)
+        VALUES (@id, @av_id, @ordem, @operacao, @maquina, @pecas_hora, @conversao, @carga_atual_pecas)
       `),
       excluirCustos: db.prepare<[string]>('DELETE FROM av_pcp_custos WHERE av_id = ?'),
       inserirCusto: db.prepare<[LinhaCusto]>(`
@@ -105,8 +140,8 @@ export class RepositorioSecaoPcpSqlite implements RepositorioSecaoPcp {
           operacao: carga.operacao,
           maquina: carga.maquina,
           pecas_hora: carga.pecasHora,
-          carga_atual: carga.cargaAtual,
-          carga_futura: carga.cargaFutura,
+          conversao: carga.conversao,
+          carga_atual_pecas: carga.cargaAtualPecas,
         });
       }
       this.sql.excluirCustos.run(avId);
@@ -143,8 +178,8 @@ function paraCarga(linha: LinhaCarga): CargaMaquina {
     operacao: linha.operacao,
     maquina: linha.maquina,
     pecasHora: linha.pecas_hora,
-    cargaAtual: linha.carga_atual,
-    cargaFutura: linha.carga_futura,
+    conversao: linha.conversao,
+    cargaAtualPecas: linha.carga_atual_pecas,
   };
 }
 

@@ -84,7 +84,7 @@ describe('gravação otimista', () => {
   it('salvamento que falha na validação não consome a versão', async () => {
     const versao = (await obterPcp.executar(avId)).versao;
     await expect(
-      salvarPcp.executar({ avId, versaoEsperada: versao, cargas: [{ operacao: 'X', cargaAtual: -5 }], custos: [] }),
+      salvarPcp.executar({ avId, versaoEsperada: versao, cargas: [{ operacao: 'X', cargaAtualPecas: -5 }], custos: [] }),
     ).rejects.toThrow();
     await salvarPcp.executar({ avId, versaoEsperada: versao, cargas: [], custos: [] });
   });

@@ -41,6 +41,7 @@ import type {
   CriarGrupoAvEntrada,
   DashboardAvDTO,
   PrazosConfigDTO,
+  CapacidadeConfigDTO,
   EntregasPorAreaDTO,
   DeclinarAvEntrada,
   GerarAvsExemploSaida,
@@ -210,6 +211,10 @@ export interface ApiDesktop {
     entregasNoPrazo(): Promise<Resultado<EntregasPorAreaDTO[]>>;
     /** Altera os dias úteis de cada área (administrador). */
     salvarPrazosConfig(entrada: PrazosConfigDTO): Promise<Resultado<PrazosConfigDTO>>;
+    /** Horas por turno e dias produtivos por mês do cálculo de turnos do PCP. */
+    obterCapacidadeConfig(): Promise<Resultado<CapacidadeConfigDTO>>;
+    /** Só administrador. */
+    salvarCapacidadeConfig(entrada: CapacidadeConfigDTO): Promise<Resultado<CapacidadeConfigDTO>>;
     avancarEtapa(entrada: AvancarEtapaEntrada): Promise<Resultado<AvDetalheDTO>>;
     declinar(entrada: DeclinarAvEntrada): Promise<Resultado<AvDetalheDTO>>;
     listarHistorico(avId: string): Promise<Resultado<HistoricoAvItemDTO[]>>;
