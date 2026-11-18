@@ -1,5 +1,46 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.5.0 — 18/11/2026
+
+### Novidades
+- **Faixa de módulos:** nas listas de AVs, SDs e Projetos aparece, no topo, a faixa **AV | SD | PRO** para trocar
+  de módulo sem voltar à tela inicial. Dentro do formulário de uma AV, SD ou PRO ela não aparece.
+- **Desenho do item (aba Comercial):** novo bloco logo após "Identificação" para anexar o desenho recebido na
+  cotação. É obrigatório para a aba Comercial ficar completa.
+- **Anexos da AV:** aceitam apenas PDF, JPG, JPEG, **TIFF**, PNG e BMP, com até 25 MB por arquivo, em todos os
+  blocos (a opção "Todos os arquivos" saiu do seletor). TIFF não tem pré-visualização no app: o botão abre o
+  arquivo no visualizador do Windows.
+- **Embalagem na estrutura do produto (Eng. Produto):** ao inserir uma embalagem, informe as **peças por
+  embalagem**; a estrutura recebe a fração por peça (50 peças por caixa = 0,02). Na árvore, a embalagem mostra
+  "1/50". Embalagens já cadastradas mantêm a quantidade digitada até alguém informar as peças.
+- **PCP — "Sem alterações significativas":** os blocos Layout da fábrica, Custos logísticos e Observações têm
+  a caixa "Sem alterações significativas", que libera o bloco sem preencher. Esses três blocos passam a exigir
+  conteúdo **ou** a declaração (antes, Custos e Observações contavam como completos vazios). A caixa só pode
+  ser marcada com o bloco vazio.
+- **Reportar erro / sugestão:** novo item no menu lateral. Qualquer usuário descreve o erro ou a sugestão e
+  anexa até 3 prints (botão ou **Ctrl+V** depois de Win+Shift+S). A tela em que a pessoa estava e a versão do
+  app vão junto. Os administradores são avisados no sino.
+  - **Reportes recebidos (administrador):** lista com filtro por status, detalhe com quem reportou, data/hora,
+    prints e o **log de alterações**. O administrador muda o status (Aberto, Em análise, Resolvido,
+    Descartado), comenta e dá baixa; quem reportou é avisado quando o reporte é resolvido ou descartado.
+
+### Técnico
+- Migrações:
+  - 0046: `pecas_por_embalagem` em `av_estrutura_produto` (o servidor calcula `quantidade = 1/peças`);
+  - 0047: `layout_sem_alteracoes`, `custos_sem_alteracoes` e `observacoes_sem_alteracoes` em `av_secao_pcp`;
+  - 0048: `reportes`, `reporte_imagens` e `reporte_eventos` (log de alterações).
+- Anexos da AV validados no servidor (`validarArquivoDeAnexo`): extensão e tamanho conferidos antes de copiar o
+  primeiro arquivo do lote; arquivo removido se a gravação no banco falhar; caminho protegido contra path
+  traversal.
+- Quantidade acumulada da estrutura para o Mapa de Custo com 8 casas decimais (4 casas zeravam frações
+  pequenas de embalagem).
+- Módulo novo `reportes` (domínio, aplicação, infraestrutura e apresentação). Prints validados pela assinatura
+  binária (PNG/JPEG/BMP), até 10 MB, gravados em `<pasta do banco>/reportes/<id>/`. Número sequencial atribuído
+  no próprio INSERT.
+- Canais IPC novos: `avs:abrir-anexo` (leitura), `reportes:criar` (leitura), `reportes:listar`,
+  `reportes:obter`, `reportes:registrar-andamento` e `reportes:obter-imagem` (administração).
+- Notificações novas: `reporte.novo` e `reporte.status`.
+
 ## 0.4.0 — 12/11/2026
 
 ### Novidades

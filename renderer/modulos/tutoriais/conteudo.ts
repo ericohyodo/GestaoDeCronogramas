@@ -40,6 +40,16 @@ export const TOPICOS: TopicoDoTutorial[] = [
           'O menu Notificações (no fim do menu lateral) mostra o que precisa de você: uma área da AV que chegou até você, uma SD aguardando aceite, uma tarefa atribuída ou atrasada. A bolinha vermelha conta as não lidas, e o sino no topo acende um ponto vermelho quando chega algo novo. Clique no aviso para ir direto à tela. Com o app aberto, o Windows também mostra o aviso.',
       },
       {
+        titulo: 'Trocar de módulo',
+        texto:
+          'Nas listas de AVs, SDs e Projetos, a faixa AV | SD | PRO no topo leva direto ao outro módulo, sem voltar à tela inicial.',
+      },
+      {
+        titulo: 'Reportar erro ou sugestão',
+        texto:
+          'Use "Reportar erro / sugestão" no menu lateral. Descreva o que aconteceu (ou a sua ideia) e, se ajudar, anexe até 3 prints: tire com Win + Shift + S e cole com Ctrl + V. A tela em que você estava vai junto. Você recebe um aviso quando o reporte for resolvido.',
+      },
+      {
         titulo: 'Esqueci a senha',
         texto:
           'Peça ao administrador para marcar "Exigir novo primeiro acesso" no seu cadastro. No próximo login você cria uma senha nova.',
@@ -66,6 +76,21 @@ export const TOPICOS: TopicoDoTutorial[] = [
         titulo: 'Blocos da aba',
         texto:
           'Cada aba é dividida em blocos. O bloco em destaque ("Preencha agora") é o próximo a completar; os já preenchidos ganham o selo "Bloco completo" e os seguintes ficam esmaecidos até lá, mas continuam editáveis. O topo da aba mostra quantos blocos já foram preenchidos.',
+      },
+      {
+        titulo: 'Desenho do item',
+        texto:
+          'Na aba Comercial, o bloco "Desenho do item" (logo após Identificação) recebe o desenho da cotação e é obrigatório. Os anexos da AV aceitam PDF, JPG, JPEG, TIFF, PNG e BMP de até 25 MB; o TIFF abre no visualizador do Windows.',
+      },
+      {
+        titulo: 'Embalagem na estrutura',
+        texto:
+          'Na estrutura do produto (Eng. Produto), ao inserir uma embalagem, informe quantas peças cabem nela. A estrutura recebe a fração por peça: 50 peças por caixa = 0,02 caixa por peça (aparece como 1/50 na árvore).',
+      },
+      {
+        titulo: 'PCP sem alterações',
+        texto:
+          'Na aba PCP, os blocos Layout da fábrica, Custos logísticos e Observações precisam de conteúdo ou da caixa "Sem alterações significativas", que só pode ser marcada com o bloco vazio.',
       },
       {
         titulo: 'Itens que não se aplicam',
