@@ -10,8 +10,8 @@ import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
 import { AnexosGaleria } from './AnexosGaleria';
-import { estadosDosBlocos, preenchido, tabelaObrigatoriaCompleta, tabelaOpcionalCompleta, todosPreenchidos } from '../blocos';
-import { CabecalhoDaSecao, SecaoAv, ProgressoDaAba } from './SecaoAv';
+import { blocoOuDeclarado, estadosDosBlocos, preenchido, tabelaObrigatoriaCompleta, todosPreenchidos } from '../blocos';
+import { CabecalhoDaSecao, CaixaSemAlteracoes, SecaoAv, ProgressoDaAba } from './SecaoAv';
 import { novaLinhaCarga, TabelaDeCargas, type LinhaCargaEditavel } from './TabelaDeCargas';
 import {
   novaLinhaCustoLogistico,
@@ -64,6 +64,10 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
   const [cargas, setCargas] = useState<LinhaCargaEditavel[]>([]);
   const [custos, setCustos] = useState<LinhaCustoLogisticoEditavel[]>([]);
   const [observacoes, setObservacoes] = useState('');
+  // Declarações "Sem alterações significativas" de cada bloco opcional.
+  const [layoutSemAlteracoes, setLayoutSemAlteracoes] = useState(false);
+  const [custosSemAlteracoes, setCustosSemAlteracoes] = useState(false);
+  const [observacoesSemAlteracoes, setObservacoesSemAlteracoes] = useState(false);
   const [operacoesDaEngenharia, setOperacoesDaEngenharia] = useState<OperacaoDTO[]>([]);
   const [sugestoesOperacao, setSugestoesOperacao] = useState<string[]>([]);
   const [sugestoesMaquina, setSugestoesMaquina] = useState<string[]>([]);
@@ -83,6 +87,9 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
       .then(([secao, processo, catalogo]) => {
         setVersao(secao.versao);
         setObservacoes(secao.observacoes ?? '');
+        setLayoutSemAlteracoes(secao.layoutSemAlteracoes);
+        setCustosSemAlteracoes(secao.custosSemAlteracoes);
+        setObservacoesSemAlteracoes(secao.observacoesSemAlteracoes);
         setCustos(
           secao.custos.map((custo) => ({ chave: custo.id, descricao: custo.descricao, valor: textoDe(custo.valor) })),
         );
@@ -104,7 +111,10 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
       .finally(() => setCarregando(false));
   }, [av.id]);
 
-  const { sujo, marcarLimpo } = useAlteracoes({ cargas, custos, observacoes }, !carregando);
+  const { sujo, marcarLimpo } = useAlteracoes(
+    { cargas, custos, observacoes, layoutSemAlteracoes, custosSemAlteracoes, observacoesSemAlteracoes },
+    !carregando,
+  );
 
   const salvar = async (): Promise<boolean> => {
     setErroSalvar(null);
@@ -115,6 +125,9 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
         observacoes: observacoes || null,
         cargas: cargasParaEnvio(cargas),
         custos: custosParaEnvio(custos),
+        layoutSemAlteracoes,
+        custosSemAlteracoes,
+        observacoesSemAlteracoes,
       });
       setVersao(salva.versao);
       marcarLimpo();
@@ -130,16 +143,20 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
   if (carregando) return <PainelVidro className="p-5 text-sm text-texto-secundario">Carregando…</PainelVidro>;
   if (erroCarregamento) return <MensagemErro mensagem={erroCarregamento} />;
 
-  // Liberação fracionada: Cargas → Layout da fábrica → Custos logísticos (opcional) → Observações (opcional).
+  // Liberação fracionada: Cargas → Layout da fábrica → Custos logísticos → Observações. Os três últimos
+  // ficam completos com conteúdo OU com a declaração "Sem alterações significativas".
   const estadosBlocos = estadosDosBlocos([
     tabelaObrigatoriaCompleta(
       cargas,
       (carga) => preenchido(carga.operacao),
       (carga) => todosPreenchidos(carga.cargaAtual, carga.cargaFutura),
     ),
-    qtdAnexos > 0,
-    tabelaOpcionalCompleta(custos, (custo) => preenchido(custo.descricao), (custo) => preenchido(custo.valor)),
-    true,
+    blocoOuDeclarado(qtdAnexos > 0, layoutSemAlteracoes),
+    blocoOuDeclarado(
+      tabelaObrigatoriaCompleta(custos, (custo) => preenchido(custo.descricao), (custo) => preenchido(custo.valor)),
+      custosSemAlteracoes,
+    ),
+    blocoOuDeclarado(preenchido(observacoes), observacoesSemAlteracoes),
   ]);
 
   return (
@@ -186,19 +203,22 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      <SecaoAv estado={estadosBlocos[1]} tom="verde" className="p-5">
+      <SecaoAv estado={estadosBlocos[1]} tom="verde" className="flex flex-col gap-3 p-5">
         <AnexosGaleria
           aoMudarQuantidade={setQtdAnexos}
           avId={av.id}
           secao="pcp"
+          desabilitado={layoutSemAlteracoes}
           titulo="Layout da fábrica"
           ajuda="Anexe uma imagem ou PDF do layout da fábrica indicando o local onde o item será implantado (máquinas, áreas de armazenagem e fluxo). Aceita PDF, JPG, JPEG, TIFF, PNG e BMP."
         />
+        <CaixaSemAlteracoes marcada={layoutSemAlteracoes} bloqueada={qtdAnexos > 0} aoMudar={setLayoutSemAlteracoes} />
       </SecaoAv>
 
-      <SecaoAv estado={estadosBlocos[2]} tom="ambar" className="p-5">
+      <SecaoAv estado={estadosBlocos[2]} tom="ambar" className="flex flex-col gap-3 p-5">
         <TabelaDeCustosLogisticos
           linhas={custos}
+          desabilitado={custosSemAlteracoes}
           aoLimpar={() => setCustos([])}
           aoAdicionar={() => setCustos((atual) => [...atual, novaLinhaCustoLogistico(chaveLocal())])}
           aoRemover={(chave) => setCustos((atual) => atual.filter((linha) => linha.chave !== chave))}
@@ -206,6 +226,7 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
             setCustos((atual) => atual.map((linha) => (linha.chave === chave ? { ...linha, [campo]: valor } : linha)))
           }
         />
+        <CaixaSemAlteracoes marcada={custosSemAlteracoes} bloqueada={custos.length > 0} aoMudar={setCustosSemAlteracoes} />
       </SecaoAv>
 
       <SecaoAv estado={estadosBlocos[3]} tom="lilas" className="flex flex-col gap-3 p-5">
@@ -214,8 +235,14 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
           rotulo="Observações do PCP"
           ajuda="Anotações do PCP sobre a análise de capacidade: gargalos, hipóteses assumidas, turnos considerados, restrições de abastecimento ou qualquer informação que ajude quem for decidir."
           rows={10}
+          disabled={observacoesSemAlteracoes}
           value={observacoes}
           onChange={(e) => setObservacoes(e.target.value)}
+        />
+        <CaixaSemAlteracoes
+          marcada={observacoesSemAlteracoes}
+          bloqueada={preenchido(observacoes)}
+          aoMudar={setObservacoesSemAlteracoes}
         />
       </SecaoAv>
 

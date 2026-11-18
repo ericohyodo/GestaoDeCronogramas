@@ -4,6 +4,10 @@ import { exigirTexto, normalizarTextoOpcional } from '../../../nucleo/dominio/te
 export interface SecaoPcp {
   avId: string;
   observacoes: string | null;
+  /** "Sem alterações significativas" declarado em cada bloco opcional. */
+  layoutSemAlteracoes: boolean;
+  custosSemAlteracoes: boolean;
+  observacoesSemAlteracoes: boolean;
   atualizadoEm: Date | null;
   atualizadoPor: string | null;
 }
@@ -38,6 +42,26 @@ export interface RepositorioSecaoPcp {
   obter(avId: string): Promise<DadosSecaoPcp | null>;
   /** Substitui a seção inteira (observações, cargas e custos), como nas demais seções. */
   salvar(dados: DadosSecaoPcp): Promise<void>;
+}
+
+/**
+ * A declaração "Sem alterações significativas" substitui o conteúdo do bloco: não pode vir junto com ele.
+ * @param declaracoes flags enviadas pela tela
+ * @param conteudo o que foi preenchido nos blocos de custos e observações
+ * @throws ErroDeValidacao quando o bloco tem conteúdo e a declaração ao mesmo tempo
+ */
+export function validarDeclaracoesPcp(
+  declaracoes: { custosSemAlteracoes: boolean; observacoesSemAlteracoes: boolean },
+  conteudo: { quantidadeDeCustos: number; observacoes: string | null },
+): void {
+  if (declaracoes.custosSemAlteracoes && conteudo.quantidadeDeCustos > 0) {
+    throw new ErroDeValidacao(
+      'Custos logísticos: remova os custos lançados ou desmarque "Sem alterações significativas".',
+    );
+  }
+  if (declaracoes.observacoesSemAlteracoes && conteudo.observacoes) {
+    throw new ErroDeValidacao('Observações: apague o texto ou desmarque "Sem alterações significativas".');
+  }
 }
 
 export function validarOperacaoDaCarga(operacao: string): string {

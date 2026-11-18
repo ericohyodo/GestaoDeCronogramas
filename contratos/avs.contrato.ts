@@ -611,7 +611,14 @@ export interface CustoLogisticoEntrada {
   valor?: number | null;
 }
 
-export interface SecaoPcpDTO {
+/** Declarações "Sem alterações significativas" do PCP: cada uma libera o bloco sem conteúdo. */
+export interface DeclaracoesPcpDTO {
+  layoutSemAlteracoes: boolean;
+  custosSemAlteracoes: boolean;
+  observacoesSemAlteracoes: boolean;
+}
+
+export interface SecaoPcpDTO extends DeclaracoesPcpDTO {
   observacoes: string | null;
   cargas: CargaMaquinaDTO[];
   custos: CustoLogisticoDTO[];
@@ -627,6 +634,9 @@ export interface AtualizarSecaoPcpEntrada {
   observacoes?: string | null;
   cargas: CargaMaquinaEntrada[];
   custos: CustoLogisticoEntrada[];
+  layoutSemAlteracoes?: boolean;
+  custosSemAlteracoes?: boolean;
+  observacoesSemAlteracoes?: boolean;
 }
 
 // --- Relatório das AVs (também é a base do que a IA enxerga sobre as AVs) ---

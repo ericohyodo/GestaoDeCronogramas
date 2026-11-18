@@ -25,12 +25,15 @@ export function TabelaDeCustosLogisticos({
   aoAdicionar,
   aoRemover,
   aoLimpar,
+  desabilitado = false,
 }: {
   linhas: LinhaCustoLogisticoEditavel[];
   aoMudar: (chave: string, campo: keyof LinhaCustoLogisticoEditavel, valor: string) => void;
   aoAdicionar: () => void;
   aoRemover: (chave: string) => void;
   aoLimpar: () => void;
+  /** Bloqueia novas linhas (ex.: PCP declarou "Sem alterações significativas"). */
+  desabilitado?: boolean;
 }) {
   const total = linhas.reduce((soma, linha) => soma + (Number(linha.valor) || 0), 0);
 
@@ -43,7 +46,7 @@ export function TabelaDeCustosLogisticos({
         </div>
         <div className="flex items-center gap-2">
           <BotaoLimparCampos aoLimpar={aoLimpar} disabled={linhas.length === 0} />
-          <BotaoIcone icone={Plus} rotulo="Adicionar custo logístico" onClick={aoAdicionar} />
+          <BotaoIcone icone={Plus} rotulo="Adicionar custo logístico" onClick={aoAdicionar} disabled={desabilitado} />
         </div>
       </div>
       {linhas.length > 0 && (

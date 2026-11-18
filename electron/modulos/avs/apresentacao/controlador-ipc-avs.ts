@@ -398,6 +398,9 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
         }),
       ),
       custos: z.array(z.object({ descricao: z.string(), valor: z.number().nullish() })),
+      layoutSemAlteracoes: z.boolean().optional(),
+      custosSemAlteracoes: z.boolean().optional(),
+      observacoesSemAlteracoes: z.boolean().optional(),
     }),
     (entrada) => casos.salvarSecaoPcp.executar(entrada),
   );

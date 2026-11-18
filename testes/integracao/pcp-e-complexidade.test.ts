@@ -77,6 +77,34 @@ describe('PCP e complexidade', () => {
     await expect(salvarPcp.executar({ avId, cargas: [{ operacao: ' ' }], custos: [] })).rejects.toThrow(/operação/i);
   });
 
+  it('grava as declarações "Sem alterações significativas" e recusa declaração com conteúdo', async () => {
+    expect(await obterPcp.executar(avId)).toMatchObject({
+      layoutSemAlteracoes: false,
+      custosSemAlteracoes: false,
+      observacoesSemAlteracoes: false,
+    });
+    await salvarPcp.executar({
+      avId,
+      cargas: [],
+      custos: [],
+      layoutSemAlteracoes: true,
+      custosSemAlteracoes: true,
+      observacoesSemAlteracoes: true,
+    });
+    expect(await obterPcp.executar(avId)).toMatchObject({
+      layoutSemAlteracoes: true,
+      custosSemAlteracoes: true,
+      observacoesSemAlteracoes: true,
+    });
+
+    await expect(
+      salvarPcp.executar({ avId, cargas: [], custos: [{ descricao: 'Estante', valor: 10 }], custosSemAlteracoes: true }),
+    ).rejects.toThrow(/Custos logísticos/);
+    await expect(
+      salvarPcp.executar({ avId, cargas: [], custos: [], observacoes: 'Algo', observacoesSemAlteracoes: true }),
+    ).rejects.toThrow(/Observações/);
+  });
+
   it('guarda a complexidade na seção da Eng. Produto', async () => {
     await salvarProduto.executar({ avId, complexidade: 'Alta', estrutura: [], investimentos: [] });
     expect((await obterProduto.executar(avId)).complexidade).toBe('Alta');

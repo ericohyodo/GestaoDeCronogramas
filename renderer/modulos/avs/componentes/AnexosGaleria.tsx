@@ -37,6 +37,7 @@ export function AnexosGaleria({
   titulo = 'Desenhos e evidências',
   ajuda,
   aoMudarQuantidade,
+  desabilitado = false,
 }: {
   avId: string;
   secao: AreaAvDTO;
@@ -45,6 +46,8 @@ export function AnexosGaleria({
   ajuda?: string;
   /** Avisa a aba quantos anexos a seção tem (liberação fracionada dos blocos). */
   aoMudarQuantidade?: (quantidade: number) => void;
+  /** Bloqueia novos anexos (ex.: PCP declarou "Sem alterações significativas"). */
+  desabilitado?: boolean;
 }) {
   const [anexos, setAnexos] = useState<AnexoAvDTO[]>([]);
   const [carregando, setCarregando] = useState(true);
@@ -116,7 +119,7 @@ export function AnexosGaleria({
           <TituloSecao>{titulo}</TituloSecao>
           {ajuda && <Ajuda texto={ajuda} />}
         </div>
-        <Botao icone={Paperclip} tamanho="sm" onClick={() => void adicionar()} disabled={enviando}>
+        <Botao icone={Paperclip} tamanho="sm" onClick={() => void adicionar()} disabled={enviando || desabilitado}>
           {enviando ? 'Anexando…' : 'Anexar arquivo'}
         </Botao>
       </div>

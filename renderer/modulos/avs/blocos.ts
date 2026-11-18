@@ -56,6 +56,14 @@ export function tabelaObrigatoriaCompleta<T>(
   return iniciadas.length > 0 && iniciadas.every(completa);
 }
 
+/**
+ * Bloco que pode ser liberado por declaração ("Sem alterações significativas") em vez de conteúdo.
+ * @param completo o bloco tem o conteúdo exigido
+ * @param declarado o responsável marcou a declaração
+ * @returns `true` se qualquer um dos dois valer
+ */
+export const blocoOuDeclarado = (completo: boolean, declarado: boolean): boolean => completo || declarado;
+
 /** Investimentos: toda linha com descrição precisa de classificação e valor (0 é um valor válido). */
 export function investimentosCompletos(
   linhas: readonly { descricao: string; classificacao: string; valor: string }[],

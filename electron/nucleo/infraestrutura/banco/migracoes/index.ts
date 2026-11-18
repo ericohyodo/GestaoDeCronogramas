@@ -45,6 +45,7 @@ import { migracao0043 } from './0043-ia-propostas';
 import { migracao0044 } from './0044-sd-lead-time';
 import { migracao0045 } from './0045-prazos-das-areas';
 import { migracao0046 } from './0046-estrutura-pecas-por-embalagem';
+import { migracao0047 } from './0047-pcp-sem-alteracoes';
 
 export const MIGRACOES: readonly Migracao[] = [
   migracao0001,
@@ -93,4 +94,5 @@ export const MIGRACOES: readonly Migracao[] = [
   migracao0044,
   migracao0045,
   migracao0046,
+  migracao0047,
 ];

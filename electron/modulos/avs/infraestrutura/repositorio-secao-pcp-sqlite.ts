@@ -10,6 +10,9 @@ import type {
 interface LinhaSecaoPcp {
   av_id: string;
   observacoes: string | null;
+  layout_sem_alteracoes: number;
+  custos_sem_alteracoes: number;
+  observacoes_sem_alteracoes: number;
   atualizado_em: string | null;
   atualizado_por: string | null;
 }
@@ -42,10 +45,19 @@ export class RepositorioSecaoPcpSqlite implements RepositorioSecaoPcp {
       listarCargas: db.prepare<[string], LinhaCarga>('SELECT * FROM av_pcp_cargas WHERE av_id = ? ORDER BY ordem'),
       listarCustos: db.prepare<[string], LinhaCusto>('SELECT * FROM av_pcp_custos WHERE av_id = ? ORDER BY ordem'),
       salvarSecao: db.prepare<[LinhaSecaoPcp]>(`
-        INSERT INTO av_secao_pcp (av_id, observacoes, atualizado_em, atualizado_por)
-        VALUES (@av_id, @observacoes, @atualizado_em, @atualizado_por)
+        INSERT INTO av_secao_pcp (
+          av_id, observacoes, layout_sem_alteracoes, custos_sem_alteracoes, observacoes_sem_alteracoes,
+          atualizado_em, atualizado_por
+        )
+        VALUES (
+          @av_id, @observacoes, @layout_sem_alteracoes, @custos_sem_alteracoes, @observacoes_sem_alteracoes,
+          @atualizado_em, @atualizado_por
+        )
         ON CONFLICT (av_id) DO UPDATE SET
           observacoes    = excluded.observacoes,
+          layout_sem_alteracoes      = excluded.layout_sem_alteracoes,
+          custos_sem_alteracoes      = excluded.custos_sem_alteracoes,
+          observacoes_sem_alteracoes = excluded.observacoes_sem_alteracoes,
           atualizado_em  = excluded.atualizado_em,
           atualizado_por = excluded.atualizado_por
       `),
@@ -78,6 +90,9 @@ export class RepositorioSecaoPcpSqlite implements RepositorioSecaoPcp {
       this.sql.salvarSecao.run({
         av_id: avId,
         observacoes: dados.secao.observacoes,
+        layout_sem_alteracoes: dados.secao.layoutSemAlteracoes ? 1 : 0,
+        custos_sem_alteracoes: dados.secao.custosSemAlteracoes ? 1 : 0,
+        observacoes_sem_alteracoes: dados.secao.observacoesSemAlteracoes ? 1 : 0,
         atualizado_em: dados.secao.atualizadoEm ? dados.secao.atualizadoEm.toISOString() : null,
         atualizado_por: dados.secao.atualizadoPor,
       });
@@ -112,6 +127,9 @@ function paraSecao(linha: LinhaSecaoPcp): SecaoPcp {
   return {
     avId: linha.av_id,
     observacoes: linha.observacoes,
+    layoutSemAlteracoes: linha.layout_sem_alteracoes === 1,
+    custosSemAlteracoes: linha.custos_sem_alteracoes === 1,
+    observacoesSemAlteracoes: linha.observacoes_sem_alteracoes === 1,
     atualizadoEm: linha.atualizado_em ? new Date(linha.atualizado_em) : null,
     atualizadoPor: linha.atualizado_por,
   };
