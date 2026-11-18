@@ -2,7 +2,7 @@
 
 import { formatarDataHora } from '@/compartilhado/formatacao';
 import { ExternalLink, Eye, FileText, Image as ImageIcon, Paperclip, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { AnexoAvDTO, AreaAvDTO, ConteudoAnexoDTO } from '@contratos/avs.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { urlDeBase64 } from '@/compartilhado/arquivos';
@@ -31,17 +31,54 @@ function ehPdf(tipoMime: string | null): boolean {
   return tipoMime === 'application/pdf';
 }
 
+/** De onde vêm os arquivos da galeria: a seção de uma AV (padrão) ou outro dono, como um item de portfólio. */
+export interface FonteDeAnexos {
+  listar(): Promise<AnexoAvDTO[]>;
+  /** Abre o seletor de arquivos; `null` quando cancela. Devolve a lista atualizada. */
+  anexar(): Promise<AnexoAvDTO[] | null>;
+  obterConteudo(id: string): Promise<ConteudoAnexoDTO>;
+  abrir(id: string): Promise<null>;
+  excluir(id: string): Promise<null>;
+}
+
+/**
+ * Anexos de uma seção da AV.
+ * @param avId AV dona dos arquivos
+ * @param secao área da AV (a lista vem da AV inteira e é filtrada pela seção)
+ */
+function fonteDaAv(avId: string, secao: AreaAvDTO): FonteDeAnexos {
+  return {
+    listar: async () => (await clienteDesktop.avs.listarAnexos(avId)).filter((anexo) => anexo.secao === secao),
+    anexar: async () => {
+      const lista = await clienteDesktop.avs.selecionarEAnexar({ avId, secao });
+      return lista ? lista.filter((anexo) => anexo.secao === secao) : null;
+    },
+    obterConteudo: (id) => clienteDesktop.avs.obterConteudoAnexo(id),
+    abrir: (id) => clienteDesktop.avs.abrirAnexo(id),
+    excluir: (id) => clienteDesktop.avs.excluirAnexo(id),
+  };
+}
+
 /** Galeria de desenhos/evidências anexados a uma AV, com pré-visualização de PDF e imagens. */
 export function AnexosGaleria({
   avId,
   secao,
+  fonte,
   titulo = 'Desenhos e evidências',
   ajuda,
   aoMudarQuantidade,
   desabilitado = false,
+  somenteLeitura = false,
+  textoVazio,
 }: {
   avId: string;
   secao: AreaAvDTO;
+  /** Outra origem dos arquivos (ex.: desenho de referência do item de portfólio). Passe um objeto estável. */
+  fonte?: FonteDeAnexos;
+  /** Só lista e visualiza: sem anexar nem excluir. */
+  somenteLeitura?: boolean;
+  /** Mensagem da galeria vazia. */
+  textoVazio?: string;
   titulo?: string;
   /** Explicação do que anexar aqui (aparece ao passar o mouse no ícone de ajuda). */
   ajuda?: string;
@@ -57,10 +94,12 @@ export function AnexosGaleria({
   const [excluindoId, setExcluindoId] = useState<string | null>(null);
   const [visualizando, setVisualizando] = useState<AnexoAvDTO | null>(null);
 
+  const origem = useMemo(() => fonte ?? fonteDaAv(avId, secao), [fonte, avId, secao]);
+
   useEffect(() => {
     let cancelado = false;
-    clienteDesktop.avs
-      .listarAnexos(avId)
+    origem
+      .listar()
       .then((lista) => {
         if (!cancelado) setAnexos(lista);
       })
@@ -69,9 +108,9 @@ export function AnexosGaleria({
     return () => {
       cancelado = true;
     };
-  }, [avId]);
+  }, [origem]);
 
-  const itens = anexos.filter((anexo) => anexo.secao === secao);
+  const itens = anexos;
   const quantidade = itens.length;
   useEffect(() => {
     if (!carregando) aoMudarQuantidade?.(quantidade);
@@ -81,7 +120,7 @@ export function AnexosGaleria({
     setEnviando(true);
     setErro(null);
     try {
-      const resultado = await clienteDesktop.avs.selecionarEAnexar({ avId, secao });
+      const resultado = await origem.anexar();
       if (resultado) setAnexos(resultado);
     } catch (falha) {
       setErro(mensagemDeErro(falha));
@@ -93,7 +132,7 @@ export function AnexosGaleria({
   const abrirExterno = async (id: string) => {
     setErro(null);
     try {
-      await clienteDesktop.avs.abrirAnexo(id);
+      await origem.abrir(id);
     } catch (falha) {
       setErro(mensagemDeErro(falha));
     }
@@ -103,7 +142,7 @@ export function AnexosGaleria({
     setExcluindoId(id);
     setErro(null);
     try {
-      await clienteDesktop.avs.excluirAnexo(id);
+      await origem.excluir(id);
       setAnexos((atual) => atual.filter((anexo) => anexo.id !== id));
       if (visualizando?.id === id) setVisualizando(null);
     } catch (falha) {
@@ -120,9 +159,11 @@ export function AnexosGaleria({
           <TituloSecao>{titulo}</TituloSecao>
           {ajuda && <Ajuda texto={ajuda} />}
         </div>
-        <Botao icone={Paperclip} tamanho="sm" onClick={() => void adicionar()} disabled={enviando || desabilitado}>
-          {enviando ? 'Anexando…' : 'Anexar arquivo'}
-        </Botao>
+        {!somenteLeitura && (
+          <Botao icone={Paperclip} tamanho="sm" onClick={() => void adicionar()} disabled={enviando || desabilitado}>
+            {enviando ? 'Anexando…' : 'Anexar arquivo'}
+          </Botao>
+        )}
       </div>
 
       {erro && <MensagemErro mensagem={erro} aoFechar={() => setErro(null)} />}
@@ -131,7 +172,7 @@ export function AnexosGaleria({
         <p className="text-sm text-texto-secundario">Carregando…</p>
       ) : itens.length === 0 ? (
         <p className="text-sm text-texto-secundario">
-          Nenhum arquivo anexado ainda. Aceita PDF, JPG, JPEG, TIFF, PNG e BMP.
+          {textoVazio ?? 'Nenhum arquivo anexado ainda. Aceita PDF, JPG, JPEG, TIFF, PNG e BMP.'}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -164,12 +205,14 @@ export function AnexosGaleria({
                 ) : (
                   <BotaoIcone icone={Eye} rotulo={`Visualizar ${anexo.nomeArquivo}`} onClick={() => setVisualizando(anexo)} />
                 )}
-                <BotaoIcone
-                  icone={Trash2}
-                  rotulo={`Excluir ${anexo.nomeArquivo}`}
-                  onClick={() => void excluir(anexo.id)}
-                  disabled={excluindoId === anexo.id}
-                />
+                {!somenteLeitura && (
+                  <BotaoIcone
+                    icone={Trash2}
+                    rotulo={`Excluir ${anexo.nomeArquivo}`}
+                    onClick={() => void excluir(anexo.id)}
+                    disabled={excluindoId === anexo.id}
+                  />
+                )}
               </div>
             </li>
           ))}
@@ -182,7 +225,9 @@ export function AnexosGaleria({
         titulo={visualizando?.nomeArquivo ?? ''}
         largura="visualizador"
       >
-        {visualizando && <ConteudoDaPrevia key={visualizando.id} anexo={visualizando} />}
+        {visualizando && (
+          <ConteudoDaPrevia key={visualizando.id} anexo={visualizando} obterConteudo={origem.obterConteudo} />
+        )}
       </Modal>
     </div>
   );
@@ -192,7 +237,13 @@ export function AnexosGaleria({
  * Só existe enquanto o modal está aberto (e é remontado a cada anexo, via `key`). O arquivo vira uma URL
  * `blob:` (sem o limite de ~2 MB das URLs `data:`), revogada quando a prévia sai da tela.
  */
-function ConteudoDaPrevia({ anexo }: { anexo: AnexoAvDTO }) {
+function ConteudoDaPrevia({
+  anexo,
+  obterConteudo,
+}: {
+  anexo: AnexoAvDTO;
+  obterConteudo: FonteDeAnexos['obterConteudo'];
+}) {
   const [conteudo, setConteudo] = useState<(ConteudoAnexoDTO & { url: string }) | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
@@ -200,8 +251,7 @@ function ConteudoDaPrevia({ anexo }: { anexo: AnexoAvDTO }) {
   useEffect(() => {
     let cancelado = false;
     let url: string | null = null;
-    clienteDesktop.avs
-      .obterConteudoAnexo(anexo.id)
+    obterConteudo(anexo.id)
       .then((resultado) => {
         if (cancelado) return;
         url = urlDeBase64(resultado.base64, resultado.tipoMime ?? 'application/octet-stream');
@@ -213,7 +263,7 @@ function ConteudoDaPrevia({ anexo }: { anexo: AnexoAvDTO }) {
       cancelado = true;
       if (url) URL.revokeObjectURL(url);
     };
-  }, [anexo.id]);
+  }, [anexo.id, obterConteudo]);
 
   return (
     <div className="flex h-full flex-col">

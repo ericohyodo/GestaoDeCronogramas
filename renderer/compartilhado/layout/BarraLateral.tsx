@@ -9,6 +9,8 @@ import {
   FileClock,
   FileText,
   Inbox,
+  Package,
+  PackageCheck,
   GraduationCap,
   Home,
   type LucideIcon,
@@ -118,6 +120,19 @@ export const NAV_AVS: NavegacaoLateral = {
       rotas: ['/avs/configuracoes'],
       permissao: 'administracao',
     },
+    { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
+    ITEM_REPORTES,
+    ITEM_NOTIFICACOES,
+  ],
+};
+
+// AV de Item de Portfólio: as AVs light e o cadastro de itens-modelo que elas usam.
+export const NAV_PORTFOLIO: NavegacaoLateral = {
+  titulo: 'AV de Portfólio',
+  itens: [
+    { rotulo: 'AVs de portfólio', icone: PackageCheck, href: '/portfolio/', rotas: ['/portfolio'] },
+    { rotulo: 'Itens de portfólio', icone: Package, href: '/portfolio/itens/', rotas: ['/portfolio/itens'] },
+    { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
     { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
     ITEM_REPORTES,
     ITEM_NOTIFICACOES,

@@ -22,6 +22,14 @@ import { EquipePanel } from './EquipePanel';
 import { EtapaBadge } from './EtapaBadge';
 import { HistoricoPanel } from './HistoricoPanel';
 import { useAvsStore } from '../store/use-avs-store';
+import { AbaPcpPortfolio } from './portfolio/AbaPcpPortfolio';
+import { AbaResumoPortfolio } from './portfolio/AbaResumoPortfolio';
+import {
+  AbaComercialPortfolio,
+  AbaCustoPortfolio,
+  AbaProcessoPortfolio,
+  AbaProdutoPortfolio,
+} from './portfolio/AbasPortfolio';
 import { podeEditarAreaDaAv, useMeuPerfilAv } from '../store/use-meu-perfil-av';
 
 /** Da Proposta Enviada em diante (e nas AVs encerradas) não há mais o que preencher: abre no Resumo. */
@@ -71,6 +79,7 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
   }, [carregarMeuPerfil]);
 
   const etapa = av.etapaAtual;
+  const portfolio = av.tipo === 'portfolio';
   const ehAbaDeArea = abaAtiva !== 'resumo';
   // Mesma regra do servidor: só o responsável pela área (ou o administrador) grava a aba.
   const responsavelDaAba = ehAbaDeArea ? av.membros[abaAtiva] : undefined;
@@ -165,7 +174,7 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
       <PainelVidro className="flex flex-col gap-4 p-5">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <p className="text-xs font-medium text-texto-sutil">AV</p>
+            <p className="text-xs font-medium text-texto-sutil">{portfolio ? 'AV de Item de Portfólio' : 'AV'}</p>
             <h1 className="text-xl font-semibold tabular-nums">{av.numero}</h1>
             {av.grupo && (
               <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-titulo-secao">
@@ -219,6 +228,8 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
                   </Link>
                 )}
               </>
+            ) : etapa.chave === 'portfolio_concluida' ? (
+              'AV de portfólio concluída: a checagem foi encerrada na proposta.'
             ) : (
               'Esta AV foi declinada e não pode mais avançar.'
             )}
@@ -261,12 +272,26 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
                   administrador).
                 </p>
               )}
-              {abaAtiva === 'comercial' && <AbaComercial av={av} />}
-              {abaAtiva === 'produto' && <AbaEngProduto av={av} />}
-              {abaAtiva === 'processo' && <AbaEngProcesso av={av} />}
-              {abaAtiva === 'pcp' && <AbaPcp av={av} />}
-              {abaAtiva === 'custo' && <AbaMapaCusto av={av} />}
-              {abaAtiva === 'resumo' && <AbaResumo av={av} />}
+              {portfolio ? (
+                // AV de Item de Portfólio: as mesmas áreas, mas cada uma confere o item-modelo.
+                <>
+                  {abaAtiva === 'comercial' && <AbaComercialPortfolio av={av} />}
+                  {abaAtiva === 'produto' && <AbaProdutoPortfolio av={av} />}
+                  {abaAtiva === 'processo' && <AbaProcessoPortfolio av={av} />}
+                  {abaAtiva === 'pcp' && <AbaPcpPortfolio av={av} />}
+                  {abaAtiva === 'custo' && <AbaCustoPortfolio av={av} />}
+                  {abaAtiva === 'resumo' && <AbaResumoPortfolio av={av} />}
+                </>
+              ) : (
+                <>
+                  {abaAtiva === 'comercial' && <AbaComercial av={av} />}
+                  {abaAtiva === 'produto' && <AbaEngProduto av={av} />}
+                  {abaAtiva === 'processo' && <AbaEngProcesso av={av} />}
+                  {abaAtiva === 'pcp' && <AbaPcp av={av} />}
+                  {abaAtiva === 'custo' && <AbaMapaCusto av={av} />}
+                  {abaAtiva === 'resumo' && <AbaResumo av={av} />}
+                </>
+              )}
 
               {ehAbaDeArea && (
                 <div data-tour="botoes-aba" className="flex flex-wrap items-center justify-end gap-3">

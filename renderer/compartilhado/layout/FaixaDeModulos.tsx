@@ -1,7 +1,7 @@
 'use client';
 
 import clsx from 'clsx';
-import { CalendarRange, ClipboardCheck, FileText, type LucideIcon } from 'lucide-react';
+import { CalendarRange, ClipboardCheck, FileText, type LucideIcon, PackageCheck } from 'lucide-react';
 import Link from 'next/link';
 import { type ModuloApp, ROTAS_DE_LISTA } from './modulo-da-rota';
 
@@ -12,9 +12,10 @@ interface OpcaoDeModulo {
   icone: LucideIcon;
 }
 
-// Mesmos ícones dos cards da tela inicial, na ordem do fluxo AV → SD → PRO.
+// Mesmos ícones dos cards da tela inicial, na ordem do fluxo AV → SD → PRO (a AV de portfólio ao lado da AV).
 const OPCOES: readonly OpcaoDeModulo[] = [
   { modulo: 'avs', sigla: 'AV', nome: 'Análises de Viabilidade', icone: ClipboardCheck },
+  { modulo: 'portfolio', sigla: 'AVP', nome: 'AV de Item de Portfólio', icone: PackageCheck },
   { modulo: 'sds', sigla: 'SD', nome: 'Solicitações de Desenvolvimento', icone: FileText },
   { modulo: 'projetos', sigla: 'PRO', nome: 'Projetos', icone: CalendarRange },
 ];

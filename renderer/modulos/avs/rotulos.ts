@@ -69,7 +69,7 @@ export const ITENS_CHECKLIST_PRODUTO = [
 /** Tom da etiqueta por chave de etapa — declínios em perigo, conclusão em sucesso, resto neutro/info. */
 export function tomDaEtapa(chave: string): Tom {
   if (chave === 'declinada_cliente' || chave === 'declinada_empresa') return 'perigo';
-  if (chave === 'projeto_criado') return 'sucesso';
+  if (chave === 'projeto_criado' || chave === 'portfolio_concluida') return 'sucesso';
   if (chave === 'sd_aberta' || chave === 'proposta_enviada') return 'destaque';
   return 'info';
 }

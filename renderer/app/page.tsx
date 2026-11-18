@@ -1,6 +1,6 @@
 'use client';
 
-import { CalendarRange, ClipboardCheck, FileText } from 'lucide-react';
+import { CalendarRange, ClipboardCheck, FileText, PackageCheck } from 'lucide-react';
 import Link from 'next/link';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { BotaoEntrarNaApresentacao } from '@/modulos/apresentacao/componentes/ControlesDaApresentacao';
@@ -14,6 +14,12 @@ const MODULOS = [
     icone: ClipboardCheck,
     titulo: 'Gestão AVs',
     descricao: 'Análises de viabilidade, do intake comercial até a proposta.',
+  },
+  {
+    href: '/portfolio/',
+    icone: PackageCheck,
+    titulo: 'AV de Portfólio',
+    descricao: 'Checagem rápida de itens já desenvolvidos: desenho, capacidade e custos para a cotação.',
   },
   {
     href: '/sds/',
@@ -38,7 +44,7 @@ export default function Inicio() {
         <p className="mt-1 text-xs font-semibold uppercase tracking-[0.18em] text-titulo-secao">AV · SD · PRO</p>
         <p className="mt-1 text-sm text-texto-secundario">Escolha uma área para continuar.</p>
       </div>
-      <div data-tour="modulos" className="grid w-full max-w-5xl grid-cols-1 gap-5 md:grid-cols-3">
+      <div data-tour="modulos" className="grid w-full max-w-5xl grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
         {MODULOS.map((modulo) => (
           <Link key={modulo.href} href={modulo.href} className="group block">
             <PainelVidro className="flex h-full flex-col items-start gap-4 p-7 transition-shadow group-hover:shadow-[0_12px_40px_rgb(15_27_45/0.14)]">

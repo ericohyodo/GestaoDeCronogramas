@@ -1,4 +1,4 @@
-export type ModuloApp = 'projetos' | 'avs' | 'sds';
+export type ModuloApp = 'projetos' | 'avs' | 'portfolio' | 'sds';
 
 // Relatórios, análises, chat, instruções e configurações da IA de Projetos ficam fora de /projetos, mas são
 // só do módulo de Projetos; o de AVs tem as suas próprias telas sob /avs.
@@ -21,14 +21,17 @@ const correspondeA = (rota: string, prefixo: string) => rota === prefixo || rota
  */
 export function moduloDaRota(rota: string, anterior: ModuloApp | null): ModuloApp {
   if (correspondeA(rota, '/avs')) return 'avs';
+  if (correspondeA(rota, '/portfolio')) return 'portfolio';
   if (correspondeA(rota, '/sds')) return 'sds';
   if (ROTAS_DE_PROJETOS.some((prefixo) => correspondeA(rota, prefixo))) return 'projetos';
   return anterior ?? 'projetos';
 }
 
-/** Páginas de lista de cada módulo (com a barra final do `trailingSlash`). Só nelas aparece a faixa de módulos. */
+/** Páginas de lista de cada módulo (com a barra final do `trailingSlash`). Só nelas aparece a faixa de módulos
+ * (a lista de itens de portfólio, `/portfolio/itens/`, não conta). */
 export const ROTAS_DE_LISTA: Readonly<Record<ModuloApp, string>> = {
   avs: '/avs/',
+  portfolio: '/portfolio/',
   sds: '/sds/',
   projetos: '/projetos/',
 };

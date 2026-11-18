@@ -115,6 +115,34 @@ export const TOPICOS: TopicoDoTutorial[] = [
     ],
   },
   {
+    id: 'portfolio',
+    titulo: 'AV de Portfólio',
+    resumo: 'Checagem rápida de itens já desenvolvidos, a partir do cadastro de itens-modelo.',
+    rota: '/portfolio/',
+    passos: [
+      {
+        titulo: 'Itens de portfólio',
+        texto:
+          'Gestores e administradores cadastram os itens já desenvolvidos em "Itens de portfólio": código, descrição, desenho de referência (com a revisão), estrutura, operações com peças por hora e custos de referência por peça com a data da última atualização. Item desativado some da escolha de novas AVs.',
+      },
+      {
+        titulo: 'Abrir a AV de portfólio',
+        texto:
+          'Em "AVs de portfólio", use "Nova AV de Portfólio", escolha o item e a equipe. A AV usa a mesma numeração da AV e já vem com código, descrição, linha, família e programa do item.',
+      },
+      {
+        titulo: 'Checagem por área',
+        texto:
+          'A sequência é a da AV: Comercial (cliente, volume, prazo e desenho da cotação) → Eng. Produto (o desenho confere com o item?) → Eng. Processo (o processo atende?) → PCP (carga em peças e turnos: temos capacidade?) → Custo (os custos de referência valem ou precisam de atualização?). Cada área responde Confere, Com ressalvas ou Não confere; nos dois últimos, a observação é obrigatória.',
+      },
+      {
+        titulo: 'Resumo e conclusão',
+        texto:
+          'O Resumo junta as conclusões, os turnos por operação e o custo por peça vigente para a cotação. Depois do Custo, o Comercial usa "Concluir AV de portfólio": não há SD, porque o item já existe.',
+      },
+    ],
+  },
+  {
     id: 'sds',
     titulo: 'Gestão SDs',
     resumo: 'Oficialização do cliente e aceite da Engenharia.',

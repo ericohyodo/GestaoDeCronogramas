@@ -46,7 +46,8 @@ export function PaginaAvs({ acoesExtras }: { acoesExtras?: ReactNode }) {
       {erro && <MensagemErro mensagem={erro} aoFechar={limparErro} />}
 
       <DashboardAvPanel />
-      <ListaAvs itens={itens} />
+      {/* A AV de portfólio tem lista própria (módulo AV de Portfólio). */}
+      <ListaAvs itens={itens.filter((av) => av.tipo !== 'portfolio')} />
 
       <GruposAvModal aberto={gerenciandoGrupos} aoFechar={() => setGerenciandoGrupos(false)} />
       <NovaAvModal aberto={criando} aoFechar={() => setCriando(false)} />

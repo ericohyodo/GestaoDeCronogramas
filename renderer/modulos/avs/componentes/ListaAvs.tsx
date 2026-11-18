@@ -23,11 +23,19 @@ const ABAS: { chave: Aba; rotulo: string }[] = [
 
 function situacaoDaAv(av: AvResumoDTO): Aba {
   if (av.historico) return 'historico';
-  if (av.etapaAtual.chave === 'projeto_criado') return 'concluidas';
+  if (av.etapaAtual.chave === 'projeto_criado' || av.etapaAtual.chave === 'portfolio_concluida') return 'concluidas';
   if (av.etapaAtual.chave === 'declinada_cliente' || av.etapaAtual.chave === 'declinada_empresa') {
     return 'declinadas';
   }
   return 'andamento';
+}
+
+/**
+ * Rota do detalhe: a AV de portfólio abre no módulo próprio (menu e faixa de portfólio).
+ * @param av AV da lista
+ */
+export function linkDoDetalhe(av: Pick<AvResumoDTO, 'id' | 'tipo'>): string {
+  return `${av.tipo === 'portfolio' ? '/portfolio' : '/avs'}/detalhe/?id=${av.id}`;
 }
 
 export function ListaAvs({ itens }: { itens: AvResumoDTO[] }) {
@@ -94,7 +102,7 @@ export function ListaAvs({ itens }: { itens: AvResumoDTO[] }) {
             {filtrados.map((av) => (
               <LinhaTabela key={av.id}>
                 <CelulaTabela className="pl-5 font-medium tabular-nums">
-                  <Link href={`/avs/detalhe/?id=${av.id}`} className="text-primaria hover:text-primaria-hover">
+                  <Link href={linkDoDetalhe(av)} className="text-primaria hover:text-primaria-hover">
                     {av.numero}
                   </Link>
                 </CelulaTabela>

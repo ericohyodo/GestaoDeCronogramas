@@ -18,6 +18,12 @@ describe('moduloDaRota', () => {
     }
   });
 
+  it('AV de portfólio tem módulo próprio (lista, detalhe e itens)', () => {
+    for (const rota of ['/portfolio/', '/portfolio/detalhe/', '/portfolio/itens/', '/portfolio/itens/editar/']) {
+      expect(moduloDaRota(rota, 'avs')).toBe('portfolio');
+    }
+  });
+
   it('páginas compartilhadas (Usuários) mantêm o último módulo visitado', () => {
     expect(moduloDaRota('/usuarios/', 'avs')).toBe('avs');
     expect(moduloDaRota('/usuarios/', 'projetos')).toBe('projetos');
@@ -35,10 +41,11 @@ describe('ehRotaDeLista', () => {
     expect(ehRotaDeLista('/sds/')).toBe(true);
     expect(ehRotaDeLista('/projetos/')).toBe(true);
     expect(ehRotaDeLista('/projetos')).toBe(true);
+    expect(ehRotaDeLista('/portfolio/')).toBe(true);
   });
 
   it('detalhes, telas auxiliares e páginas compartilhadas não mostram', () => {
-    for (const rota of ['/avs/detalhe/', '/sds/detalhe/', '/cronograma/', '/avs/relatorios/', '/usuarios/', '/']) {
+    for (const rota of ['/avs/detalhe/', '/sds/detalhe/', '/cronograma/', '/avs/relatorios/', '/usuarios/', '/', '/portfolio/itens/', '/portfolio/detalhe/']) {
       expect(ehRotaDeLista(rota)).toBe(false);
     }
   });
