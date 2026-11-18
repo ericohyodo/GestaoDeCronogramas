@@ -3,7 +3,8 @@
 import { PanelLeftOpen } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
-import { type ModuloApp, moduloDaRota } from '@/compartilhado/layout/modulo-da-rota';
+import { ehRotaDeLista, type ModuloApp, moduloDaRota } from '@/compartilhado/layout/modulo-da-rota';
+import { FaixaDeModulos } from '@/compartilhado/layout/FaixaDeModulos';
 import { clienteDesktop } from '@/compartilhado/api/cliente-desktop';
 import { BotaoIcone } from '@/compartilhado/ui/Botao';
 import { BarraDeTitulo } from '@/compartilhado/layout/BarraDeTitulo';
@@ -145,7 +146,11 @@ export function AppShell({ children }: { children: ReactNode }) {
                   aoRetrair={() => setLateralRetraida(true)}
                 />
               )}
-              <main className="min-w-0 flex-1 overflow-y-auto rounded-2xl">{children}</main>
+              <main className="min-w-0 flex-1 overflow-y-auto rounded-2xl">
+                {/* Só nas listas: dentro do formulário de uma AV, SD ou PRO a faixa não aparece. */}
+                {ehRotaDeLista(rota) && <FaixaDeModulos atual={moduloAtual} />}
+                {children}
+              </main>
             </div>
           )
         ) : (

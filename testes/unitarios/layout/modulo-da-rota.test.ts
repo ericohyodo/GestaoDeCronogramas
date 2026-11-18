@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { moduloDaRota } from '../../../renderer/compartilhado/layout/modulo-da-rota';
+import { ehRotaDeLista, moduloDaRota } from '../../../renderer/compartilhado/layout/modulo-da-rota';
 
 describe('moduloDaRota', () => {
   it('rotas de AVs, de SDs e de Projetos definem o módulo', () => {
@@ -26,5 +26,20 @@ describe('moduloDaRota', () => {
 
   it('sem histórico, páginas compartilhadas caem em Projetos', () => {
     expect(moduloDaRota('/usuarios/', null)).toBe('projetos');
+  });
+});
+
+describe('ehRotaDeLista', () => {
+  it('só as listas de AV, SD e PRO mostram a faixa de módulos', () => {
+    expect(ehRotaDeLista('/avs/')).toBe(true);
+    expect(ehRotaDeLista('/sds/')).toBe(true);
+    expect(ehRotaDeLista('/projetos/')).toBe(true);
+    expect(ehRotaDeLista('/projetos')).toBe(true);
+  });
+
+  it('detalhes, telas auxiliares e páginas compartilhadas não mostram', () => {
+    for (const rota of ['/avs/detalhe/', '/sds/detalhe/', '/cronograma/', '/avs/relatorios/', '/usuarios/', '/']) {
+      expect(ehRotaDeLista(rota)).toBe(false);
+    }
   });
 });
