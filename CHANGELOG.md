@@ -1,5 +1,15 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.7.1 — 18/11/2026
+
+### Novidades
+- **Página de AVs mais compacta:** a lista fica no centro e o painel (indicadores, Prazos das áreas e AVs por etapa)
+  fica à direita, acompanhando a rolagem. O botão no topo do painel o **recolhe para a direita**, deixando só a lista;
+  o app lembra a escolha neste computador. Em telas estreitas, o painel continua acima da lista.
+- **Pasta das AVs** mudou de lugar: agora fica em **Configurações do menu das AVs**, logo abaixo da chave da API da IA
+  (antes estava na tela de Configurações de Projetos).
+- O painel das AVs não mostra mais a etapa "Concluída (portfólio)", que é do módulo de portfólio.
+
 ## 0.7.0 — 18/11/2026
 
 ### Novidades
@@ -9,7 +19,7 @@
   - Nome, usuário e perfil de acesso continuam sendo alterados pelo administrador.
 - **Pasta da AV no Windows:** ao criar uma AV, o app cria a pasta "AV 26-036 - Cliente - Descrição" dentro da pasta
   raiz, para guardar as entradas do Comercial (e-mails, desenhos, orçamentos).
-  - **Configurações → Pasta das AVs (administrador):** define a pasta raiz (de preferência uma pasta de rede que
+  - **Configurações (menu das AVs) → Pasta das AVs (administrador):** define a pasta raiz (de preferência uma pasta de rede que
     todos acessem). Sem raiz definida, nenhuma pasta é criada.
   - **Arquivos da AV** (cabeçalho da AV): lista o que há na pasta, com subpastas. Clique num item para abrir no
     programa padrão; "Abrir no Explorer" abre a pasta. Pasta vazia mostra "A pasta está vazia.".

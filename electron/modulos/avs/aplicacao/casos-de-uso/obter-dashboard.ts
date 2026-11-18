@@ -56,7 +56,8 @@ export class ObterDashboard implements CasoDeUso<void, DashboardAvDTO> {
       emAndamento: avs.length - concluidas - declinadas,
       concluidas,
       declinadas,
-      porEtapa: ETAPAS_AV.map((etapa) => ({
+      // A etapa "Concluída (portfólio)" é do módulo de portfólio: fora do painel das AVs.
+      porEtapa: ETAPAS_AV.filter((etapa) => etapa.chave !== 'portfolio_concluida').map((etapa) => ({
         etapa,
         quantidade: contagemPorEtapa.get(etapa.numero) ?? 0,
       })),

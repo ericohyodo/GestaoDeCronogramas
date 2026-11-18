@@ -5,7 +5,7 @@ import { type ReactNode, useEffect, useState } from 'react';
 import { Botao } from '@/compartilhado/ui/Botao';
 import { CabecalhoPagina } from '@/compartilhado/ui/CabecalhoPagina';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
-import { DashboardAvPanel } from './DashboardAvPanel';
+import { PainelLateralDasAvs } from './PainelLateralDasAvs';
 import { GruposAvModal } from './GruposAvModal';
 import { ListaAvs } from './ListaAvs';
 import { NovaAvModal } from './NovaAvModal';
@@ -45,9 +45,17 @@ export function PaginaAvs({ acoesExtras }: { acoesExtras?: ReactNode }) {
 
       {erro && <MensagemErro mensagem={erro} aoFechar={limparErro} />}
 
-      <DashboardAvPanel />
-      {/* A AV de portfólio tem lista própria (módulo AV de Portfólio). */}
-      <ListaAvs itens={itens.filter((av) => av.tipo !== 'portfolio')} />
+      {/* Lista no centro e o painel à direita (recolhível); em telas estreitas o painel vem antes da lista. */}
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
+        <div className="min-w-0 flex-1">
+          {/* A AV de portfólio tem lista própria (módulo AV de Portfólio). */}
+          <ListaAvs itens={itens.filter((av) => av.tipo !== 'portfolio')} />
+        </div>
+        {/* `self-stretch`: a coluna ocupa a altura da lista, para o painel acompanhar a rolagem (sticky). */}
+        <div className="order-first xl:order-none xl:self-stretch">
+          <PainelLateralDasAvs />
+        </div>
+      </div>
 
       <GruposAvModal aberto={gerenciandoGrupos} aoFechar={() => setGerenciandoGrupos(false)} />
       <NovaAvModal aberto={criando} aoFechar={() => setCriando(false)} />

@@ -85,7 +85,7 @@ export const TOPICOS: TopicoDoTutorial[] = [
       {
         titulo: 'Pasta da AV',
         texto:
-          'Toda AV nova ganha uma pasta no Windows ("AV 26-036 - Cliente - Descrição") para as entradas do Comercial: e-mails, desenhos e orçamentos. No cabeçalho da AV, "Arquivos da AV" mostra o que há na pasta; clique num item para abrir. AVs antigas mostram "Criar pasta da AV".',
+          'Toda AV nova ganha uma pasta no Windows ("AV 26-036 - Cliente - Descrição") para as entradas do Comercial: e-mails, desenhos e orçamentos. No cabeçalho da AV, "Arquivos da AV" mostra o que há na pasta; clique num item para abrir. AVs antigas mostram "Criar pasta da AV". O administrador define a pasta raiz em Configurações, no menu das AVs.',
       },
       {
         titulo: 'Desenho do item',
