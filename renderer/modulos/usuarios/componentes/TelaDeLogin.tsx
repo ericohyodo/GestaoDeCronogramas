@@ -1,6 +1,7 @@
 'use client';
 
-import { CalendarRange, KeyRound, LogIn, ShieldCheck } from 'lucide-react';
+import { KeyRound, LogIn, ShieldCheck } from 'lucide-react';
+import { IconeDoApp } from '@/compartilhado/ui/IconeDoApp';
 import { type FormEvent, useState } from 'react';
 import { ErroDaApi, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { Botao } from '@/compartilhado/ui/Botao';
@@ -58,9 +59,7 @@ export function TelaDeLogin() {
     <div className="flex min-h-full items-center justify-center p-6">
       <PainelVidro className="w-full max-w-sm p-8">
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="mb-4 grid size-12 place-items-center rounded-2xl bg-linear-to-br from-primaria to-destaque text-sobre-primaria">
-            <CalendarRange aria-hidden className="size-6" />
-          </div>
+          <IconeDoApp className="mb-4 size-12" />
           <h1 className="text-lg font-semibold">Gestão de Novos Desenvolvimentos</h1>
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-titulo-secao">AV · SD · PRO</p>
           <p className="mt-1 text-sm text-texto-secundario">

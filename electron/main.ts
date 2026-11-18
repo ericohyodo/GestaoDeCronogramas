@@ -25,8 +25,10 @@ app.userAgentFallback = app.userAgentFallback.normalize('NFD').replace(/[^\x20-\
 registrarEsquemaApp();
 
 // Uma instância por vez: duas escrevendo no mesmo arquivo .db causariam conflitos.
-// Identidade do app no Windows: os avisos de notificação aparecem com o nome e o ícone dele.
-app.setAppUserModelId('com.ferkoda.novosdesenvolvimentos');
+// Identidade do app no Windows: os avisos de notificação aparecem com o nome e o ícone dele. Em
+// desenvolvimento (`npm run dev`, electron.exe) a identidade é outra: senão o Windows guarda o ícone do
+// Electron para o grupo da barra de tarefas e passa a mostrá-lo também no executável de produção.
+app.setAppUserModelId(app.isPackaged ? 'com.ferkoda.novosdesenvolvimentos' : 'com.ferkoda.novosdesenvolvimentos.dev');
 
 if (!app.requestSingleInstanceLock()) {
   app.quit();

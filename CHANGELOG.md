@@ -1,5 +1,19 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.7.2 — 18/11/2026
+
+### Novidades
+- **Ícone novo ("Etapas"):** três avanços em sequência, AV → SD → PRO, o último em verde-água. Vale para o
+  executável, a barra de tarefas, a barra de título e a tela de login.
+- **Enter nas tabelas:** numa tabela de preenchimento (cargas de máquina, operações, materiais, custos, contatos,
+  investimentos…), Enter leva ao campo da mesma coluna na linha de baixo; Shift+Enter, à linha de cima. O Enter não
+  envia mais a aba sem querer.
+
+### Correções
+- A barra de tarefas mostrava o ícone padrão do Electron no computador de quem também roda a versão de
+  desenvolvimento: as duas usavam a mesma identidade no Windows. A versão de desenvolvimento agora tem identidade
+  própria. Se o ícone antigo continuar aparecendo, rode `ie4uinit.exe -show` e abra o app de novo.
+
 ## 0.7.1 — 18/11/2026
 
 ### Novidades

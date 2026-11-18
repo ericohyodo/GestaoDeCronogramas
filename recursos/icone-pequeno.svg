@@ -1,8 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <!-- Versão simplificada do ícone "Fluxo" para 16–32 px: traços e marcos mais grossos, sem o "check". -->
+  <!-- Versão simplificada do ícone "Etapas" para 16–32 px: traços mais grossos e mais espaço entre as setas. -->
   <rect width="256" height="256" rx="48" fill="#14305c"/>
-  <path d="M64 188 L192 68" fill="none" stroke="#7aa6e2" stroke-width="22" stroke-linecap="round"/>
-  <circle cx="64" cy="188" r="34" fill="#ffffff"/>
-  <circle cx="128" cy="128" r="34" fill="#ffffff"/>
-  <circle cx="192" cy="68" r="42" fill="#2dd4bf"/>
+  <path d="M50 76 L94 128 L50 180" fill="none" stroke="#ffffff" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M113 76 L157 128 L113 180" fill="none" stroke="#7aa6e2" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M176 76 L220 128 L176 180" fill="none" stroke="#2dd4bf" stroke-width="36" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
