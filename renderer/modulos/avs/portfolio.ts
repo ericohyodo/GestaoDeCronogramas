@@ -1,16 +1,8 @@
-import type { CustosPortfolioDTO, ResultadoChecagemDTO } from '@contratos/portfolio.contrato';
-import type { Tom } from '@/compartilhado/ui/Etiqueta';
+import type { CustosPortfolioDTO } from '@contratos/portfolio.contrato';
 
 // =====================================================================================================
-// AV de Item de Portfólio: rótulos e contas puras (sem React).
+// AV de Item de Portfólio: contas puras (sem React), testadas. Os rótulos com cor ficam em `rotulos.ts`.
 // =====================================================================================================
-
-/** Rótulo e cor da conclusão de cada área. */
-export const RESULTADO_VISUAL: Record<ResultadoChecagemDTO, { rotulo: string; tom: Tom }> = {
-  confere: { rotulo: 'Confere', tom: 'sucesso' },
-  ressalvas: { rotulo: 'Com ressalvas', tom: 'alerta' },
-  diverge: { rotulo: 'Não confere', tom: 'perigo' },
-};
 
 export const CATEGORIAS_DE_CUSTO: { chave: keyof CustosPortfolioDTO; rotulo: string }[] = [
   { chave: 'materiaPrima', rotulo: 'Matéria-prima' },

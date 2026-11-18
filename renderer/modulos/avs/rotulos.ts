@@ -1,3 +1,4 @@
+import type { ResultadoChecagemDTO } from '@contratos/portfolio.contrato';
 import type {
   AreaAvDTO,
   ClassificacaoInvestimentoDTO,
@@ -77,4 +78,11 @@ export function tomDaEtapa(chave: string): Tom {
 export const ROTULO_ETAPA_DECLINIO: Record<EtapaDeDeclinioDTO, string> = {
   declinada_cliente: 'Declinada pelo cliente',
   declinada_empresa: 'Declinada internamente',
+};
+
+/** Rótulo e cor da conclusão de cada área na AV de Item de Portfólio. */
+export const RESULTADO_VISUAL: Record<ResultadoChecagemDTO, { rotulo: string; tom: Tom }> = {
+  confere: { rotulo: 'Confere', tom: 'sucesso' },
+  ressalvas: { rotulo: 'Com ressalvas', tom: 'alerta' },
+  diverge: { rotulo: 'Não confere', tom: 'perigo' },
 };

@@ -15,7 +15,7 @@ import { RESULTADOS_DE_CHECAGEM } from '@contratos/portfolio.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { AreaTexto } from '@/compartilhado/ui/Campos';
 import { CelulaCabecalho, CelulaTabela, LinhaTabela, Tabela } from '@/compartilhado/ui/Tabela';
-import { RESULTADO_VISUAL } from '../../portfolio';
+import { RESULTADO_VISUAL } from '../../rotulos';
 import { ROTULO_DO_TIPO } from '../ModalDoItemDaEstrutura';
 import { IconeDeEstrutura } from '../IconesDeEstrutura';
 import { TituloSecao } from '../SecaoAv';

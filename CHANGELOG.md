@@ -1,5 +1,38 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.6.0 — 18/11/2026
+
+### Novidades
+- **AV de Item de Portfólio (novo módulo, 4º card da tela inicial):** versão light da AV para itens já
+  desenvolvidos (correntes de produção), para responder rápido à cotação.
+  - **Itens de portfólio:** cadastro dos itens-modelo, feito por gestores e administradores. Cada item tem
+    código (único), descrição, cliente, linha, família, programa, **desenho de referência** com a revisão,
+    estrutura do produto, operações com peças por hora e **custos de referência por peça** com a data da última
+    atualização. Na lista, custos com mais de 6 meses aparecem em destaque. Itens podem ser desativados.
+  - **Nova AV de Portfólio:** escolhe o item ativo, o cliente da cotação e a equipe. Usa a **mesma numeração da
+    AV** e herda código, descrição, linha, família e programa do item.
+  - **Fluxo sequencial**, como a AV: Comercial → Eng. Produto → Eng. Processo → PCP → Mapa de Custo.
+    - Comercial: cliente, solicitante, volume anual, prazo e o **desenho da cotação**.
+    - Eng. Produto: desenho de referência ao lado do desenho da cotação e a estrutura do item; responde se o
+      desenho confere.
+    - Eng. Processo: operações do item; responde se o processo atual atende.
+    - PCP: carga de máquina em peças com as operações do item e o volume da cotação; responde se há capacidade.
+    - Custo: custos de referência e, se preciso, os valores atualizados; responde se a referência vale.
+    - Cada área marca **Confere**, **Com ressalvas** ou **Não confere** (os dois últimos pedem observação).
+  - **Resumo:** item, cotação, conclusões das áreas (quem e quando), turnos por operação e custo por peça
+    (referência × vigente). Depois do Custo, o Comercial usa **"Concluir AV de portfólio"**: não há SD.
+  - Faixa de módulos passa a **AV | AVP | SD | PRO**.
+- A lista, o painel, o relatório e a IA das AVs continuam só com as AVs completas.
+
+### Técnico
+- Migração 0050: `portfolio_itens`, `portfolio_estrutura`, `portfolio_operacoes`, `portfolio_anexos`;
+  `av.tipo` ('completa' | 'portfolio') e `av.item_portfolio_id`; etapa 11 `portfolio_concluida` (terminal);
+  `av_portfolio_checagens` e `av_portfolio_custos` (foto dos custos de referência na checagem do Custo).
+- Desenhos de referência em `<pasta do banco>/anexos-portfolio/<itemId>/`, com as mesmas regras dos anexos da AV.
+- Canais IPC `portfolio:*`: consulta (leitura), cadastro de itens (planejamento) e checagens/conclusão (tarefas,
+  com a permissão por área da AV). `avs:finalizar-e-criar-pre-sd` recusa AV de portfólio.
+- `/avs/detalhe/` redireciona a AV de portfólio para `/portfolio/detalhe/` (avisos e links antigos).
+
 ## 0.5.1 — 18/11/2026
 
 ### Novidades
