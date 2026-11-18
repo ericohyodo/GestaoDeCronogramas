@@ -111,6 +111,8 @@ const esquemaVersao = z.number().int().positive().nullish();
 const esquemaMembros = z.object(Object.fromEntries(AREAS_AV.map((area) => [area, z.string().nullish()])));
 
 const esquemaCriar = z.object({
+  tipo: z.enum(['completa', 'portfolio']).optional(),
+  itemPortfolioId: z.string().min(1).nullish(),
   descricao: z.string(),
   cliente: z.string().nullish(),
   codigo: z.string().nullish(),

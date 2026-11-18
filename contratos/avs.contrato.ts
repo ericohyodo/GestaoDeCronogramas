@@ -46,8 +46,14 @@ export interface MembroAreaDTO {
   nome: string;
 }
 
+/** AV completa ou de Item de Portfólio (versão light, termina na proposta, sem SD). */
+export type TipoAvDTO = 'completa' | 'portfolio';
+
 export interface AvResumoDTO {
   id: string;
+  tipo: TipoAvDTO;
+  /** Só na AV de portfólio: o item escolhido na abertura. */
+  itemPortfolioId: string | null;
   numero: string;
   cliente: string | null;
   descricao: string;
@@ -94,6 +100,9 @@ export interface AvDetalheDTO extends AvResumoDTO {
 }
 
 export interface CriarAvEntrada {
+  /** Padrão: completa. Na de portfólio, `itemPortfolioId` é obrigatório e a descrição vem do item. */
+  tipo?: TipoAvDTO;
+  itemPortfolioId?: string | null;
   descricao: string;
   cliente?: string | null;
   codigo?: string | null;

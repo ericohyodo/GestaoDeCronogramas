@@ -3,6 +3,9 @@ import type { CasoDeUso } from '../../../../nucleo/aplicacao/caso-de-uso';
 import type { GeradorDeId } from '../../../../nucleo/aplicacao/portas/gerador-de-id';
 import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
 import { Av, gerarNumeroAv } from '../../dominio/av';
+import type { RepositorioPortfolio } from '../../dominio/portfolio';
+import { ErroNaoEncontrado } from '../../../../nucleo/aplicacao/erros';
+import { ErroDeDominio } from '../../../../nucleo/dominio/erro-de-dominio';
 import type { RepositorioAvs } from '../../dominio/repositorio-avs';
 import type { AutorizacaoAv } from '../autorizacao';
 import { construirMapaDeNomes, paraAvDetalheDTO } from '../mapeador-dto';
@@ -23,12 +26,25 @@ export class CriarAv implements CasoDeUso<CriarAvEntrada, AvDetalheDTO> {
     private readonly autorizacao: AutorizacaoAv,
     private readonly versoes: ControleDeVersao = versaoSemControle,
     private readonly notificador: Notificador = semNotificacao,
+    /** Itens de portfólio: a AV de portfólio herda identificação do item escolhido. */
+    private readonly portfolio: Pick<RepositorioPortfolio, 'obter'> | null = null,
   ) {}
 
   async executar(entrada: CriarAvEntrada): Promise<AvDetalheDTO> {
     const usuarioAtual = await this.autorizacao.exigirCompetencia('comercial');
     const ativos = await this.usuarios.listarAtivos();
     validarMembros(entrada.membros, ativos);
+
+    // AV de portfólio: descrição, código, cliente, linha, família e programa vêm do item (ativo).
+    const tipo = entrada.tipo ?? 'completa';
+    let herdado: { descricao: string; codigo: string; cliente: string | null; programa: string | null; linha: string | null; familia: string | null } | null = null;
+    if (tipo === 'portfolio') {
+      if (!entrada.itemPortfolioId || !this.portfolio) throw new ErroNaoEncontrado('Item de portfólio');
+      const dados = await this.portfolio.obter(entrada.itemPortfolioId);
+      if (!dados) throw new ErroNaoEncontrado('Item de portfólio');
+      if (!dados.item.ativo) throw new ErroDeDominio('ITEM_INATIVO', 'Este item de portfólio está inativo.');
+      herdado = dados.item;
+    }
 
     const agora = this.relogio.agora();
     const ano = agora.getFullYear();
@@ -39,9 +55,14 @@ export class CriarAv implements CasoDeUso<CriarAvEntrada, AvDetalheDTO> {
       numero: gerarNumeroAv(sequencial, ano),
       sequencial,
       ano,
-      descricao: entrada.descricao,
-      cliente: entrada.cliente,
-      codigo: entrada.codigo,
+      tipo,
+      itemPortfolioId: tipo === 'portfolio' ? (entrada.itemPortfolioId ?? null) : null,
+      descricao: herdado ? herdado.descricao : entrada.descricao,
+      cliente: entrada.cliente ?? herdado?.cliente ?? null,
+      codigo: herdado ? herdado.codigo : entrada.codigo,
+      programa: herdado?.programa ?? null,
+      linha: herdado?.linha ?? null,
+      familia: herdado?.familia ?? null,
       complexidade: entrada.complexidade,
       solicitante: entrada.solicitante,
       prazoCliente: entrada.prazoCliente,

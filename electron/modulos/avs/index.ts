@@ -18,6 +18,25 @@ import { CriarAv } from './aplicacao/casos-de-uso/criar-av';
 import { ObterContatosAv, SalvarContatosAv } from './aplicacao/casos-de-uso/contatos-av';
 import { DeclinarAv } from './aplicacao/casos-de-uso/declinar-av';
 import { AbrirAnexo } from './aplicacao/casos-de-uso/abrir-anexo';
+import {
+  AbrirDesenhoPortfolio,
+  AnexarDesenhoPortfolio,
+  ConcluirAvPortfolio,
+  DefinirAtivoItemPortfolio,
+  type DependenciasPortfolio,
+  ExcluirDesenhoPortfolio,
+  ListarItensPortfolio,
+  ObterConteudoDesenhoPortfolio,
+  ObterItemPortfolio,
+  ObterPortfolioDaAv,
+  SalvarChecagemPortfolio,
+  SalvarItemPortfolio,
+} from './aplicacao/casos-de-uso/portfolio';
+import { registrarIpcPortfolio } from './apresentacao/controlador-ipc-portfolio';
+import {
+  RepositorioChecagensPortfolioSqlite,
+  RepositorioPortfolioSqlite,
+} from './infraestrutura/repositorio-portfolio-sqlite';
 import { ExcluirAnexo } from './aplicacao/casos-de-uso/excluir-anexo';
 import {
   AplicarAoGrupo,
@@ -159,7 +178,50 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
   const notificador = deps.notificador ?? semNotificacao;
   const transacao = new UnidadeDeTrabalhoSqlite(deps.db);
 
-  const criarAv = new CriarAv(repositorio, deps.relogio, deps.geradorDeId, deps.consultaDeUsuarios, autorizacao, versoes, notificador);
+  const repositorioPortfolio = new RepositorioPortfolioSqlite(deps.db);
+  const criarAv = new CriarAv(
+    repositorio,
+    deps.relogio,
+    deps.geradorDeId,
+    deps.consultaDeUsuarios,
+    autorizacao,
+    versoes,
+    notificador,
+    repositorioPortfolio,
+  );
+  const depsPortfolio: DependenciasPortfolio = {
+    repositorio: repositorioPortfolio,
+    checagens: new RepositorioChecagensPortfolioSqlite(deps.db),
+    avs: repositorio,
+    autorizacao,
+    usuarios: deps.consultaDeUsuarios,
+    armazenamento: new ArmazenamentoDeArquivosFs('anexos-portfolio'),
+    seletor: seletorDeArquivos,
+    relogio: deps.relogio,
+    geradorDeId: deps.geradorDeId,
+  };
+  registrarIpcPortfolio(deps.ipc, {
+    listarItens: new ListarItensPortfolio(depsPortfolio),
+    obterItem: new ObterItemPortfolio(depsPortfolio),
+    salvarItem: new SalvarItemPortfolio(depsPortfolio),
+    definirAtivo: new DefinirAtivoItemPortfolio(depsPortfolio),
+    anexarDesenho: new AnexarDesenhoPortfolio(depsPortfolio),
+    excluirDesenho: new ExcluirDesenhoPortfolio(depsPortfolio),
+    obterConteudoDesenho: new ObterConteudoDesenhoPortfolio(depsPortfolio),
+    abrirDesenho: new AbrirDesenhoPortfolio(depsPortfolio),
+    obterDaAv: new ObterPortfolioDaAv(depsPortfolio),
+    salvarChecagem: new SalvarChecagemPortfolio(depsPortfolio),
+    concluirAv: new ConcluirAvPortfolio(
+      repositorio,
+      repositorioHistorico,
+      autorizacao,
+      deps.relogio,
+      deps.geradorDeId,
+      deps.consultaDeUsuarios,
+      versoes,
+      notificador,
+    ),
+  });
   const atualizarComercial = new AtualizarComercial(repositorio, autorizacao, deps.consultaDeUsuarios, versoes);
   const salvarSecaoCusto = new SalvarSecaoCusto(
     repositorio,

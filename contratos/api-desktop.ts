@@ -7,6 +7,13 @@ import type {
 } from './atualizacao.contrato';
 import type { CaixaDeNotificacoesDTO } from './notificacoes.contrato';
 import type {
+  ItemPortfolioDTO,
+  ItemPortfolioResumoDTO,
+  PortfolioDaAvDTO,
+  SalvarChecagemPortfolioEntrada,
+  SalvarItemPortfolioEntrada,
+} from './portfolio.contrato';
+import type {
   AndamentoReporteEntrada,
   ConteudoImagemReporteDTO,
   CriarReporteEntrada,
@@ -166,6 +173,24 @@ export interface ApiDesktop {
     criar(entrada: CriarResponsavelEntrada): Promise<Resultado<ResponsavelDTO>>;
     atualizar(entrada: AtualizarResponsavelEntrada): Promise<Resultado<ResponsavelDTO>>;
     excluir(id: string): Promise<Resultado<null>>;
+  };
+  portfolio: {
+    /** Itens de portfólio (templates); `apenasAtivos` para a escolha na abertura da AV. */
+    listarItens(filtro?: { apenasAtivos?: boolean }): Promise<Resultado<ItemPortfolioResumoDTO[]>>;
+    obterItem(id: string): Promise<Resultado<ItemPortfolioDTO>>;
+    /** Gestor ou administrador: cria (sem id) ou altera um item. */
+    salvarItem(entrada: SalvarItemPortfolioEntrada): Promise<Resultado<ItemPortfolioDTO>>;
+    definirAtivo(entrada: { id: string; ativo: boolean }): Promise<Resultado<ItemPortfolioDTO>>;
+    /** Abre o seletor de arquivos; `null` quando cancela. */
+    anexarDesenho(itemId: string): Promise<Resultado<AnexoAvDTO[] | null>>;
+    excluirDesenho(anexoId: string): Promise<Resultado<null>>;
+    obterConteudoDesenho(anexoId: string): Promise<Resultado<ConteudoAnexoDTO>>;
+    abrirDesenho(anexoId: string): Promise<Resultado<null>>;
+    /** Item (template) da AV de portfólio e as conclusões das áreas. */
+    obterDaAv(avId: string): Promise<Resultado<PortfolioDaAvDTO>>;
+    salvarChecagem(entrada: SalvarChecagemPortfolioEntrada): Promise<Resultado<PortfolioDaAvDTO>>;
+    /** Comercial: encerra a AV de portfólio na Proposta Enviada (sem SD). */
+    concluirAv(entrada: { avId: string; comentario?: string | null }): Promise<Resultado<AvDetalheDTO>>;
   };
   reportes: {
     /** Qualquer pessoa logada: envia um erro ou sugestão (até 3 prints). */

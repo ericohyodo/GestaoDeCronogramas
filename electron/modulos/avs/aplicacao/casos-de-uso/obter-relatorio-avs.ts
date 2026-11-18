@@ -45,7 +45,8 @@ export class ObterRelatorioAvs implements CasoDeUso<void, LinhaRelatorioAvDTO[]>
     );
 
     const linhas: LinhaRelatorioAvDTO[] = [];
-    for (const av of avs) {
+    // A AV de portfólio tem lista própria: fora do relatório (e da IA, que lê este relatório).
+    for (const av of avs.filter((item) => !item.ehPortfolio)) {
       const etapa = obterEtapaAv(av.etapaAtual);
       const situacao: SituacaoAvDTO = etapa.terminal
         ? etapa.chave === 'projeto_criado'

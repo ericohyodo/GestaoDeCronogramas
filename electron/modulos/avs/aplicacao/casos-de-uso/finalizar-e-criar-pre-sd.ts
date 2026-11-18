@@ -32,6 +32,9 @@ export class FinalizarECriarPreSd implements CasoDeUso<string, SdDTO> {
     const av = await this.repositorio.obterPorId(avId);
     if (!av) throw new ErroNaoEncontrado('AV');
 
+    if (av.ehPortfolio) {
+      throw new ErroDeDominio('PORTFOLIO_SEM_SD', 'A AV de portfólio não gera SD: o item já existe. Use "Concluir AV de portfólio".');
+    }
     const usuario = await this.autorizacao.exigirEdicaoDaArea(av, 'comercial');
     const mapaDeCusto = obterEtapaPorChave('mapa_custo');
     const sdAberta = obterEtapaPorChave('sd_aberta');

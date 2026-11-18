@@ -26,9 +26,9 @@ function sanitizarNomeArquivo(nome: string): string {
   return `${base || 'arquivo'}${extensao}`;
 }
 
-/** Pasta da AV; o id vem do banco (UUID), mas ainda assim é sanitizado contra "..". */
-function pastaDaAv(avId: string): string {
-  return path.join(resolverPastaDoBanco(), 'anexos-avs', avId.replace(/[^\w-]/g, '_'));
+/** Pasta do dono (AV ou item de portfólio); o id vem do banco (UUID), mas ainda é sanitizado contra "..". */
+function pastaDaAv(avId: string, pastaRaiz = 'anexos-avs'): string {
+  return path.join(resolverPastaDoBanco(), pastaRaiz, avId.replace(/[^\w-]/g, '_'));
 }
 
 /**
@@ -37,16 +37,19 @@ function pastaDaAv(avId: string): string {
  * @param nomeArmazenado nome gravado no banco
  * @returns caminho absoluto do arquivo
  */
-function caminhoSeguro(avId: string, nomeArmazenado: string): string {
-  const pasta = pastaDaAv(avId);
+function caminhoSeguro(avId: string, nomeArmazenado: string, pastaRaiz?: string): string {
+  const pasta = pastaDaAv(avId, pastaRaiz);
   const caminho = path.join(pasta, path.basename(nomeArmazenado));
   if (!caminho.startsWith(pasta + path.sep)) throw new ErroDeDominio('CAMINHO_INVALIDO', 'Arquivo inválido.');
   return caminho;
 }
 
 export class ArmazenamentoDeArquivosFs implements ArmazenamentoDeArquivos {
+  /** @param pastaRaiz subpasta ao lado do banco (`anexos-avs` para as AVs, `anexos-portfolio` para os itens) */
+  constructor(private readonly pastaRaiz = 'anexos-avs') {}
+
   async copiarParaAnexos(avId: string, arquivo: ArquivoSelecionado): Promise<ArquivoArmazenado> {
-    const pasta = pastaDaAv(avId);
+    const pasta = pastaDaAv(avId, this.pastaRaiz);
     garantirPastaGravavel(pasta);
 
     const nomeArmazenado = `${randomUUID()}-${sanitizarNomeArquivo(arquivo.nomeArquivo)}`;
@@ -63,16 +66,16 @@ export class ArmazenamentoDeArquivosFs implements ArmazenamentoDeArquivos {
   }
 
   async lerConteudoBase64(avId: string, nomeArmazenado: string): Promise<string> {
-    const conteudo = await readFile(caminhoSeguro(avId, nomeArmazenado));
+    const conteudo = await readFile(caminhoSeguro(avId, nomeArmazenado, this.pastaRaiz));
     return conteudo.toString('base64');
   }
 
   async excluirArquivo(avId: string, nomeArmazenado: string): Promise<void> {
-    await rm(caminhoSeguro(avId, nomeArmazenado), { force: true });
+    await rm(caminhoSeguro(avId, nomeArmazenado, this.pastaRaiz), { force: true });
   }
 
   async abrirNoProgramaPadrao(avId: string, nomeArmazenado: string): Promise<void> {
-    const falha = await shell.openPath(caminhoSeguro(avId, nomeArmazenado));
+    const falha = await shell.openPath(caminhoSeguro(avId, nomeArmazenado, this.pastaRaiz));
     if (falha) throw new ErroDeDominio('NAO_FOI_POSSIVEL_ABRIR', `Não foi possível abrir o arquivo: ${falha}`);
   }
 }

@@ -31,8 +31,14 @@ export interface CamposComerciaisAv {
   infoComplementarComercial: string | null;
 }
 
+/** AV completa (desenvolvimento novo) ou de Item de Portfólio (versão light para itens já desenvolvidos). */
+export type TipoAv = 'completa' | 'portfolio';
+
 export interface PropsAv extends CamposComerciaisAv {
   id: string;
+  tipo: TipoAv;
+  /** Item de portfólio escolhido na abertura (só na AV de portfólio). */
+  itemPortfolioId: string | null;
   numero: string;
   sequencial: number;
   ano: number;
@@ -69,14 +75,27 @@ export interface DadosNovaAv {
   membros?: Partial<Record<Area, string | null>>;
   criadoPor: string | null;
   agora: Date;
+  /** Padrão: completa. */
+  tipo?: TipoAv;
+  itemPortfolioId?: string | null;
+  /** Dados herdados do item de portfólio. */
+  programa?: string | null;
+  linha?: string | null;
+  familia?: string | null;
 }
 
 export class Av {
   private constructor(private props: PropsAv) {}
 
   static criar(dados: DadosNovaAv): Av {
+    const tipo = dados.tipo ?? 'completa';
+    if (tipo === 'portfolio' && !dados.itemPortfolioId) {
+      throw new ErroDeValidacao('Escolha o item de portfólio da AV.');
+    }
     return new Av({
       id: dados.id,
+      tipo,
+      itemPortfolioId: tipo === 'portfolio' ? (dados.itemPortfolioId ?? null) : null,
       numero: dados.numero,
       sequencial: dados.sequencial,
       ano: dados.ano,
@@ -92,13 +111,13 @@ export class Av {
       foneComercial: null,
       contatoTecnico: null,
       dataFechamento: null,
-      programa: null,
+      programa: normalizarTextoOpcional(dados.programa),
       volumeAnual: null,
       anoSopEop: null,
       respAbertura: null,
-      linha: null,
+      linha: normalizarTextoOpcional(dados.linha),
       origemProjeto: null,
-      familia: null,
+      familia: normalizarTextoOpcional(dados.familia),
       localEntrega: null,
       conceitoLogistico: null,
       respEmbalagem: null,
@@ -126,6 +145,15 @@ export class Av {
   }
   get numero(): string {
     return this.props.numero;
+  }
+  get tipo(): TipoAv {
+    return this.props.tipo;
+  }
+  get itemPortfolioId(): string | null {
+    return this.props.itemPortfolioId;
+  }
+  get ehPortfolio(): boolean {
+    return this.props.tipo === 'portfolio';
   }
   get sequencial(): number {
     return this.props.sequencial;
