@@ -24,10 +24,12 @@ export function BotaoReportar() {
       <button
         type="button"
         onClick={() => setAberto(true)}
-        className="flex h-9 w-full items-center gap-2.5 rounded-lg px-3 text-sm font-medium text-texto-secundario transition-colors hover:bg-texto/6 hover:text-texto"
+        title="Reportar um erro ou enviar uma sugestão"
+        // Mesmo desenho dos itens do menu: uma linha, alinhado à esquerda (o rótulo longo quebrava e centralizava).
+        className="flex h-9 w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-3 text-left text-sm font-medium text-texto-secundario transition-colors hover:bg-texto/6 hover:text-texto"
       >
-        <Bug aria-hidden className="size-4" />
-        Reportar erro / sugestão
+        <Bug aria-hidden className="size-4 shrink-0" />
+        Erros e sugestões
       </button>
       <Modal
         aberto={aberto}

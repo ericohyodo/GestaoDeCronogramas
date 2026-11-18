@@ -29,11 +29,12 @@ const POLITICA_DE_CONTEUDO = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data:",
+  // blob: para a pré-visualização de anexos (imagem e PDF) e prints dos reportes.
+  "img-src 'self' data: blob:",
   "font-src 'self' data:",
   "connect-src 'self'",
-  // data: para o PDF de anexos, exibido em <iframe> na pré-visualização de evidências.
-  "frame-src 'self' data:",
+  // blob: para o PDF de anexos, exibido em <iframe> (data: tinha limite de ~2 MB e ficava em branco).
+  "frame-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

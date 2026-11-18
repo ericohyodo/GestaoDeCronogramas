@@ -324,7 +324,7 @@ function PrintsDoReporte({ imagens }: { imagens: ImagemReporteDTO[] }) {
           );
         })}
       </ul>
-      <Modal aberto={!!ampliada} aoFechar={() => setAmpliada(null)} titulo={ampliada?.nomeArquivo ?? ''} largura="cheia">
+      <Modal aberto={!!ampliada} aoFechar={() => setAmpliada(null)} titulo={ampliada?.nomeArquivo ?? ''} largura="visualizador">
         {ampliada && (
           // eslint-disable-next-line @next/next/no-img-element -- data: URI local, sem loader de otimização
           <img

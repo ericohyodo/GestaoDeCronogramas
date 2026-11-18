@@ -5,6 +5,7 @@ import { ExternalLink, Eye, FileText, Image as ImageIcon, Paperclip, Trash2 } fr
 import { useEffect, useState } from 'react';
 import type { AnexoAvDTO, AreaAvDTO, ConteudoAnexoDTO } from '@contratos/avs.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
+import { urlDeBase64 } from '@/compartilhado/arquivos';
 import { Ajuda } from '@/compartilhado/ui/Ajuda';
 import { Botao, BotaoIcone } from '@/compartilhado/ui/Botao';
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
@@ -179,7 +180,7 @@ export function AnexosGaleria({
         aberto={!!visualizando}
         aoFechar={() => setVisualizando(null)}
         titulo={visualizando?.nomeArquivo ?? ''}
-        largura="cheia"
+        largura="visualizador"
       >
         {visualizando && <ConteudoDaPrevia key={visualizando.id} anexo={visualizando} />}
       </Modal>
@@ -187,49 +188,49 @@ export function AnexosGaleria({
   );
 }
 
-/** Só existe enquanto o modal está aberto (e é remontado a cada anexo, via `key`): ao fechar, o
- * iframe do PDF é esvaziado antes de sair do DOM para não deixar o visualizador nativo pendurado. */
+/**
+ * Só existe enquanto o modal está aberto (e é remontado a cada anexo, via `key`). O arquivo vira uma URL
+ * `blob:` (sem o limite de ~2 MB das URLs `data:`), revogada quando a prévia sai da tela.
+ */
 function ConteudoDaPrevia({ anexo }: { anexo: AnexoAvDTO }) {
-  const [conteudo, setConteudo] = useState<ConteudoAnexoDTO | null>(null);
+  const [conteudo, setConteudo] = useState<(ConteudoAnexoDTO & { url: string }) | null>(null);
   const [carregando, setCarregando] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelado = false;
+    let url: string | null = null;
     clienteDesktop.avs
       .obterConteudoAnexo(anexo.id)
-      .then((resultado) => !cancelado && setConteudo(resultado))
+      .then((resultado) => {
+        if (cancelado) return;
+        url = urlDeBase64(resultado.base64, resultado.tipoMime ?? 'application/octet-stream');
+        setConteudo({ ...resultado, url });
+      })
       .catch((falha: unknown) => !cancelado && setErro(mensagemDeErro(falha)))
       .finally(() => !cancelado && setCarregando(false));
     return () => {
       cancelado = true;
+      if (url) URL.revokeObjectURL(url);
     };
   }, [anexo.id]);
 
   return (
-    <div className="h-full">
+    <div className="flex h-full flex-col">
       {carregando && <p className="text-sm text-texto-secundario">Carregando pré-visualização…</p>}
       {erro && <MensagemErro mensagem={erro} />}
       {!carregando && conteudo && (
         <>
           {ehImagem(conteudo.tipoMime) && !ehTiff(conteudo.tipoMime) && (
-            // eslint-disable-next-line @next/next/no-img-element -- data: URI local, sem loader de otimização
+            // eslint-disable-next-line @next/next/no-img-element -- blob: local, sem loader de otimização
             <img
-              src={`data:${conteudo.tipoMime};base64,${conteudo.base64}`}
+              src={conteudo.url}
               alt={conteudo.nomeArquivo}
               className="mx-auto max-h-full max-w-full rounded-lg object-contain"
             />
           )}
           {ehPdf(conteudo.tipoMime) && (
-            <iframe
-              // Ao sair do DOM, esvazia o quadro: o visualizador nativo de PDF não fica pendurado.
-              ref={(quadro) => () => {
-                if (quadro) quadro.src = 'about:blank';
-              }}
-              src={`data:application/pdf;base64,${conteudo.base64}`}
-              title={conteudo.nomeArquivo}
-              className="h-full w-full rounded-lg border border-borda/60"
-            />
+            <iframe src={conteudo.url} title={conteudo.nomeArquivo} className="min-h-0 w-full flex-1 rounded-lg border border-borda/60" />
           )}
           {(ehTiff(conteudo.tipoMime) || (!ehImagem(conteudo.tipoMime) && !ehPdf(conteudo.tipoMime))) && (
             <p className="text-sm text-texto-secundario">Pré-visualização não disponível para este arquivo.</p>

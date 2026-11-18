@@ -47,7 +47,7 @@ export const TOPICOS: TopicoDoTutorial[] = [
       {
         titulo: 'Reportar erro ou sugestão',
         texto:
-          'Use "Reportar erro / sugestão" no menu lateral. Descreva o que aconteceu (ou a sua ideia) e, se ajudar, anexe até 3 prints: tire com Win + Shift + S e cole com Ctrl + V. A tela em que você estava vai junto. Você recebe um aviso quando o reporte for resolvido.',
+          'Use "Erros e sugestões" no menu lateral. Descreva o que aconteceu (ou a sua ideia) e, se ajudar, anexe até 3 prints: tire com Win + Shift + S e cole com Ctrl + V. A tela em que você estava vai junto. Você recebe um aviso quando o reporte for resolvido.',
       },
       {
         titulo: 'Esqueci a senha',

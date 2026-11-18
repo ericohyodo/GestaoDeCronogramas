@@ -10,7 +10,7 @@ interface PropsModal {
   titulo: string;
   descricao?: string;
   aoFechar: () => void;
-  largura?: 'sm' | 'md' | 'lg' | 'cheia';
+  largura?: 'sm' | 'md' | 'lg' | 'visualizador' | 'cheia';
   children: ReactNode;
 }
 
@@ -18,6 +18,8 @@ const LARGURAS = {
   sm: 'max-w-sm',
   md: 'max-w-lg',
   lg: 'max-w-2xl',
+  // Visualizador de arquivos (PDF, imagem): janela grande sobre a tela, com o X para fechar.
+  visualizador: 'h-[88dvh] w-[92dvw] max-w-none open:flex open:flex-col',
   // Ocupa a janela inteira (o `open:` evita que o display:flex apareça com o <dialog> fechado).
   cheia: 'h-dvh max-h-none w-dvw max-w-none rounded-none open:flex open:flex-col',
 } as const;
@@ -40,6 +42,12 @@ export function Modal({ aberto, titulo, descricao, aoFechar, largura = 'md', chi
     if (!aberto && dialogo.open) dialogo.close();
   }, [aberto]);
 
+  // Os botões só fecham o <dialog>: o aviso ao dono (aoFechar) sai uma vez, pelo evento `close`. Antes o
+  // botão avisava, o efeito fechava e o `close` avisava de novo — dois ciclos ao desmontar um PDF pesado.
+  const fechar = () => referencia.current?.close();
+  // Tela cheia e visualizador: sem vidro (o backdrop-filter sobre a janela toda pesa na GPU e trava com PDFs).
+  const fundoSolido = largura === 'cheia' || largura === 'visualizador';
+
   return (
     <dialog
       ref={referencia}
@@ -47,10 +55,11 @@ export function Modal({ aberto, titulo, descricao, aoFechar, largura = 'md', chi
       onClose={aoFechar}
       className={clsx(
         'm-auto p-0 text-texto',
-        // Em tela cheia o vidro (backdrop-filter sobre a janela toda) pesa na GPU e trava com PDFs: fundo sólido.
         largura === 'cheia'
           ? 'rounded-none border-0 bg-superficie-solida'
-          : 'vidro-forte w-[calc(100%-2rem)] rounded-2xl backdrop:backdrop-blur-[3px]',
+          : fundoSolido
+            ? 'rounded-2xl border border-borda/70 bg-superficie-solida'
+            : 'vidro-forte w-[calc(100%-2rem)] rounded-2xl backdrop:backdrop-blur-[3px]',
         'backdrop:bg-[#0b1220]/35',
         LARGURAS[largura],
       )}
@@ -65,7 +74,7 @@ export function Modal({ aberto, titulo, descricao, aoFechar, largura = 'md', chi
             )}
           >
             {largura === 'cheia' && (
-              <Botao icone={ArrowLeft} onClick={aoFechar}>
+              <Botao icone={ArrowLeft} onClick={fechar}>
                 Voltar
               </Botao>
             )}
@@ -76,10 +85,10 @@ export function Modal({ aberto, titulo, descricao, aoFechar, largura = 'md', chi
               {descricao && <p className="mt-1 text-sm text-texto-secundario">{descricao}</p>}
             </div>
             {largura !== 'cheia' && (
-              <BotaoIcone icone={X} rotulo="Fechar" onClick={aoFechar} className="-mr-2 -mt-1" />
+              <BotaoIcone icone={X} rotulo="Fechar" onClick={fechar} className="-mr-2 -mt-1" />
             )}
           </header>
-          <div className={clsx('px-6 pb-5 pt-4', largura === 'cheia' && 'min-h-0 flex-1')}>{children}</div>
+          <div className={clsx('px-6 pb-5 pt-4', fundoSolido && 'min-h-0 flex-1')}>{children}</div>
         </>
       )}
     </dialog>
