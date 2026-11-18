@@ -2,7 +2,13 @@
 
 import { ListOrdered } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import type { AvDetalheDTO, CargaMaquinaEntrada, CustoLogisticoEntrada, OperacaoDTO } from '@contratos/avs.contrato';
+import type {
+  AvDetalheDTO,
+  CapacidadeConfigDTO,
+  CargaMaquinaEntrada,
+  CustoLogisticoEntrada,
+  OperacaoDTO,
+} from '@contratos/avs.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { Botao } from '@/compartilhado/ui/Botao';
 import { AreaTexto } from '@/compartilhado/ui/Campos';
@@ -10,8 +16,9 @@ import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
 import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
 import { AnexosGaleria } from './AnexosGaleria';
-import { estadosDosBlocos, preenchido, tabelaObrigatoriaCompleta, tabelaOpcionalCompleta, todosPreenchidos } from '../blocos';
-import { CabecalhoDaSecao, SecaoAv, ProgressoDaAba } from './SecaoAv';
+import { blocoOuDeclarado, estadosDosBlocos, preenchido, tabelaObrigatoriaCompleta } from '../blocos';
+import { linhaDeCargaCompleta } from '../capacidade';
+import { CabecalhoDaSecao, CaixaSemAlteracoes, SecaoAv, ProgressoDaAba } from './SecaoAv';
 import { novaLinhaCarga, TabelaDeCargas, type LinhaCargaEditavel } from './TabelaDeCargas';
 import {
   novaLinhaCustoLogistico,
@@ -44,8 +51,8 @@ function cargasParaEnvio(linhas: LinhaCargaEditavel[]): CargaMaquinaEntrada[] {
       operacao: linha.operacao,
       maquina: linha.maquina.trim() || null,
       pecasHora: numeroOuNull(linha.pecasHora),
-      cargaAtual: numeroOuNull(linha.cargaAtual),
-      cargaFutura: numeroOuNull(linha.cargaFutura),
+      conversao: numeroOuNull(linha.conversao),
+      cargaAtualPecas: numeroOuNull(linha.cargaAtual),
     }));
 }
 
@@ -64,10 +71,16 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
   const [cargas, setCargas] = useState<LinhaCargaEditavel[]>([]);
   const [custos, setCustos] = useState<LinhaCustoLogisticoEditavel[]>([]);
   const [observacoes, setObservacoes] = useState('');
+  // Declarações "Sem alterações significativas" de cada bloco opcional.
+  const [layoutSemAlteracoes, setLayoutSemAlteracoes] = useState(false);
+  const [custosSemAlteracoes, setCustosSemAlteracoes] = useState(false);
+  const [observacoesSemAlteracoes, setObservacoesSemAlteracoes] = useState(false);
   const [operacoesDaEngenharia, setOperacoesDaEngenharia] = useState<OperacaoDTO[]>([]);
   const [sugestoesOperacao, setSugestoesOperacao] = useState<string[]>([]);
   const [sugestoesMaquina, setSugestoesMaquina] = useState<string[]>([]);
   const [aviso, setAviso] = useState<string | null>(null);
+  // Horas por turno e dias produtivos por mês (Configurações); padrão até a leitura chegar.
+  const [capacidade, setCapacidade] = useState<CapacidadeConfigDTO>({ horasPorTurno: 8, diasProdutivosMes: 22 });
   const [erroSalvar, setErroSalvar] = useState<unknown>(null);
   // Anexos já gravados na seção (o bloco de anexos conta como completo com ao menos um).
   const [qtdAnexos, setQtdAnexos] = useState(0);
@@ -79,10 +92,15 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
       clienteDesktop.avs.obterSecaoPcp(av.id),
       clienteDesktop.avs.obterSecaoProcesso(av.id),
       clienteDesktop.avs.obterCatalogoCusto(),
+      clienteDesktop.avs.obterCapacidadeConfig(),
     ])
-      .then(([secao, processo, catalogo]) => {
+      .then(([secao, processo, catalogo, parametros]) => {
+        setCapacidade(parametros);
         setVersao(secao.versao);
         setObservacoes(secao.observacoes ?? '');
+        setLayoutSemAlteracoes(secao.layoutSemAlteracoes);
+        setCustosSemAlteracoes(secao.custosSemAlteracoes);
+        setObservacoesSemAlteracoes(secao.observacoesSemAlteracoes);
         setCustos(
           secao.custos.map((custo) => ({ chave: custo.id, descricao: custo.descricao, valor: textoDe(custo.valor) })),
         );
@@ -92,8 +110,8 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
           operacao: carga.operacao,
           maquina: carga.maquina ?? '',
           pecasHora: textoDe(carga.pecasHora),
-          cargaAtual: textoDe(carga.cargaAtual),
-          cargaFutura: textoDe(carga.cargaFutura),
+          conversao: textoDe(carga.conversao),
+          cargaAtual: textoDe(carga.cargaAtualPecas),
         }));
         // Sem carga salva, já nasce com as operações definidas pela Eng. Processo.
         setCargas(salvas.length === 0 && processo.operacoes.length > 0 ? aplicarOperacoes([], processo.operacoes) : salvas);
@@ -104,7 +122,10 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
       .finally(() => setCarregando(false));
   }, [av.id]);
 
-  const { sujo, marcarLimpo } = useAlteracoes({ cargas, custos, observacoes }, !carregando);
+  const { sujo, marcarLimpo } = useAlteracoes(
+    { cargas, custos, observacoes, layoutSemAlteracoes, custosSemAlteracoes, observacoesSemAlteracoes },
+    !carregando,
+  );
 
   const salvar = async (): Promise<boolean> => {
     setErroSalvar(null);
@@ -115,6 +136,9 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
         observacoes: observacoes || null,
         cargas: cargasParaEnvio(cargas),
         custos: custosParaEnvio(custos),
+        layoutSemAlteracoes,
+        custosSemAlteracoes,
+        observacoesSemAlteracoes,
       });
       setVersao(salva.versao);
       marcarLimpo();
@@ -130,16 +154,18 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
   if (carregando) return <PainelVidro className="p-5 text-sm text-texto-secundario">Carregando…</PainelVidro>;
   if (erroCarregamento) return <MensagemErro mensagem={erroCarregamento} />;
 
-  // Liberação fracionada: Cargas → Layout da fábrica → Custos logísticos (opcional) → Observações (opcional).
+  // Liberação fracionada: Cargas → Layout da fábrica → Custos logísticos → Observações. As cargas pedem o
+  // volume anual (aba Comercial) para calcular a futura; os três últimos ficam completos com conteúdo OU com
+  // a declaração "Sem alterações significativas".
+  const temVolumeAnual = av.volumeAnual != null && av.volumeAnual > 0;
   const estadosBlocos = estadosDosBlocos([
-    tabelaObrigatoriaCompleta(
-      cargas,
-      (carga) => preenchido(carga.operacao),
-      (carga) => todosPreenchidos(carga.cargaAtual, carga.cargaFutura),
+    temVolumeAnual && tabelaObrigatoriaCompleta(cargas, (carga) => preenchido(carga.operacao), linhaDeCargaCompleta),
+    blocoOuDeclarado(qtdAnexos > 0, layoutSemAlteracoes),
+    blocoOuDeclarado(
+      tabelaObrigatoriaCompleta(custos, (custo) => preenchido(custo.descricao), (custo) => preenchido(custo.valor)),
+      custosSemAlteracoes,
     ),
-    qtdAnexos > 0,
-    tabelaOpcionalCompleta(custos, (custo) => preenchido(custo.descricao), (custo) => preenchido(custo.valor)),
-    true,
+    blocoOuDeclarado(preenchido(observacoes), observacoesSemAlteracoes),
   ]);
 
   return (
@@ -156,6 +182,8 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
           linhas={cargas}
           operacoes={sugestoesOperacao}
           maquinas={sugestoesMaquina}
+          volumeAnual={av.volumeAnual}
+          parametros={capacidade}
           aoLimpar={() => setCargas([])}
           aoAdicionar={() => setCargas((atual) => [...atual, novaLinhaCarga(chaveLocal())])}
           aoRemover={(chave) => setCargas((atual) => atual.filter((linha) => linha.chave !== chave))}
@@ -186,19 +214,22 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
         />
       </SecaoAv>
 
-      <SecaoAv estado={estadosBlocos[1]} tom="verde" className="p-5">
+      <SecaoAv estado={estadosBlocos[1]} tom="verde" className="flex flex-col gap-3 p-5">
         <AnexosGaleria
           aoMudarQuantidade={setQtdAnexos}
           avId={av.id}
           secao="pcp"
+          desabilitado={layoutSemAlteracoes}
           titulo="Layout da fábrica"
-          ajuda="Anexe uma imagem ou PDF do layout da fábrica indicando o local onde o item será implantado (máquinas, áreas de armazenagem e fluxo). Aceita PDF, JPG, JPEG, PNG e BMP."
+          ajuda="Anexe uma imagem ou PDF do layout da fábrica indicando o local onde o item será implantado (máquinas, áreas de armazenagem e fluxo). Aceita PDF, JPG, JPEG, TIFF, PNG e BMP."
         />
+        <CaixaSemAlteracoes marcada={layoutSemAlteracoes} bloqueada={qtdAnexos > 0} aoMudar={setLayoutSemAlteracoes} />
       </SecaoAv>
 
-      <SecaoAv estado={estadosBlocos[2]} tom="ambar" className="p-5">
+      <SecaoAv estado={estadosBlocos[2]} tom="ambar" className="flex flex-col gap-3 p-5">
         <TabelaDeCustosLogisticos
           linhas={custos}
+          desabilitado={custosSemAlteracoes}
           aoLimpar={() => setCustos([])}
           aoAdicionar={() => setCustos((atual) => [...atual, novaLinhaCustoLogistico(chaveLocal())])}
           aoRemover={(chave) => setCustos((atual) => atual.filter((linha) => linha.chave !== chave))}
@@ -206,6 +237,7 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
             setCustos((atual) => atual.map((linha) => (linha.chave === chave ? { ...linha, [campo]: valor } : linha)))
           }
         />
+        <CaixaSemAlteracoes marcada={custosSemAlteracoes} bloqueada={custos.length > 0} aoMudar={setCustosSemAlteracoes} />
       </SecaoAv>
 
       <SecaoAv estado={estadosBlocos[3]} tom="lilas" className="flex flex-col gap-3 p-5">
@@ -214,8 +246,14 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
           rotulo="Observações do PCP"
           ajuda="Anotações do PCP sobre a análise de capacidade: gargalos, hipóteses assumidas, turnos considerados, restrições de abastecimento ou qualquer informação que ajude quem for decidir."
           rows={10}
+          disabled={observacoesSemAlteracoes}
           value={observacoes}
           onChange={(e) => setObservacoes(e.target.value)}
+        />
+        <CaixaSemAlteracoes
+          marcada={observacoesSemAlteracoes}
+          bloqueada={preenchido(observacoes)}
+          aoMudar={setObservacoesSemAlteracoes}
         />
       </SecaoAv>
 

@@ -48,6 +48,9 @@ export class AvancarEtapa implements CasoDeUso<AvancarEtapaEntrada, AvDetalheDTO
         'A AV vai para "Projeto Criado" quando a Engenharia der o aceite da SD (módulo de SDs).',
       );
     }
+    if (av.ehPortfolio && etapaAtual.chave === 'proposta_enviada') {
+      throw new ErroDeDominio('USE_CONCLUIR_PORTFOLIO', 'Para encerrar a AV de portfólio, use "Concluir AV de portfólio" no Resumo.');
+    }
     if (obterEtapaAv(etapaAtual.numero + 1).chave === 'sd_aberta') {
       throw new ErroDeDominio(
         'USE_FINALIZAR_AV',

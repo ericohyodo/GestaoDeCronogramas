@@ -40,6 +40,21 @@ export const TOPICOS: TopicoDoTutorial[] = [
           'O menu Notificações (no fim do menu lateral) mostra o que precisa de você: uma área da AV que chegou até você, uma SD aguardando aceite, uma tarefa atribuída ou atrasada. A bolinha vermelha conta as não lidas, e o sino no topo acende um ponto vermelho quando chega algo novo. Clique no aviso para ir direto à tela. Com o app aberto, o Windows também mostra o aviso.',
       },
       {
+        titulo: 'Trocar de módulo',
+        texto:
+          'Nas listas de AVs, SDs e Projetos, a faixa AV | SD | PRO no topo leva direto ao outro módulo, sem voltar à tela inicial.',
+      },
+      {
+        titulo: 'Reportar erro ou sugestão',
+        texto:
+          'Use "Erros e sugestões" no menu lateral. Descreva o que aconteceu (ou a sua ideia) e, se ajudar, anexe até 3 prints: tire com Win + Shift + S e cole com Ctrl + V. A tela em que você estava vai junto. Você recebe um aviso quando o reporte for resolvido.',
+      },
+      {
+        titulo: 'Meu perfil',
+        texto:
+          'Clique na sua foto ou no seu nome, na barra de título. Ali você inclui a foto, preenche cargo, departamento, e-mail, ramal, celular e "sobre mim", e redefine a senha (pede a senha atual).',
+      },
+      {
         titulo: 'Esqueci a senha',
         texto:
           'Peça ao administrador para marcar "Exigir novo primeiro acesso" no seu cadastro. No próximo login você cria uma senha nova.',
@@ -68,6 +83,36 @@ export const TOPICOS: TopicoDoTutorial[] = [
           'Cada aba é dividida em blocos. O bloco em destaque ("Preencha agora") é o próximo a completar; os já preenchidos ganham o selo "Bloco completo" e os seguintes ficam esmaecidos até lá, mas continuam editáveis. O topo da aba mostra quantos blocos já foram preenchidos.',
       },
       {
+        titulo: 'Pasta da AV',
+        texto:
+          'Toda AV nova ganha uma pasta no Windows ("AV 26-036 - Cliente - Descrição") para as entradas do Comercial: e-mails, desenhos e orçamentos. No cabeçalho da AV, "Arquivos da AV" mostra o que há na pasta; clique num item para abrir. AVs antigas mostram "Criar pasta da AV". O administrador define a pasta raiz em Configurações, no menu das AVs.',
+      },
+      {
+        titulo: 'Desenho do item',
+        texto:
+          'Na aba Comercial, o bloco "Desenho do item" (logo após Identificação) recebe o desenho da cotação e é obrigatório. Os anexos da AV aceitam PDF, JPG, JPEG, TIFF, PNG e BMP de até 25 MB; o TIFF abre no visualizador do Windows.',
+      },
+      {
+        titulo: 'Embalagem na estrutura',
+        texto:
+          'Na estrutura do produto (Eng. Produto), ao inserir uma embalagem, informe quantas peças cabem nela. A estrutura recebe a fração por peça: 50 peças por caixa = 0,02 caixa por peça (aparece como 1/50 na árvore).',
+      },
+      {
+        titulo: 'Templates de operações',
+        texto:
+          'Na aba Eng. Processo, a barra de templates traz sequências prontas por família com "(referência)" no nome: bases forjadas, venturi e estamparia, tiradas das folhas de processo. Aplique o mais parecido com o item, apague as etapas que não se aplicam e ajuste máquina e peças por hora.',
+      },
+      {
+        titulo: 'Carga de máquina (PCP)',
+        texto:
+          'Para cada operação, informe as peças por hora e a carga atual da máquina em peças por mês, na unidade da operação. A conversão diz quantas peças do produto saem de uma unidade (ex.: uma placa da fundição vira 8 peças → 8; use 1 quando for a própria peça). A carga futura vem do volume anual da aba Comercial ÷ 12 ÷ conversão, e o app mostra os turnos por dia de hoje → com o item (8 h por turno e 22 dias por mês, ajustáveis em Configurações).',
+      },
+      {
+        titulo: 'PCP sem alterações',
+        texto:
+          'Na aba PCP, os blocos Layout da fábrica, Custos logísticos e Observações precisam de conteúdo ou da caixa "Sem alterações significativas", que só pode ser marcada com o bloco vazio.',
+      },
+      {
         titulo: 'Itens que não se aplicam',
         texto:
           'Em "Dados de Entrada Técnica" (Eng. Produto), marque N/A no item que foi visto mas não se aplica. Item marcado como Disponível pede o link ou a pasta da evidência.',
@@ -81,6 +126,34 @@ export const TOPICOS: TopicoDoTutorial[] = [
         titulo: 'Finalizar a AV',
         texto:
           'Depois do Mapa de Custo, o Comercial usa "Finalizar AV e criar Pré-SD" na aba Resumo. A AV vai para "SD Aberta" e a SD aparece em Gestão SDs.',
+      },
+    ],
+  },
+  {
+    id: 'portfolio',
+    titulo: 'AV de Portfólio',
+    resumo: 'Checagem rápida de itens já desenvolvidos, a partir do cadastro de itens-modelo.',
+    rota: '/portfolio/',
+    passos: [
+      {
+        titulo: 'Itens de portfólio',
+        texto:
+          'Gestores e administradores cadastram os itens já desenvolvidos em "Itens de portfólio": código, descrição, desenho de referência (com a revisão), estrutura, operações com peças por hora e custos de referência por peça com a data da última atualização. Item desativado some da escolha de novas AVs.',
+      },
+      {
+        titulo: 'Abrir a AV de portfólio',
+        texto:
+          'Em "AVs de portfólio", use "Nova AV de Portfólio", escolha o item e a equipe. A AV usa a mesma numeração da AV e já vem com código, descrição, linha, família e programa do item.',
+      },
+      {
+        titulo: 'Checagem por área',
+        texto:
+          'A sequência é a da AV: Comercial (cliente, volume, prazo e desenho da cotação) → Eng. Produto (o desenho confere com o item?) → Eng. Processo (o processo atende?) → PCP (carga em peças e turnos: temos capacidade?) → Custo (os custos de referência valem ou precisam de atualização?). Cada área responde Confere, Com ressalvas ou Não confere; nos dois últimos, a observação é obrigatória.',
+      },
+      {
+        titulo: 'Resumo e conclusão',
+        texto:
+          'O Resumo junta as conclusões, os turnos por operação e o custo por peça vigente para a cotação. Depois do Custo, o Comercial usa "Concluir AV de portfólio": não há SD, porque o item já existe.',
       },
     ],
   },

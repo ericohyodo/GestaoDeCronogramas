@@ -7,6 +7,21 @@ import type {
 } from './atualizacao.contrato';
 import type { CaixaDeNotificacoesDTO } from './notificacoes.contrato';
 import type {
+  ItemPortfolioDTO,
+  ItemPortfolioResumoDTO,
+  PortfolioDaAvDTO,
+  SalvarChecagemPortfolioEntrada,
+  SalvarItemPortfolioEntrada,
+} from './portfolio.contrato';
+import type {
+  AndamentoReporteEntrada,
+  ConteudoImagemReporteDTO,
+  CriarReporteEntrada,
+  ReporteDetalheDTO,
+  ReporteResumoDTO,
+  StatusReporteDTO,
+} from './reportes.contrato';
+import type {
   AceitarSdEntrada,
   AnexoSdDTO,
   DevolverSdEntrada,
@@ -33,6 +48,9 @@ import type {
   CriarGrupoAvEntrada,
   DashboardAvDTO,
   PrazosConfigDTO,
+  CapacidadeConfigDTO,
+  ConteudoDaPastaDTO,
+  PastaConfigDTO,
   EntregasPorAreaDTO,
   DeclinarAvEntrada,
   GerarAvsExemploSaida,
@@ -110,6 +128,8 @@ import type {
   AlterarSenhaEntrada,
   AtualizarUsuarioEntrada,
   CriarUsuarioEntrada,
+  MeuPerfilDTO,
+  SalvarMeuPerfilEntrada,
 } from './usuarios.contrato';
 
 /** Formato de `window.api`, exposto pelo preload via contextBridge. */
@@ -151,12 +171,43 @@ export interface ApiDesktop {
     atualizar(entrada: AtualizarUsuarioEntrada): Promise<Resultado<UsuarioDTO>>;
     alterarSenha(entrada: AlterarSenhaEntrada): Promise<Resultado<null>>;
     excluir(id: string): Promise<Resultado<null>>;
+    /** Quem está logado: dados de contato e foto (página "Meu perfil"). */
+    obterMeuPerfil(): Promise<Resultado<MeuPerfilDTO>>;
+    salvarMeuPerfil(entrada: SalvarMeuPerfilEntrada): Promise<Resultado<MeuPerfilDTO>>;
   };
   responsaveis: {
     listar(): Promise<Resultado<ResponsavelDTO[]>>;
     criar(entrada: CriarResponsavelEntrada): Promise<Resultado<ResponsavelDTO>>;
     atualizar(entrada: AtualizarResponsavelEntrada): Promise<Resultado<ResponsavelDTO>>;
     excluir(id: string): Promise<Resultado<null>>;
+  };
+  portfolio: {
+    /** Itens de portfólio (templates); `apenasAtivos` para a escolha na abertura da AV. */
+    listarItens(filtro?: { apenasAtivos?: boolean }): Promise<Resultado<ItemPortfolioResumoDTO[]>>;
+    obterItem(id: string): Promise<Resultado<ItemPortfolioDTO>>;
+    /** Gestor ou administrador: cria (sem id) ou altera um item. */
+    salvarItem(entrada: SalvarItemPortfolioEntrada): Promise<Resultado<ItemPortfolioDTO>>;
+    definirAtivo(entrada: { id: string; ativo: boolean }): Promise<Resultado<ItemPortfolioDTO>>;
+    /** Abre o seletor de arquivos; `null` quando cancela. */
+    anexarDesenho(itemId: string): Promise<Resultado<AnexoAvDTO[] | null>>;
+    excluirDesenho(anexoId: string): Promise<Resultado<null>>;
+    obterConteudoDesenho(anexoId: string): Promise<Resultado<ConteudoAnexoDTO>>;
+    abrirDesenho(anexoId: string): Promise<Resultado<null>>;
+    /** Item (template) da AV de portfólio e as conclusões das áreas. */
+    obterDaAv(avId: string): Promise<Resultado<PortfolioDaAvDTO>>;
+    salvarChecagem(entrada: SalvarChecagemPortfolioEntrada): Promise<Resultado<PortfolioDaAvDTO>>;
+    /** Comercial: encerra a AV de portfólio na Proposta Enviada (sem SD). */
+    concluirAv(entrada: { avId: string; comentario?: string | null }): Promise<Resultado<AvDetalheDTO>>;
+  };
+  reportes: {
+    /** Qualquer pessoa logada: envia um erro ou sugestão (até 3 prints). */
+    criar(entrada: CriarReporteEntrada): Promise<Resultado<{ id: string; numero: number }>>;
+    /** Administrador: lista, mais recentes primeiro. */
+    listar(filtro?: { status?: StatusReporteDTO }): Promise<Resultado<ReporteResumoDTO[]>>;
+    obter(id: string): Promise<Resultado<ReporteDetalheDTO>>;
+    /** Administrador: muda o status (dar baixa) ou comenta; tudo vai para o log. */
+    registrarAndamento(entrada: AndamentoReporteEntrada): Promise<Resultado<ReporteDetalheDTO>>;
+    obterImagem(imagemId: string): Promise<Resultado<ConteudoImagemReporteDTO>>;
   };
   sds: {
     listar(): Promise<Resultado<SdDTO[]>>;
@@ -192,6 +243,21 @@ export interface ApiDesktop {
     entregasNoPrazo(): Promise<Resultado<EntregasPorAreaDTO[]>>;
     /** Altera os dias úteis de cada área (administrador). */
     salvarPrazosConfig(entrada: PrazosConfigDTO): Promise<Resultado<PrazosConfigDTO>>;
+    /** Horas por turno e dias produtivos por mês do cálculo de turnos do PCP. */
+    obterCapacidadeConfig(): Promise<Resultado<CapacidadeConfigDTO>>;
+    /** Só administrador. */
+    salvarCapacidadeConfig(entrada: CapacidadeConfigDTO): Promise<Resultado<CapacidadeConfigDTO>>;
+    /** Pasta raiz onde o app cria a pasta de cada AV nova. */
+    obterPastaConfig(): Promise<Resultado<PastaConfigDTO>>;
+    /** Só administrador; a pasta precisa existir. */
+    salvarPastaConfig(entrada: PastaConfigDTO): Promise<Resultado<PastaConfigDTO>>;
+    /** Seletor nativo de pasta; `null` quando cancela. */
+    selecionarPastaRaiz(): Promise<Resultado<string | null>>;
+    /** Cria a pasta de uma AV que ficou sem ela (Comercial ou administrador). */
+    criarPasta(avId: string): Promise<Resultado<AvDetalheDTO>>;
+    listarArquivosDaPasta(avId: string): Promise<Resultado<ConteudoDaPastaDTO>>;
+    /** Abre a pasta no Explorer (sem caminho) ou um arquivo dela no programa padrão. */
+    abrirDaPasta(entrada: { avId: string; caminhoRelativo?: string | null }): Promise<Resultado<null>>;
     avancarEtapa(entrada: AvancarEtapaEntrada): Promise<Resultado<AvDetalheDTO>>;
     declinar(entrada: DeclinarAvEntrada): Promise<Resultado<AvDetalheDTO>>;
     listarHistorico(avId: string): Promise<Resultado<HistoricoAvItemDTO[]>>;
@@ -211,6 +277,8 @@ export interface ApiDesktop {
     selecionarEAnexar(entrada: SelecionarEAnexarEntrada): Promise<Resultado<AnexoAvDTO[] | null>>;
     /** Lê o arquivo do disco e devolve o conteúdo em base64, para pré-visualização. */
     obterConteudoAnexo(anexoId: string): Promise<Resultado<ConteudoAnexoDTO>>;
+    /** Abre o anexo no programa padrão do Windows (formatos sem pré-visualização, como TIFF). */
+    abrirAnexo(anexoId: string): Promise<Resultado<null>>;
     excluirAnexo(anexoId: string): Promise<Resultado<null>>;
     /** Cria 25 AVs de exemplo em estágios variados (só administrador; não duplica). */
     gerarExemplos(): Promise<Resultado<GerarAvsExemploSaida>>;

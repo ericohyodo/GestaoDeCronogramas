@@ -62,6 +62,8 @@ export const clienteDesktop = {
   usuarios: grupo('usuarios'),
   responsaveis: grupo('responsaveis'),
   sds: grupo('sds'),
+  reportes: grupo('reportes'),
+  portfolio: grupo('portfolio'),
   avs: grupo('avs'),
   cronogramas: grupo('cronogramas'),
   tarefas: grupo('tarefas'),

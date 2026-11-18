@@ -46,8 +46,14 @@ export interface MembroAreaDTO {
   nome: string;
 }
 
+/** AV completa ou de Item de Portfólio (versão light, termina na proposta, sem SD). */
+export type TipoAvDTO = 'completa' | 'portfolio';
+
 export interface AvResumoDTO {
   id: string;
+  tipo: TipoAvDTO;
+  /** Só na AV de portfólio: o item escolhido na abertura. */
+  itemPortfolioId: string | null;
   numero: string;
   cliente: string | null;
   descricao: string;
@@ -64,6 +70,8 @@ export interface AvResumoDTO {
 }
 
 export interface AvDetalheDTO extends AvResumoDTO {
+  /** Pasta da AV no Windows; `null` enquanto não foi criada. */
+  pasta: string | null;
   codigo: string | null;
   solicitante: string | null;
   desenhoClienteRef: string | null;
@@ -94,6 +102,9 @@ export interface AvDetalheDTO extends AvResumoDTO {
 }
 
 export interface CriarAvEntrada {
+  /** Padrão: completa. Na de portfólio, `itemPortfolioId` é obrigatório e a descrição vem do item. */
+  tipo?: TipoAvDTO;
+  itemPortfolioId?: string | null;
   descricao: string;
   cliente?: string | null;
   codigo?: string | null;
@@ -326,6 +337,8 @@ export interface NoEstruturaDTO {
   descricao: string;
   quantidade: number | null;
   unidade: string | null;
+  /** Só embalagens: peças por embalagem; a quantidade é 1/peças. `null` = quantidade digitada à mão. */
+  pecasPorEmbalagem: number | null;
 }
 
 /** `chave` identifica o item só dentro do envio; `paiChave` aponta para o pai (`null` na raiz). */
@@ -337,6 +350,8 @@ export interface NoEstruturaEntrada {
   descricao: string;
   quantidade?: number | null;
   unidade?: string | null;
+  /** Só embalagens: quando informado, o servidor grava `quantidade = 1 / pecasPorEmbalagem`. */
+  pecasPorEmbalagem?: number | null;
 }
 
 // --- Eng. Produto ---
@@ -577,23 +592,28 @@ export interface SalvarContatosAvEntrada {
 
 // --- PCP: carga de máquina, custos logísticos e observações ---
 
+/**
+ * Carga de máquina numa operação, na unidade da operação (ex.: placas na fundição). A carga futura não é
+ * gravada: a tela calcula volume anual ÷ 12 ÷ conversão.
+ */
 export interface CargaMaquinaDTO {
   id: string;
   operacao: string;
   maquina: string | null;
+  /** Unidades da operação por hora. */
   pecasHora: number | null;
-  /** Ocupação da máquina hoje, em %. */
-  cargaAtual: number | null;
-  /** Ocupação prevista depois de implantar o item, em %. */
-  cargaFutura: number | null;
+  /** Peças do produto final por unidade da operação (1 = mesma unidade). */
+  conversao: number;
+  /** Carga atual da máquina, em unidades da operação por mês. */
+  cargaAtualPecas: number | null;
 }
 
 export interface CargaMaquinaEntrada {
   operacao: string;
   maquina?: string | null;
   pecasHora?: number | null;
-  cargaAtual?: number | null;
-  cargaFutura?: number | null;
+  conversao?: number | null;
+  cargaAtualPecas?: number | null;
 }
 
 export interface CustoLogisticoDTO {
@@ -607,7 +627,14 @@ export interface CustoLogisticoEntrada {
   valor?: number | null;
 }
 
-export interface SecaoPcpDTO {
+/** Declarações "Sem alterações significativas" do PCP: cada uma libera o bloco sem conteúdo. */
+export interface DeclaracoesPcpDTO {
+  layoutSemAlteracoes: boolean;
+  custosSemAlteracoes: boolean;
+  observacoesSemAlteracoes: boolean;
+}
+
+export interface SecaoPcpDTO extends DeclaracoesPcpDTO {
   observacoes: string | null;
   cargas: CargaMaquinaDTO[];
   custos: CustoLogisticoDTO[];
@@ -623,6 +650,9 @@ export interface AtualizarSecaoPcpEntrada {
   observacoes?: string | null;
   cargas: CargaMaquinaEntrada[];
   custos: CustoLogisticoEntrada[];
+  layoutSemAlteracoes?: boolean;
+  custosSemAlteracoes?: boolean;
+  observacoesSemAlteracoes?: boolean;
 }
 
 // --- Relatório das AVs (também é a base do que a IA enxerga sobre as AVs) ---
@@ -630,6 +660,36 @@ export interface AtualizarSecaoPcpEntrada {
 export type SituacaoAvDTO = 'em_andamento' | 'concluida' | 'declinada';
 
 /** Dias úteis que cada área da AV tem para preencher a sua aba (1 a 30). */
+/** Onde o app cria a pasta de cada AV nova (administrador define em Configurações). */
+export interface PastaConfigDTO {
+  pastaRaiz: string | null;
+}
+
+export interface ItemDaPastaDTO {
+  caminhoRelativo: string;
+  nome: string;
+  ehPasta: boolean;
+  tamanhoBytes: number | null;
+  modificadoEm: string;
+  profundidade: number;
+}
+
+/** Conteúdo da pasta da AV para o visualizador. */
+export interface ConteudoDaPastaDTO {
+  pasta: string | null;
+  /** `false`: sem pasta ou a pasta sumiu/está inacessível. */
+  existe: boolean;
+  itens: ItemDaPastaDTO[];
+  /** Mais de 500 itens: a lista foi cortada. */
+  limitado: boolean;
+}
+
+/** Parâmetros do cálculo de turnos do PCP (administrador ajusta em Configurações). */
+export interface CapacidadeConfigDTO {
+  horasPorTurno: number;
+  diasProdutivosMes: number;
+}
+
 export interface PrazosConfigDTO {
   produto: number;
   processo: number;

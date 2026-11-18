@@ -1,10 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <!-- Gestão de Novos Desenvolvimentos (AV-SD-PRO) — conceito "Fluxo": três marcos em ascensão
-       (AV, SD, PRO), o último concluído. Versão detalhada, usada de 48 px para cima. -->
+  <!-- Gestão de Novos Desenvolvimentos (AV-SD-PRO) — conceito "Etapas": três avanços em sequência
+       (AV → SD → PRO), o último em verde-água. Versão detalhada, usada de 48 px para cima. -->
   <rect width="256" height="256" rx="56" fill="#14305c"/>
-  <path d="M64 184 L128 128 L192 72" fill="none" stroke="#7aa6e2" stroke-width="14" stroke-linecap="round"/>
-  <circle cx="64" cy="184" r="26" fill="#ffffff"/>
-  <circle cx="128" cy="128" r="26" fill="#ffffff"/>
-  <circle cx="192" cy="72" r="34" fill="#2dd4bf"/>
-  <path d="M176 72 L188 84 L208 62" fill="none" stroke="#14305c" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M58 84 L98 128 L58 172" fill="none" stroke="#ffffff" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M114 84 L154 128 L114 172" fill="none" stroke="#7aa6e2" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M170 84 L210 128 L170 172" fill="none" stroke="#2dd4bf" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

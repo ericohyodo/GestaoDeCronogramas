@@ -9,7 +9,9 @@ import {
   normalizarMaquinaDaCarga,
   validarDescricaoDoCusto,
   validarOperacaoDaCarga,
-  validarPercentual,
+  validarConversao,
+  validarDeclaracoesPcp,
+  validarQuantidadeDaCarga,
   type DadosSecaoPcp,
   type RepositorioSecaoPcp,
 } from '../../dominio/secao-pcp';
@@ -18,16 +20,30 @@ import { type ControleDeVersao, versaoSemControle } from '../../../../nucleo/apl
 import { chaveDaSecao } from '../versoes';
 
 function paraSecaoPcpDTO(dados: DadosSecaoPcp | null, versao: number): SecaoPcpDTO {
-  if (!dados) return { observacoes: null, cargas: [], custos: [], atualizadoEm: null, versao };
+  if (!dados) {
+    return {
+      observacoes: null,
+      cargas: [],
+      custos: [],
+      layoutSemAlteracoes: false,
+      custosSemAlteracoes: false,
+      observacoesSemAlteracoes: false,
+      atualizadoEm: null,
+      versao,
+    };
+  }
   return {
     observacoes: dados.secao.observacoes,
+    layoutSemAlteracoes: dados.secao.layoutSemAlteracoes,
+    custosSemAlteracoes: dados.secao.custosSemAlteracoes,
+    observacoesSemAlteracoes: dados.secao.observacoesSemAlteracoes,
     cargas: dados.cargas.map((carga) => ({
       id: carga.id,
       operacao: carga.operacao,
       maquina: carga.maquina,
       pecasHora: carga.pecasHora,
-      cargaAtual: carga.cargaAtual,
-      cargaFutura: carga.cargaFutura,
+      conversao: carga.conversao,
+      cargaAtualPecas: carga.cargaAtualPecas,
     })),
     custos: dados.custos.map((custo) => ({ id: custo.id, descricao: custo.descricao, valor: custo.valor })),
     atualizadoEm: dados.secao.atualizadoEm ? dados.secao.atualizadoEm.toISOString() : null,
@@ -62,10 +78,19 @@ export class SalvarSecaoPcp implements CasoDeUso<AtualizarSecaoPcpEntrada, Secao
     if (!av) throw new ErroNaoEncontrado('AV');
     const usuario = await this.autorizacao.exigirEdicaoDaArea(av, 'pcp');
 
+    const observacoes = normalizarTextoOpcional(entrada.observacoes);
+    const declaracoes = {
+      layoutSemAlteracoes: entrada.layoutSemAlteracoes ?? false,
+      custosSemAlteracoes: entrada.custosSemAlteracoes ?? false,
+      observacoesSemAlteracoes: entrada.observacoesSemAlteracoes ?? false,
+    };
+    validarDeclaracoesPcp(declaracoes, { quantidadeDeCustos: entrada.custos.length, observacoes });
+
     const dados: DadosSecaoPcp = {
       secao: {
         avId: av.id,
-        observacoes: normalizarTextoOpcional(entrada.observacoes),
+        observacoes,
+        ...declaracoes,
         atualizadoEm: this.relogio.agora(),
         atualizadoPor: usuario.id,
       },
@@ -75,9 +100,9 @@ export class SalvarSecaoPcp implements CasoDeUso<AtualizarSecaoPcpEntrada, Secao
         ordem,
         operacao: validarOperacaoDaCarga(carga.operacao),
         maquina: normalizarMaquinaDaCarga(carga.maquina),
-        pecasHora: carga.pecasHora ?? null,
-        cargaAtual: validarPercentual(carga.cargaAtual, 'A carga atual'),
-        cargaFutura: validarPercentual(carga.cargaFutura, 'A carga futura'),
+        pecasHora: validarQuantidadeDaCarga(carga.pecasHora, 'As peças por hora'),
+        conversao: validarConversao(carga.conversao),
+        cargaAtualPecas: validarQuantidadeDaCarga(carga.cargaAtualPecas, 'A carga atual'),
       })),
       custos: entrada.custos.map((custo, ordem) => ({
         id: this.geradorDeId.gerar(),

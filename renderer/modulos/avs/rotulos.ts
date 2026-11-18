@@ -1,3 +1,4 @@
+import type { ResultadoChecagemDTO } from '@contratos/portfolio.contrato';
 import type {
   AreaAvDTO,
   ClassificacaoInvestimentoDTO,
@@ -69,7 +70,7 @@ export const ITENS_CHECKLIST_PRODUTO = [
 /** Tom da etiqueta por chave de etapa — declínios em perigo, conclusão em sucesso, resto neutro/info. */
 export function tomDaEtapa(chave: string): Tom {
   if (chave === 'declinada_cliente' || chave === 'declinada_empresa') return 'perigo';
-  if (chave === 'projeto_criado') return 'sucesso';
+  if (chave === 'projeto_criado' || chave === 'portfolio_concluida') return 'sucesso';
   if (chave === 'sd_aberta' || chave === 'proposta_enviada') return 'destaque';
   return 'info';
 }
@@ -77,4 +78,11 @@ export function tomDaEtapa(chave: string): Tom {
 export const ROTULO_ETAPA_DECLINIO: Record<EtapaDeDeclinioDTO, string> = {
   declinada_cliente: 'Declinada pelo cliente',
   declinada_empresa: 'Declinada internamente',
+};
+
+/** Rótulo e cor da conclusão de cada área na AV de Item de Portfólio. */
+export const RESULTADO_VISUAL: Record<ResultadoChecagemDTO, { rotulo: string; tom: Tom }> = {
+  confere: { rotulo: 'Confere', tom: 'sucesso' },
+  ressalvas: { rotulo: 'Com ressalvas', tom: 'alerta' },
+  diverge: { rotulo: 'Não confere', tom: 'perigo' },
 };

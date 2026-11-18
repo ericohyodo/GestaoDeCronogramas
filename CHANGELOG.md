@@ -1,5 +1,176 @@
 # Patch Notes — Gestão de Novos Desenvolvimentos (AV-SD-PRO)
 
+## 0.7.2 — 18/11/2026
+
+### Novidades
+- **Ícone novo ("Etapas"):** três avanços em sequência, AV → SD → PRO, o último em verde-água. Vale para o
+  executável, a barra de tarefas, a barra de título e a tela de login.
+- **Enter nas tabelas:** numa tabela de preenchimento (cargas de máquina, operações, materiais, custos, contatos,
+  investimentos…), Enter leva ao campo da mesma coluna na linha de baixo; Shift+Enter, à linha de cima. O Enter não
+  envia mais a aba sem querer.
+
+### Correções
+- A barra de tarefas mostrava o ícone padrão do Electron no computador de quem também roda a versão de
+  desenvolvimento: as duas usavam a mesma identidade no Windows. A versão de desenvolvimento agora tem identidade
+  própria. Se o ícone antigo continuar aparecendo, rode `ie4uinit.exe -show` e abra o app de novo.
+
+## 0.7.1 — 18/11/2026
+
+### Novidades
+- **Página de AVs mais compacta:** a lista fica no centro e o painel (indicadores, Prazos das áreas e AVs por etapa)
+  fica à direita, acompanhando a rolagem. O botão no topo do painel o **recolhe para a direita**, deixando só a lista;
+  o app lembra a escolha neste computador. Em telas estreitas, o painel continua acima da lista.
+- **Pasta das AVs** mudou de lugar: agora fica em **Configurações do menu das AVs**, logo abaixo da chave da API da IA
+  (antes estava na tela de Configurações de Projetos).
+- O painel das AVs não mostra mais a etapa "Concluída (portfólio)", que é do módulo de portfólio.
+
+## 0.7.0 — 18/11/2026
+
+### Novidades
+- **Meu perfil:** clique na sua foto ou no seu nome, na barra de título.
+  - Inclua uma foto (o app recorta e reduz) e preencha cargo, departamento, e-mail, ramal, celular e "sobre mim".
+  - **Redefinir senha:** informe a senha atual e a nova (mínimo de 8 caracteres).
+  - Nome, usuário e perfil de acesso continuam sendo alterados pelo administrador.
+- **Pasta da AV no Windows:** ao criar uma AV, o app cria a pasta "AV 26-036 - Cliente - Descrição" dentro da pasta
+  raiz, para guardar as entradas do Comercial (e-mails, desenhos, orçamentos).
+  - **Configurações (menu das AVs) → Pasta das AVs (administrador):** define a pasta raiz (de preferência uma pasta de rede que
+    todos acessem). Sem raiz definida, nenhuma pasta é criada.
+  - **Arquivos da AV** (cabeçalho da AV): lista o que há na pasta, com subpastas. Clique num item para abrir no
+    programa padrão; "Abrir no Explorer" abre a pasta. Pasta vazia mostra "A pasta está vazia.".
+  - AV sem pasta (criada antes desta versão ou com a rede fora do ar) mostra **Criar pasta da AV**.
+  - O nome da pasta não muda depois, mesmo que cliente ou descrição mudem.
+
+### Técnico
+- Migrações:
+  - 0052: `usuarios_perfil` (cargo, ramal, celular, sobre, foto em base64);
+  - 0053: `av.pasta` e `av_pasta_config`.
+- A foto é conferida pela assinatura binária (JPG/PNG) no IPC e limitada a ~300 KB.
+- O visualizador lista até 3 níveis e 500 itens; caminhos relativos vindos da tela não saem da pasta da AV.
+- Canais IPC novos:
+  - `usuarios:obter-meu-perfil` e `usuarios:salvar-meu-perfil` (leitura);
+  - `avs:obter-pasta-config`, `avs:listar-arquivos-da-pasta` e `avs:abrir-da-pasta` (leitura);
+  - `avs:salvar-pasta-config` e `avs:selecionar-pasta-raiz` (administração);
+  - `avs:criar-pasta` (tarefas).
+
+## 0.6.1 — 18/11/2026
+
+### Novidades
+- **Templates de operações de referência (Eng. Processo):** 15 sequências prontas, condensadas das folhas de
+  processo do estudo de capacidade (bdFolhaProcesso de 10/11/2026). Aparecem na barra de templates da aba
+  Eng. Processo com "(referência)" no nome:
+  - Bases: forjada simples; forjada jateada e usinada; grande forjada (simples e jateada/usinada); com tubo
+    cravado; com tubo forjado.
+  - Venturi: com janela e rasgo; com janela; horizontal.
+  - Estamparia: capa esmaltada; capa esmaltada fosca; capa com pinos soldados; arremate esmaltado; espalhador
+    estampado; espalhador dobrado.
+  - Cada template traz o processo completo da família (preparação, operações externas e embalagem), com a máquina
+    mais usada e a mediana de pç/h das folhas como ponto de partida. Apague as etapas que não se aplicam e ajuste
+    o pç/h do item.
+
+### Técnico
+- Migração 0051: `INSERT OR IGNORE` dos templates em `av_templates` (tipo `operacoes`); um template de mesmo nome
+  criado antes por um usuário é mantido.
+
+## 0.6.0 — 18/11/2026
+
+### Novidades
+- **AV de Item de Portfólio (novo módulo, 4º card da tela inicial):** versão light da AV para itens já
+  desenvolvidos (correntes de produção), para responder rápido à cotação.
+  - **Itens de portfólio:** cadastro dos itens-modelo, feito por gestores e administradores. Cada item tem
+    código (único), descrição, cliente, linha, família, programa, **desenho de referência** com a revisão,
+    estrutura do produto, operações com peças por hora e **custos de referência por peça** com a data da última
+    atualização. Na lista, custos com mais de 6 meses aparecem em destaque. Itens podem ser desativados.
+  - **Nova AV de Portfólio:** escolhe o item ativo, o cliente da cotação e a equipe. Usa a **mesma numeração da
+    AV** e herda código, descrição, linha, família e programa do item.
+  - **Fluxo sequencial**, como a AV: Comercial → Eng. Produto → Eng. Processo → PCP → Mapa de Custo.
+    - Comercial: cliente, solicitante, volume anual, prazo e o **desenho da cotação**.
+    - Eng. Produto: desenho de referência ao lado do desenho da cotação e a estrutura do item; responde se o
+      desenho confere.
+    - Eng. Processo: operações do item; responde se o processo atual atende.
+    - PCP: carga de máquina em peças com as operações do item e o volume da cotação; responde se há capacidade.
+    - Custo: custos de referência e, se preciso, os valores atualizados; responde se a referência vale.
+    - Cada área marca **Confere**, **Com ressalvas** ou **Não confere** (os dois últimos pedem observação).
+  - **Resumo:** item, cotação, conclusões das áreas (quem e quando), turnos por operação e custo por peça
+    (referência × vigente). Depois do Custo, o Comercial usa **"Concluir AV de portfólio"**: não há SD.
+  - Faixa de módulos passa a **AV | AVP | SD | PRO**.
+- A lista, o painel, o relatório e a IA das AVs continuam só com as AVs completas.
+
+### Técnico
+- Migração 0050: `portfolio_itens`, `portfolio_estrutura`, `portfolio_operacoes`, `portfolio_anexos`;
+  `av.tipo` ('completa' | 'portfolio') e `av.item_portfolio_id`; etapa 11 `portfolio_concluida` (terminal);
+  `av_portfolio_checagens` e `av_portfolio_custos` (foto dos custos de referência na checagem do Custo).
+- Desenhos de referência em `<pasta do banco>/anexos-portfolio/<itemId>/`, com as mesmas regras dos anexos da AV.
+- Canais IPC `portfolio:*`: consulta (leitura), cadastro de itens (planejamento) e checagens/conclusão (tarefas,
+  com a permissão por área da AV). `avs:finalizar-e-criar-pre-sd` recusa AV de portfólio.
+- `/avs/detalhe/` redireciona a AV de portfólio para `/portfolio/detalhe/` (avisos e links antigos).
+
+## 0.5.1 — 18/11/2026
+
+### Novidades
+- **Carga de máquina (PCP) em peças por mês:** as colunas em % deram lugar a peças.
+  - O PCP informa **Pçs/hora** e **Carga atual (pç/mês)** na unidade da operação, e a **Conversão**: quantas
+    peças do produto final saem de uma unidade da operação (ex.: uma placa da fundição vira 8 peças → 8).
+  - **Carga futura (pç/mês)** é calculada: volume anual da aba Comercial ÷ 12 ÷ conversão (só o item novo).
+  - **Turnos** por dia, de hoje → com o item: carga ÷ (pçs/hora × horas por turno × dias produtivos). Acima de
+    3 turnos o valor fica em vermelho.
+  - O bloco só fica completo com o volume anual informado no Comercial.
+  - **Configurações → Capacidade do PCP (administrador):** horas por turno (padrão 8) e dias produtivos por mês
+    (padrão 22).
+  - Cargas em % gravadas antes desta versão não são convertidas: o PCP preenche de novo em peças.
+- **Pré-visualização de anexos:** abre num modal grande, com o X para fechar, e mostra PDFs de qualquer tamanho.
+- **Menu:** o item de reportes passa a se chamar "Erros e sugestões" e fica alinhado aos demais.
+
+### Correções
+- PDF do anexo abria em branco: o quadro era trocado para `about:blank` a cada atualização da tela e PDFs acima de
+  ~1,5 MB passavam do limite de URL do Chromium. Agora o arquivo é exibido por URL `blob:`.
+- O botão de fechar do modal às vezes travava ao sair de um PDF: o fechamento rodava duas vezes.
+
+### Técnico
+- Migração 0049: `carga_atual_pecas` e `conversao` em `av_pcp_cargas`; `av_capacidade_config` (linha única).
+- Canais IPC novos: `avs:obter-capacidade-config` (leitura) e `avs:salvar-capacidade-config` (administração).
+- CSP: `blob:` em `img-src` e `frame-src`; `data:` saiu do `frame-src`.
+
+## 0.5.0 — 18/11/2026
+
+### Novidades
+- **Faixa de módulos:** nas listas de AVs, SDs e Projetos aparece, no topo, a faixa **AV | SD | PRO** para trocar
+  de módulo sem voltar à tela inicial. Dentro do formulário de uma AV, SD ou PRO ela não aparece.
+- **Desenho do item (aba Comercial):** novo bloco logo após "Identificação" para anexar o desenho recebido na
+  cotação. É obrigatório para a aba Comercial ficar completa.
+- **Anexos da AV:** aceitam apenas PDF, JPG, JPEG, **TIFF**, PNG e BMP, com até 25 MB por arquivo, em todos os
+  blocos (a opção "Todos os arquivos" saiu do seletor). TIFF não tem pré-visualização no app: o botão abre o
+  arquivo no visualizador do Windows.
+- **Embalagem na estrutura do produto (Eng. Produto):** ao inserir uma embalagem, informe as **peças por
+  embalagem**; a estrutura recebe a fração por peça (50 peças por caixa = 0,02). Na árvore, a embalagem mostra
+  "1/50". Embalagens já cadastradas mantêm a quantidade digitada até alguém informar as peças.
+- **PCP — "Sem alterações significativas":** os blocos Layout da fábrica, Custos logísticos e Observações têm
+  a caixa "Sem alterações significativas", que libera o bloco sem preencher. Esses três blocos passam a exigir
+  conteúdo **ou** a declaração (antes, Custos e Observações contavam como completos vazios). A caixa só pode
+  ser marcada com o bloco vazio.
+- **Reportar erro / sugestão:** novo item no menu lateral. Qualquer usuário descreve o erro ou a sugestão e
+  anexa até 3 prints (botão ou **Ctrl+V** depois de Win+Shift+S). A tela em que a pessoa estava e a versão do
+  app vão junto. Os administradores são avisados no sino.
+  - **Reportes recebidos (administrador):** lista com filtro por status, detalhe com quem reportou, data/hora,
+    prints e o **log de alterações**. O administrador muda o status (Aberto, Em análise, Resolvido,
+    Descartado), comenta e dá baixa; quem reportou é avisado quando o reporte é resolvido ou descartado.
+
+### Técnico
+- Migrações:
+  - 0046: `pecas_por_embalagem` em `av_estrutura_produto` (o servidor calcula `quantidade = 1/peças`);
+  - 0047: `layout_sem_alteracoes`, `custos_sem_alteracoes` e `observacoes_sem_alteracoes` em `av_secao_pcp`;
+  - 0048: `reportes`, `reporte_imagens` e `reporte_eventos` (log de alterações).
+- Anexos da AV validados no servidor (`validarArquivoDeAnexo`): extensão e tamanho conferidos antes de copiar o
+  primeiro arquivo do lote; arquivo removido se a gravação no banco falhar; caminho protegido contra path
+  traversal.
+- Quantidade acumulada da estrutura para o Mapa de Custo com 8 casas decimais (4 casas zeravam frações
+  pequenas de embalagem).
+- Módulo novo `reportes` (domínio, aplicação, infraestrutura e apresentação). Prints validados pela assinatura
+  binária (PNG/JPEG/BMP), até 10 MB, gravados em `<pasta do banco>/reportes/<id>/`. Número sequencial atribuído
+  no próprio INSERT.
+- Canais IPC novos: `avs:abrir-anexo` (leitura), `reportes:criar` (leitura), `reportes:listar`,
+  `reportes:obter`, `reportes:registrar-andamento` e `reportes:obter-imagem` (administração).
+- Notificações novas: `reporte.novo` e `reporte.status`.
+
 ## 0.4.0 — 12/11/2026
 
 ### Novidades

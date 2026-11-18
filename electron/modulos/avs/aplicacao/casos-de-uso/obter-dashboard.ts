@@ -23,7 +23,8 @@ export class ObterDashboard implements CasoDeUso<void, DashboardAvDTO> {
   /** @returns contadores das AVs (fora do histórico), por etapa e pela situação do prazo da área atual */
   async executar(): Promise<DashboardAvDTO> {
     // O histórico (antes do uso multiusuário) fica fora dos contadores.
-    const avs = (await this.repositorio.listar()).filter((av) => !av.historico);
+    // A AV de portfólio tem lista própria: fora do painel das AVs.
+    const avs = (await this.repositorio.listar()).filter((av) => !av.historico && !av.ehPortfolio);
     const contagemPorEtapa = new Map<number, number>();
     let concluidas = 0;
     let declinadas = 0;
@@ -55,7 +56,8 @@ export class ObterDashboard implements CasoDeUso<void, DashboardAvDTO> {
       emAndamento: avs.length - concluidas - declinadas,
       concluidas,
       declinadas,
-      porEtapa: ETAPAS_AV.map((etapa) => ({
+      // A etapa "Concluída (portfólio)" é do módulo de portfólio: fora do painel das AVs.
+      porEtapa: ETAPAS_AV.filter((etapa) => etapa.chave !== 'portfolio_concluida').map((etapa) => ({
         etapa,
         quantidade: contagemPorEtapa.get(etapa.numero) ?? 0,
       })),

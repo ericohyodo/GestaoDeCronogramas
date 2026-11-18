@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  blocoOuDeclarado,
   estadosDosBlocos,
   investimentosCompletos,
   progressoDosBlocos,
@@ -29,5 +30,27 @@ describe('liberação fracionada dos blocos da AV', () => {
     expect(investimentosCompletos([{ descricao: 'Projeto', classificacao: 'suporte', valor: '0' }])).toBe(true);
     expect(investimentosCompletos([{ descricao: 'Projeto', classificacao: '', valor: '10' }])).toBe(false);
     expect(investimentosCompletos([{ descricao: '', classificacao: '', valor: '' }])).toBe(true);
+  });
+});
+
+describe('blocoOuDeclarado', () => {
+  it('libera o bloco com conteúdo ou com a declaração "Sem alterações significativas"', () => {
+    expect(blocoOuDeclarado(true, false)).toBe(true);
+    expect(blocoOuDeclarado(false, true)).toBe(true);
+    expect(blocoOuDeclarado(false, false)).toBe(false);
+  });
+
+  it('PCP: blocos vazios ficam pendentes até haver conteúdo ou declaração', () => {
+    const custosVazios = tabelaObrigatoriaCompleta([] as { d: string }[], () => true, () => true);
+    expect(estadosDosBlocos([true, blocoOuDeclarado(false, false), blocoOuDeclarado(custosVazios, true)])).toEqual([
+      'completo',
+      'atual',
+      'pendente',
+    ]);
+    expect(estadosDosBlocos([true, blocoOuDeclarado(false, true), blocoOuDeclarado(custosVazios, true)])).toEqual([
+      'completo',
+      'completo',
+      'completo',
+    ]);
   });
 });

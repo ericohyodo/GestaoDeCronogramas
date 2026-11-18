@@ -17,7 +17,9 @@ import {
   ExcluirUsuario,
   ListarUsuarios,
 } from './aplicacao/casos-de-uso/gerenciar-usuarios';
+import { ObterMeuPerfil, SalvarMeuPerfil } from './aplicacao/casos-de-uso/meu-perfil';
 import { ObterSessao, Sair } from './aplicacao/casos-de-uso/obter-sessao';
+import { RepositorioPerfilPessoalSqlite } from './infraestrutura/repositorio-perfil-pessoal-sqlite';
 import { BaterPresenca, ListarUsuariosOnline } from './aplicacao/casos-de-uso/presenca';
 import { Sessao } from './aplicacao/sessao';
 import { registrarIpcUsuarios } from './apresentacao/controlador-ipc-usuarios';
@@ -66,6 +68,7 @@ export function montarModuloUsuarios(deps: DependenciasModuloUsuarios): ModuloUs
   const idDestaInstancia = deps.geradorDeId.gerar();
 
   const sair = new Sair(repositorio, sessao);
+  const perfisPessoais = new RepositorioPerfilPessoalSqlite(deps.db);
 
   registrarIpcUsuarios(deps.ipc, {
     obterSessao: new ObterSessao(repositorio, sessao),
@@ -86,6 +89,8 @@ export function montarModuloUsuarios(deps: DependenciasModuloUsuarios): ModuloUs
     excluir: new ExcluirUsuario(repositorio, sessao),
     baterPresenca: new BaterPresenca(presenca, sessao, deps.relogio, idDestaInstancia),
     listarOnline: new ListarUsuariosOnline(presenca, deps.relogio),
+    obterMeuPerfil: new ObterMeuPerfil(sessao, perfisPessoais),
+    salvarMeuPerfil: new SalvarMeuPerfil(sessao, repositorio, perfisPessoais, deps.relogio),
   });
 
   return {

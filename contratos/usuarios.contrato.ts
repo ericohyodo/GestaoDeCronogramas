@@ -28,3 +28,37 @@ export interface AlterarSenhaEntrada {
   senhaAtual?: string;
   novaSenha: string;
 }
+
+// --- Meu perfil (o próprio usuário mantém) ---
+
+/** Foto do usuário: base64 sem o prefixo `data:`. A tela reduz para 256 px antes de enviar. */
+export interface FotoDoUsuarioDTO {
+  base64: string;
+  mime: 'image/jpeg' | 'image/png';
+}
+
+export interface MeuPerfilDTO {
+  id: string;
+  nome: string;
+  login: string;
+  /** Perfil de acesso (só o administrador altera). */
+  perfil: PerfilDTO;
+  email: string | null;
+  departamento: string | null;
+  cargo: string | null;
+  ramal: string | null;
+  celular: string | null;
+  sobre: string | null;
+  foto: FotoDoUsuarioDTO | null;
+}
+
+export interface SalvarMeuPerfilEntrada {
+  email?: string | null;
+  departamento?: string | null;
+  cargo?: string | null;
+  ramal?: string | null;
+  celular?: string | null;
+  sobre?: string | null;
+  /** Ausente: mantém a foto atual; `null`: remove. */
+  foto?: FotoDoUsuarioDTO | null;
+}

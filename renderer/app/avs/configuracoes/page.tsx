@@ -4,6 +4,7 @@ import { ShieldAlert } from 'lucide-react';
 import { CabecalhoPagina } from '@/compartilhado/ui/CabecalhoPagina';
 import { EstadoVazio } from '@/compartilhado/ui/EstadoVazio';
 import { PainelVidro } from '@/compartilhado/ui/PainelVidro';
+import { ConfiguracaoPastaDasAvs } from '@/modulos/avs/componentes/ConfiguracaoPastaDasAvs';
 import { ConfiguracaoIa } from '@/modulos/ia/componentes/ConfiguracaoIa';
 import { usePermissao } from '@/modulos/usuarios/store/use-sessao-store';
 
@@ -14,7 +15,11 @@ export default function ConfiguracoesDasAvs() {
     <div className="flex flex-col gap-6 p-6">
       <CabecalhoPagina titulo="Configurações — AVs" descricao="Ajustes do módulo de AVs para todos os usuários." />
       {ehAdministrador ? (
-        <ConfiguracaoIa escopo="avs" />
+        <>
+          <ConfiguracaoIa escopo="avs" />
+          {/* Pasta onde o app cria a pasta de cada AV nova (entradas do Comercial). */}
+          <ConfiguracaoPastaDasAvs />
+        </>
       ) : (
         <PainelVidro>
           <EstadoVazio

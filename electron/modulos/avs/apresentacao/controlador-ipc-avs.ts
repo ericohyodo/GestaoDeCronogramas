@@ -22,6 +22,7 @@ import type { AvancarEtapa } from '../aplicacao/casos-de-uso/avancar-etapa';
 import type { ObterContatosAv, SalvarContatosAv } from '../aplicacao/casos-de-uso/contatos-av';
 import type { CriarAv } from '../aplicacao/casos-de-uso/criar-av';
 import type { DeclinarAv } from '../aplicacao/casos-de-uso/declinar-av';
+import type { AbrirAnexo } from '../aplicacao/casos-de-uso/abrir-anexo';
 import type { ExcluirAnexo } from '../aplicacao/casos-de-uso/excluir-anexo';
 import type {
   AplicarAoGrupo,
@@ -45,6 +46,15 @@ import type { ObterConteudoAnexo } from '../aplicacao/casos-de-uso/obter-conteud
 import type { ObterDashboard } from '../aplicacao/casos-de-uso/obter-dashboard';
 import type { ObterEntregasNoPrazo } from '../aplicacao/casos-de-uso/obter-entregas-no-prazo';
 import type { ObterPrazosConfig, SalvarPrazosConfig } from '../aplicacao/casos-de-uso/configurar-prazos-das-areas';
+import type { ObterCapacidadeConfig, SalvarCapacidadeConfig } from '../aplicacao/casos-de-uso/configurar-capacidade';
+import type {
+  AbrirDaPasta,
+  CriarPastaDaAv,
+  ListarArquivosDaPasta,
+  ObterPastaConfig,
+  SalvarPastaConfig,
+  SelecionarPastaRaiz,
+} from '../aplicacao/casos-de-uso/pasta-da-av';
 import type { ObterSecaoCusto } from '../aplicacao/casos-de-uso/obter-secao-custo';
 import type { ObterSecaoProcesso } from '../aplicacao/casos-de-uso/obter-secao-processo';
 import type { ObterSecaoProduto } from '../aplicacao/casos-de-uso/obter-secao-produto';
@@ -67,6 +77,14 @@ export interface CasosDeUsoAvs {
   obterPrazosConfig: ObterPrazosConfig;
   entregasNoPrazo: ObterEntregasNoPrazo;
   salvarPrazosConfig: SalvarPrazosConfig;
+  obterCapacidadeConfig: ObterCapacidadeConfig;
+  salvarCapacidadeConfig: SalvarCapacidadeConfig;
+  obterPastaConfig: ObterPastaConfig;
+  salvarPastaConfig: SalvarPastaConfig;
+  selecionarPastaRaiz: SelecionarPastaRaiz;
+  criarPasta: CriarPastaDaAv;
+  listarArquivosDaPasta: ListarArquivosDaPasta;
+  abrirDaPasta: AbrirDaPasta;
   avancarEtapa: Pick<AvancarEtapa, 'executar'>;
   declinar: DeclinarAv;
   listarHistorico: ListarHistoricoAv;
@@ -83,6 +101,7 @@ export interface CasosDeUsoAvs {
   selecionarEAnexar: SelecionarEAnexar;
   obterConteudoAnexo: ObterConteudoAnexo;
   excluirAnexo: ExcluirAnexo;
+  abrirAnexo: AbrirAnexo;
   gerarExemplos: GerarAvsExemplo;
   finalizarECriarPreSd: Pick<FinalizarECriarPreSd, 'executar'>;
   listarGrupos: ListarGruposAv;
@@ -106,6 +125,8 @@ const esquemaVersao = z.number().int().positive().nullish();
 const esquemaMembros = z.object(Object.fromEntries(AREAS_AV.map((area) => [area, z.string().nullish()])));
 
 const esquemaCriar = z.object({
+  tipo: z.enum(['completa', 'portfolio']).optional(),
+  itemPortfolioId: z.string().min(1).nullish(),
   descricao: z.string(),
   cliente: z.string().nullish(),
   codigo: z.string().nullish(),
@@ -246,6 +267,7 @@ const esquemaSalvarSecaoProduto = z.object({
         descricao: z.string(),
         quantidade: z.number().nullish(),
         unidade: z.string().nullish(),
+        pecasPorEmbalagem: z.number().int().min(1).max(10_000_000).nullish(),
       }),
     )
     .max(500),
@@ -293,6 +315,36 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
     casos.obterDashboard.executar(),
   );
   ipc.registrar(CANAIS.avs.obterPrazosConfig, 'leitura', esquemaSemEntrada, () => casos.obterPrazosConfig.executar());
+  ipc.registrar(CANAIS.avs.obterCapacidadeConfig, 'leitura', esquemaSemEntrada, () =>
+    casos.obterCapacidadeConfig.executar(),
+  );
+  // Pasta da AV no Windows: raiz (administrador), criação (Comercial), visualizador e abertura (leitura).
+  ipc.registrar(CANAIS.avs.obterPastaConfig, 'leitura', esquemaSemEntrada, () => casos.obterPastaConfig.executar());
+  ipc.registrar(
+    CANAIS.avs.salvarPastaConfig,
+    'administracao',
+    z.object({ pastaRaiz: z.string().max(200).nullable() }),
+    (entrada) => casos.salvarPastaConfig.executar(entrada),
+  );
+  ipc.registrar(CANAIS.avs.selecionarPastaRaiz, 'administracao', esquemaSemEntrada, () =>
+    casos.selecionarPastaRaiz.executar(),
+  );
+  ipc.registrar(CANAIS.avs.criarPasta, 'tarefas', esquemaId, (avId) => casos.criarPasta.executar(avId));
+  ipc.registrar(CANAIS.avs.listarArquivosDaPasta, 'leitura', esquemaId, (avId) =>
+    casos.listarArquivosDaPasta.executar(avId),
+  );
+  ipc.registrar(
+    CANAIS.avs.abrirDaPasta,
+    'leitura',
+    z.object({ avId: esquemaId, caminhoRelativo: z.string().max(400).nullish() }),
+    (entrada) => casos.abrirDaPasta.executar(entrada),
+  );
+  ipc.registrar(
+    CANAIS.avs.salvarCapacidadeConfig,
+    'administracao',
+    z.object({ horasPorTurno: z.number().positive().max(24), diasProdutivosMes: z.number().int().min(1).max(31) }),
+    (entrada) => casos.salvarCapacidadeConfig.executar(entrada),
+  );
   ipc.registrar(CANAIS.avs.entregasNoPrazo, 'leitura', esquemaSemEntrada, () => casos.entregasNoPrazo.executar());
   const diasUteis = z.number().int().min(1).max(30);
   ipc.registrar(
@@ -349,6 +401,7 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
   ipc.registrar(CANAIS.avs.excluirAnexo, 'tarefas', esquemaId, (anexoId) =>
     casos.excluirAnexo.executar(anexoId),
   );
+  ipc.registrar(CANAIS.avs.abrirAnexo, 'leitura', esquemaId, (anexoId) => casos.abrirAnexo.executar(anexoId));
   ipc.registrar(CANAIS.avs.gerarExemplos, 'administracao', esquemaSemEntrada, () =>
     casos.gerarExemplos.executar(),
   );
@@ -388,12 +441,15 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
         z.object({
           operacao: z.string(),
           maquina: z.string().nullish(),
-          pecasHora: z.number().nullish(),
-          cargaAtual: z.number().nullish(),
-          cargaFutura: z.number().nullish(),
+          pecasHora: z.number().min(0).nullish(),
+          conversao: z.number().positive().nullish(),
+          cargaAtualPecas: z.number().min(0).nullish(),
         }),
       ),
       custos: z.array(z.object({ descricao: z.string(), valor: z.number().nullish() })),
+      layoutSemAlteracoes: z.boolean().optional(),
+      custosSemAlteracoes: z.boolean().optional(),
+      observacoesSemAlteracoes: z.boolean().optional(),
     }),
     (entrada) => casos.salvarSecaoPcp.executar(entrada),
   );

@@ -7,6 +7,7 @@ import type { NoEstruturaDTO, NoEstruturaEntrada } from '@contratos/avs.contrato
 import { Ajuda } from '@/compartilhado/ui/Ajuda';
 import { Botao, BotaoIcone } from '@/compartilhado/ui/Botao';
 import { IconeDeEstrutura } from './IconesDeEstrutura';
+import { formatarQuantidade, pecasValidas, quantidadeDasPecas } from '../quantidade-da-embalagem';
 import { ModalDoItemDaEstrutura, ROTULO_DO_TIPO, type DadosDoItem, type NoEditavel } from './ModalDoItemDaEstrutura';
 import { BotaoLimparCampos, TituloSecao } from './SecaoAv';
 
@@ -21,6 +22,7 @@ export function estruturaDeDto(nos: NoEstruturaDTO[]): NoEditavel[] {
     descricao: no.descricao,
     quantidade: no.quantidade != null ? String(no.quantidade) : '',
     unidade: no.unidade ?? '',
+    pecasPorEmbalagem: no.pecasPorEmbalagem != null ? String(no.pecasPorEmbalagem) : '',
   }));
 }
 
@@ -57,6 +59,7 @@ export function estruturaParaEnvio(nos: readonly NoEditavel[]): NoEstruturaEntra
       descricao: no.descricao,
       quantidade: no.quantidade.trim() === '' ? null : Number(no.quantidade),
       unidade: no.unidade.trim() || null,
+      pecasPorEmbalagem: no.tipo === 'embalagem' ? pecasValidas(no.pecasPorEmbalagem) : null,
     });
     for (const filho of filhos.get(no.chave) ?? []) visitar(filho);
   };
@@ -83,7 +86,8 @@ export function componentesDaEstrutura(
     .map((no) => ({
       codigo: no.codigo.trim(),
       descricao: no.descricao.trim(),
-      quantidade: Math.round(acumulada(no) * 10_000) / 10_000,
+      // 8 casas: embalagens viram frações pequenas (1/30 000 pç/cx) que 4 casas zerariam.
+      quantidade: Math.round(acumulada(no) * 100_000_000) / 100_000_000,
       unidade: no.unidade.trim(),
     }));
 }
@@ -171,18 +175,45 @@ export function ArvoreDeEstrutura({
             <BotaoIcone icone={Pencil} rotulo={`Editar ${nome}`} onClick={() => setEditando(no)} />
             <BotaoIcone icone={Trash2} rotulo={`Remover ${nome} e o que está dentro dele`} onClick={() => aoRemover(no.chave)} />
           </span>
-          <span className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
-            <input
-              type="number"
-              min={0}
-              step="any"
-              aria-label={`Quantidade de ${nome}`}
-              className="h-7 w-20 rounded-md border border-borda bg-superficie-solida/80 px-2 text-right text-xs tabular-nums focus:border-primaria focus:outline-none focus:ring-2 focus:ring-primaria/20"
-              value={no.quantidade}
-              onChange={(e) => aoMudar(no.chave, 'quantidade', e.target.value)}
-            />
-            <span className="w-7 text-xs text-texto-sutil">{no.unidade}</span>
-          </span>
+          {no.tipo === 'embalagem' ? (
+            // Embalagem: edita as peças por embalagem; a quantidade (1/peças) é derivada. Embalagens antigas
+            // (sem peças) mostram o campo vazio e mantêm a quantidade digitada até alguém informar as peças.
+            <span
+              className="flex shrink-0 items-center gap-1"
+              onClick={(e) => e.stopPropagation()}
+              title={`Quantidade na estrutura: ${formatarQuantidade(no.quantidade)} ${no.unidade} por peça`}
+            >
+              <span className="text-xs text-texto-sutil">1/</span>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                aria-label={`Peças por embalagem de ${nome}`}
+                className="h-7 w-[60px] rounded-md border border-borda bg-superficie-solida/80 px-2 text-right text-xs tabular-nums focus:border-primaria focus:outline-none focus:ring-2 focus:ring-primaria/20"
+                placeholder="—"
+                value={no.pecasPorEmbalagem}
+                onChange={(e) => {
+                  aoMudar(no.chave, 'pecasPorEmbalagem', e.target.value);
+                  const quantidade = quantidadeDasPecas(e.target.value);
+                  if (quantidade) aoMudar(no.chave, 'quantidade', quantidade);
+                }}
+              />
+              <span className="w-7 text-xs text-texto-sutil">pç</span>
+            </span>
+          ) : (
+            <span className="flex shrink-0 items-center gap-1" onClick={(e) => e.stopPropagation()}>
+              <input
+                type="number"
+                min={0}
+                step="any"
+                aria-label={`Quantidade de ${nome}`}
+                className="h-7 w-20 rounded-md border border-borda bg-superficie-solida/80 px-2 text-right text-xs tabular-nums focus:border-primaria focus:outline-none focus:ring-2 focus:ring-primaria/20"
+                value={no.quantidade}
+                onChange={(e) => aoMudar(no.chave, 'quantidade', e.target.value)}
+              />
+              <span className="w-7 text-xs text-texto-sutil">{no.unidade}</span>
+            </span>
+          )}
         </div>
         {filhosDoNo.length > 0 && !recolhidos.has(no.chave) && (
           <ul role="group" className="ml-[9px] border-l border-dotted border-texto-sutil/60 pl-4">
@@ -200,7 +231,7 @@ export function ArvoreDeEstrutura({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <TituloSecao>Estrutura do produto</TituloSecao>
-          <Ajuda texto="Composição do produto em árvore. O conjunto principal usa o código do cliente (aba Comercial) como nome. Use 'Inserir item' para adicionar conjuntos, componentes, matérias-primas, embalagens e insumos, escolhendo o nível: 1º nível entra direto no conjunto; 2º nível entra dentro de um item de 1º nível. A quantidade de cada item fica à direita. Os componentes e as matérias-primas vão para as matérias-primas do Mapa de Custo." />
+          <Ajuda texto="Composição do produto em árvore. O conjunto principal usa o código do cliente (aba Comercial) como nome. Use 'Inserir item' para adicionar conjuntos, componentes, matérias-primas, embalagens e insumos, escolhendo o nível: 1º nível entra direto no conjunto; 2º nível entra dentro de um item de 1º nível. A quantidade de cada item fica à direita; nas embalagens, informe as peças por embalagem (1/50 = 0,02 por peça). Os componentes e as matérias-primas vão para as matérias-primas do Mapa de Custo." />
         </div>
         <BotaoLimparCampos aoLimpar={aoLimpar} disabled={nos.length === 0} />
       </div>
@@ -261,6 +292,7 @@ export function ArvoreDeEstrutura({
           aoMudar(editando.chave, 'descricao', dados.descricao);
           aoMudar(editando.chave, 'quantidade', dados.quantidade);
           aoMudar(editando.chave, 'unidade', dados.unidade);
+          aoMudar(editando.chave, 'pecasPorEmbalagem', dados.pecasPorEmbalagem);
         }}
         aoFechar={() => setEditando(null)}
       />

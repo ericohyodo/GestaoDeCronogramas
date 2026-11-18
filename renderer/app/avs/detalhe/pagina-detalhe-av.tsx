@@ -2,7 +2,7 @@
 
 import { SearchX } from 'lucide-react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
 import { classeBotao } from '@/compartilhado/ui/Botao';
@@ -20,6 +20,14 @@ export function PaginaDetalheAv() {
 
   const [falha, setFalha] = useState<{ id: string; mensagem: string } | null>(null);
   const erro = falha?.id === id ? falha.mensagem : null;
+  const router = useRouter();
+  const rota = usePathname();
+
+  // Links antigos e avisos apontam para /avs/detalhe: a AV de portfólio abre no módulo dela (e vice-versa).
+  const moduloCerto = av ? (av.tipo === 'portfolio' ? '/portfolio/' : '/avs/') : null;
+  useEffect(() => {
+    if (av && moduloCerto && !rota.startsWith(moduloCerto)) router.replace(`${moduloCerto}detalhe/?id=${av.id}`);
+  }, [av, moduloCerto, rota, router]);
 
   useEffect(() => {
     if (!id) return;

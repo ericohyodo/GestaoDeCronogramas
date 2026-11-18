@@ -8,6 +8,9 @@ import {
   ClipboardCheck,
   FileClock,
   FileText,
+  Inbox,
+  Package,
+  PackageCheck,
   GraduationCap,
   Home,
   type LucideIcon,
@@ -20,6 +23,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { ReactNode } from 'react';
 import type { PermissaoDTO } from '@contratos/sessao.contrato';
 import { BotaoIcone } from '@/compartilhado/ui/Botao';
 
@@ -46,6 +50,15 @@ const ITEM_NOTIFICACOES: ItemNavegacao = {
   href: '/notificacoes/',
   rotas: ['/notificacoes'],
   contador: 'notificacoes',
+};
+
+// Reportes de erro/sugestão: só o administrador acompanha (página compartilhada, mantém o módulo atual).
+const ITEM_REPORTES: ItemNavegacao = {
+  rotulo: 'Reportes recebidos',
+  icone: Inbox,
+  href: '/reportes/',
+  rotas: ['/reportes'],
+  permissao: 'administracao',
 };
 
 export interface NavegacaoLateral {
@@ -77,6 +90,7 @@ export const NAV_PROJETOS: NavegacaoLateral = {
       permissao: 'administracao',
     },
     { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
+    ITEM_REPORTES,
     ITEM_NOTIFICACOES,
   ],
 };
@@ -107,6 +121,20 @@ export const NAV_AVS: NavegacaoLateral = {
       permissao: 'administracao',
     },
     { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
+    ITEM_REPORTES,
+    ITEM_NOTIFICACOES,
+  ],
+};
+
+// AV de Item de Portfólio: as AVs light e o cadastro de itens-modelo que elas usam.
+export const NAV_PORTFOLIO: NavegacaoLateral = {
+  titulo: 'AV de Portfólio',
+  itens: [
+    { rotulo: 'AVs de portfólio', icone: PackageCheck, href: '/portfolio/', rotas: ['/portfolio'] },
+    { rotulo: 'Itens de portfólio', icone: Package, href: '/portfolio/itens/', rotas: ['/portfolio/itens'] },
+    { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
+    { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
+    ITEM_REPORTES,
     ITEM_NOTIFICACOES,
   ],
 };
@@ -118,6 +146,7 @@ export const NAV_SDS: NavegacaoLateral = {
     { rotulo: 'SDs', icone: FileText, href: '/sds/', rotas: ['/sds'] },
     { rotulo: 'Usuários', icone: UserCog, href: '/usuarios/', rotas: ['/usuarios'], permissao: 'administracao' },
     { rotulo: 'Tutoriais', icone: GraduationCap, href: '/tutoriais/', rotas: ['/tutoriais'] },
+    ITEM_REPORTES,
     ITEM_NOTIFICACOES,
   ],
 };
@@ -127,11 +156,14 @@ export function BarraLateral({
   permissoes,
   contadores = {},
   aoRetrair,
+  extras,
 }: {
   navegacao: NavegacaoLateral;
   permissoes: PermissaoDTO[];
   contadores?: ContadoresDoMenu;
   aoRetrair: () => void;
+  /** Ações logo abaixo dos itens (ex.: "Reportar erro / sugestão"), compostas pela casca do app. */
+  extras?: ReactNode;
 }) {
   const rotaAtual = usePathname();
   const itensVisiveis = navegacao.itens.filter(
@@ -207,6 +239,7 @@ export function BarraLateral({
           </li>
         ))}
       </ul>
+      {extras && <div className="mt-0.5 flex flex-col gap-0.5">{extras}</div>}
 
       <div className="mt-auto rounded-xl border border-borda-vidro bg-texto/3 px-3 py-2.5 text-[11px] leading-relaxed text-texto-sutil">
         Versão {process.env.NEXT_PUBLIC_VERSAO_DO_APP}

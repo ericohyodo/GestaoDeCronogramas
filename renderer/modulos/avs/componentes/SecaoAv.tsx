@@ -40,6 +40,42 @@ export function BotaoLimparCampos({ aoLimpar, disabled }: { aoLimpar: () => void
   );
 }
 
+/**
+ * Caixa "Sem alterações significativas": o responsável declara que o bloco não tem nada a acrescentar, o que
+ * libera o bloco sem conteúdo. Só pode ser marcada com o bloco vazio (a declaração substitui o conteúdo).
+ * @param marcada estado atual da declaração
+ * @param bloqueada `true` enquanto o bloco tiver conteúdo (a caixa fica desabilitada, com a explicação)
+ * @param aoMudar recebe o novo estado
+ */
+export function CaixaSemAlteracoes({
+  marcada,
+  bloqueada,
+  aoMudar,
+}: {
+  marcada: boolean;
+  bloqueada: boolean;
+  aoMudar: (marcada: boolean) => void;
+}) {
+  return (
+    <label
+      className={clsx(
+        'flex w-fit items-center gap-2 rounded-lg border border-borda/60 bg-superficie-solida/60 px-3 py-1.5 text-xs font-medium',
+        bloqueada ? 'cursor-not-allowed text-texto-sutil' : 'cursor-pointer text-texto-secundario hover:text-texto',
+      )}
+      title={bloqueada ? 'Disponível só com o bloco vazio: a declaração substitui o conteúdo.' : undefined}
+    >
+      <input
+        type="checkbox"
+        className="size-4 accent-primaria"
+        checked={marcada}
+        disabled={bloqueada}
+        onChange={(e) => aoMudar(e.target.checked)}
+      />
+      Sem alterações significativas
+    </label>
+  );
+}
+
 /** Título da seção com o botão "Limpar Campos" no canto superior direito. */
 export function CabecalhoDaSecao({
   titulo,

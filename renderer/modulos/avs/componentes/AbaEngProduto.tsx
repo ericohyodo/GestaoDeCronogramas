@@ -350,7 +350,7 @@ export function AbaEngProduto({ av }: { av: AvDetalheDTO }) {
           aoMudarQuantidade={setQtdAnexos}
           avId={av.id}
           secao="produto"
-          ajuda="Anexe aqui os desenhos, fotos e PDFs que ajudam a entender o produto (aceita PDF, JPG, JPEG, PNG e BMP). Clique no olho para visualizar em tela cheia."
+          ajuda="Anexe aqui os desenhos, fotos e PDFs que ajudam a entender o produto (aceita PDF, JPG, JPEG, TIFF, PNG e BMP). Clique no olho para visualizar em tela cheia."
         />
       </SecaoAv>
 

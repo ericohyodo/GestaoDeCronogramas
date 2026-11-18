@@ -24,6 +24,8 @@ export const ETAPAS_AV: readonly DefinicaoEtapaAv[] = [
   { numero: 8, chave: 'projeto_criado', nome: 'Projeto Criado', area: null, terminal: true },
   { numero: 9, chave: 'declinada_cliente', nome: 'Declinada pelo Cliente', area: null, terminal: true },
   { numero: 10, chave: 'declinada_empresa', nome: 'Declinada Internamente', area: null, terminal: true },
+  // Só a AV de Item de Portfólio: termina na proposta, sem SD (migração 0050).
+  { numero: 11, chave: 'portfolio_concluida', nome: 'Concluída (portfólio)', area: null, terminal: true },
 ];
 
 export const ETAPA_INICIAL = 1;

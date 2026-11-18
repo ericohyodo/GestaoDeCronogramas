@@ -17,6 +17,26 @@ import { AvancarEtapa } from './aplicacao/casos-de-uso/avancar-etapa';
 import { CriarAv } from './aplicacao/casos-de-uso/criar-av';
 import { ObterContatosAv, SalvarContatosAv } from './aplicacao/casos-de-uso/contatos-av';
 import { DeclinarAv } from './aplicacao/casos-de-uso/declinar-av';
+import { AbrirAnexo } from './aplicacao/casos-de-uso/abrir-anexo';
+import {
+  AbrirDesenhoPortfolio,
+  AnexarDesenhoPortfolio,
+  ConcluirAvPortfolio,
+  DefinirAtivoItemPortfolio,
+  type DependenciasPortfolio,
+  ExcluirDesenhoPortfolio,
+  ListarItensPortfolio,
+  ObterConteudoDesenhoPortfolio,
+  ObterItemPortfolio,
+  ObterPortfolioDaAv,
+  SalvarChecagemPortfolio,
+  SalvarItemPortfolio,
+} from './aplicacao/casos-de-uso/portfolio';
+import { registrarIpcPortfolio } from './apresentacao/controlador-ipc-portfolio';
+import {
+  RepositorioChecagensPortfolioSqlite,
+  RepositorioPortfolioSqlite,
+} from './infraestrutura/repositorio-portfolio-sqlite';
 import { ExcluirAnexo } from './aplicacao/casos-de-uso/excluir-anexo';
 import {
   AplicarAoGrupo,
@@ -46,6 +66,17 @@ import { GarantirPrazosDasAreas } from './aplicacao/casos-de-uso/garantir-prazos
 import { VerificarPrazosDasAreas } from './aplicacao/casos-de-uso/verificar-prazos-das-areas';
 import { ObterEntregasNoPrazo } from './aplicacao/casos-de-uso/obter-entregas-no-prazo';
 import { ObterPrazosConfig, SalvarPrazosConfig } from './aplicacao/casos-de-uso/configurar-prazos-das-areas';
+import { ObterCapacidadeConfig, SalvarCapacidadeConfig } from './aplicacao/casos-de-uso/configurar-capacidade';
+import {
+  AbrirDaPasta,
+  CriarPastaDaAv,
+  type DependenciasPastaDaAv,
+  ListarArquivosDaPasta,
+  ObterPastaConfig,
+  SalvarPastaConfig,
+  SelecionarPastaRaiz,
+} from './aplicacao/casos-de-uso/pasta-da-av';
+import { GerenciadorDePastasFs, RepositorioConfigPastaDasAvsSqlite } from './infraestrutura/pastas-fs';
 import { podeDarAceiteDaSd } from './dominio/papel-av';
 import { ROTULO_DA_AREA } from './aplicacao/notificacoes-av';
 import { SalvarSecaoCusto } from './aplicacao/casos-de-uso/salvar-secao-custo';
@@ -70,7 +101,7 @@ import { HistoricoComPrazos } from './aplicacao/prazos/historico-com-prazos';
 import { ajustarPrazosDeExemplo } from './aplicacao/prazos/prazos-de-exemplo';
 import { RepositorioPerfisAvSqlite } from './infraestrutura/repositorio-perfis-av-sqlite';
 import { RepositorioSecaoCustoSqlite } from './infraestrutura/repositorio-secao-custo-sqlite';
-import { RepositorioSecaoPcpSqlite } from './infraestrutura/repositorio-secao-pcp-sqlite';
+import { RepositorioConfigCapacidadeSqlite, RepositorioSecaoPcpSqlite } from './infraestrutura/repositorio-secao-pcp-sqlite';
 import { RepositorioSecaoProcessoSqlite } from './infraestrutura/repositorio-secao-processo-sqlite';
 import { RepositorioSecaoProdutoSqlite } from './infraestrutura/repositorio-secao-produto-sqlite';
 import { RepositorioTemplatesAvSqlite } from './infraestrutura/repositorio-templates-av-sqlite';
@@ -132,6 +163,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
   const repositorioPerfis = new RepositorioPerfisAvSqlite(deps.db);
   const repositorioPrazos = new RepositorioPrazosAreaSqlite(deps.db);
   const repositorioConfigPrazos = new RepositorioConfigPrazosSqlite(deps.db);
+  const repositorioConfigCapacidade = new RepositorioConfigCapacidadeSqlite(deps.db);
   // Toda mudança de etapa passa pelo histórico: o decorador mantém os prazos das áreas em dia.
   const repositorioHistorico = new HistoricoComPrazos(
     new RepositorioHistoricoAvSqlite(deps.db),
@@ -156,7 +188,60 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
   const notificador = deps.notificador ?? semNotificacao;
   const transacao = new UnidadeDeTrabalhoSqlite(deps.db);
 
-  const criarAv = new CriarAv(repositorio, deps.relogio, deps.geradorDeId, deps.consultaDeUsuarios, autorizacao, versoes, notificador);
+  const repositorioPortfolio = new RepositorioPortfolioSqlite(deps.db);
+  const depsPasta: DependenciasPastaDaAv = {
+    avs: repositorio,
+    config: new RepositorioConfigPastaDasAvsSqlite(deps.db),
+    pastas: new GerenciadorDePastasFs(),
+    autorizacao,
+    usuarios: deps.consultaDeUsuarios,
+    relogio: deps.relogio,
+    versoes,
+  };
+  const criarAv = new CriarAv(
+    repositorio,
+    deps.relogio,
+    deps.geradorDeId,
+    deps.consultaDeUsuarios,
+    autorizacao,
+    versoes,
+    notificador,
+    repositorioPortfolio,
+    depsPasta,
+  );
+  const depsPortfolio: DependenciasPortfolio = {
+    repositorio: repositorioPortfolio,
+    checagens: new RepositorioChecagensPortfolioSqlite(deps.db),
+    avs: repositorio,
+    autorizacao,
+    usuarios: deps.consultaDeUsuarios,
+    armazenamento: new ArmazenamentoDeArquivosFs('anexos-portfolio'),
+    seletor: seletorDeArquivos,
+    relogio: deps.relogio,
+    geradorDeId: deps.geradorDeId,
+  };
+  registrarIpcPortfolio(deps.ipc, {
+    listarItens: new ListarItensPortfolio(depsPortfolio),
+    obterItem: new ObterItemPortfolio(depsPortfolio),
+    salvarItem: new SalvarItemPortfolio(depsPortfolio),
+    definirAtivo: new DefinirAtivoItemPortfolio(depsPortfolio),
+    anexarDesenho: new AnexarDesenhoPortfolio(depsPortfolio),
+    excluirDesenho: new ExcluirDesenhoPortfolio(depsPortfolio),
+    obterConteudoDesenho: new ObterConteudoDesenhoPortfolio(depsPortfolio),
+    abrirDesenho: new AbrirDesenhoPortfolio(depsPortfolio),
+    obterDaAv: new ObterPortfolioDaAv(depsPortfolio),
+    salvarChecagem: new SalvarChecagemPortfolio(depsPortfolio),
+    concluirAv: new ConcluirAvPortfolio(
+      repositorio,
+      repositorioHistorico,
+      autorizacao,
+      deps.relogio,
+      deps.geradorDeId,
+      deps.consultaDeUsuarios,
+      versoes,
+      notificador,
+    ),
+  });
   const atualizarComercial = new AtualizarComercial(repositorio, autorizacao, deps.consultaDeUsuarios, versoes);
   const salvarSecaoCusto = new SalvarSecaoCusto(
     repositorio,
@@ -276,6 +361,14 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     obterPrazosConfig: new ObterPrazosConfig(repositorioConfigPrazos),
     entregasNoPrazo: new ObterEntregasNoPrazo(repositorioPrazos, repositorio, deps.relogio),
     salvarPrazosConfig: new SalvarPrazosConfig(repositorioConfigPrazos, deps.consultaDeUsuarios, deps.relogio),
+    obterCapacidadeConfig: new ObterCapacidadeConfig(repositorioConfigCapacidade),
+    salvarCapacidadeConfig: new SalvarCapacidadeConfig(repositorioConfigCapacidade, deps.consultaDeUsuarios, deps.relogio),
+    obterPastaConfig: new ObterPastaConfig(depsPasta),
+    salvarPastaConfig: new SalvarPastaConfig(depsPasta),
+    selecionarPastaRaiz: new SelecionarPastaRaiz(seletorDeArquivos),
+    criarPasta: new CriarPastaDaAv(depsPasta),
+    listarArquivosDaPasta: new ListarArquivosDaPasta(depsPasta),
+    abrirDaPasta: new AbrirDaPasta(depsPasta),
     avancarEtapa: transacional(avancarEtapa, transacao),
     declinar: declinarAv,
     listarHistorico: new ListarHistoricoAv(repositorioHistorico, deps.consultaDeUsuarios),
@@ -301,6 +394,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     ),
     obterConteudoAnexo: new ObterConteudoAnexo(repositorioAnexos, armazenamentoDeArquivos),
     excluirAnexo: new ExcluirAnexo(repositorio, repositorioAnexos, autorizacao, armazenamentoDeArquivos),
+    abrirAnexo: new AbrirAnexo(repositorioAnexos, armazenamentoDeArquivos),
     gerarExemplos,
     listarGrupos: new ListarGruposAv(repositorioGrupos, repositorio, autorizacao),
     criarGrupo: transacional(

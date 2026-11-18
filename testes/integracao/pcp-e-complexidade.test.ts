@@ -2,13 +2,20 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { CriarAv } from '../../electron/modulos/avs/aplicacao/casos-de-uso/criar-av';
 import { ObterSecaoPcp, SalvarSecaoPcp } from '../../electron/modulos/avs/aplicacao/casos-de-uso/secao-pcp';
+import {
+  ObterCapacidadeConfig,
+  SalvarCapacidadeConfig,
+} from '../../electron/modulos/avs/aplicacao/casos-de-uso/configurar-capacidade';
 import { SalvarSecaoProduto } from '../../electron/modulos/avs/aplicacao/casos-de-uso/salvar-secao-produto';
 import { ObterSecaoProduto } from '../../electron/modulos/avs/aplicacao/casos-de-uso/obter-secao-produto';
 import { AutorizacaoAv } from '../../electron/modulos/avs/aplicacao/autorizacao';
 import type { ConsultaDeUsuarios } from '../../electron/modulos/avs/aplicacao/portas';
 import { RepositorioAvsSqlite } from '../../electron/modulos/avs/infraestrutura/repositorio-avs-sqlite';
 import { RepositorioPerfisAvSqlite } from '../../electron/modulos/avs/infraestrutura/repositorio-perfis-av-sqlite';
-import { RepositorioSecaoPcpSqlite } from '../../electron/modulos/avs/infraestrutura/repositorio-secao-pcp-sqlite';
+import {
+  RepositorioConfigCapacidadeSqlite,
+  RepositorioSecaoPcpSqlite,
+} from '../../electron/modulos/avs/infraestrutura/repositorio-secao-pcp-sqlite';
 import { RepositorioSecaoProdutoSqlite } from '../../electron/modulos/avs/infraestrutura/repositorio-secao-produto-sqlite';
 import { Usuario } from '../../electron/modulos/usuarios/dominio/usuario';
 import { RepositorioUsuariosSqlite } from '../../electron/modulos/usuarios/infraestrutura/repositorio-usuarios-sqlite';
@@ -52,29 +59,85 @@ describe('PCP e complexidade', () => {
 
   afterEach(() => db.close());
 
-  it('grava cargas, custos logísticos e observações e valida percentuais', async () => {
+  it('grava cargas em peças por mês com conversão, custos logísticos e observações', async () => {
     await salvarPcp.executar({
       avId,
       observacoes: 'Gargalo na prensa',
       cargas: [
-        { operacao: 'Estampagem', maquina: 'PR-042', pecasHora: 600, cargaAtual: 62.5, cargaFutura: 81 },
-        { operacao: 'Solda', cargaAtual: 40, cargaFutura: 120 },
+        { operacao: 'Fundição', maquina: 'FUND-01', pecasHora: 400, conversao: 8, cargaAtualPecas: 20_000 },
+        { operacao: 'Solda', pecasHora: 120, cargaAtualPecas: 9_000 },
       ],
       custos: [{ descricao: 'Estante de armazenagem', valor: 3500 }],
     });
 
     const lida = await obterPcp.executar(avId);
     expect(lida.observacoes).toBe('Gargalo na prensa');
-    expect(lida.cargas.map((c) => [c.operacao, c.maquina, c.cargaAtual, c.cargaFutura])).toEqual([
-      ['Estampagem', 'PR-042', 62.5, 81],
-      ['Solda', null, 40, 120],
+    expect(lida.cargas.map((c) => [c.operacao, c.maquina, c.pecasHora, c.conversao, c.cargaAtualPecas])).toEqual([
+      ['Fundição', 'FUND-01', 400, 8, 20_000],
+      // Sem conversão informada vale 1 (a operação trabalha a própria peça).
+      ['Solda', null, 120, 1, 9_000],
     ]);
     expect(lida.custos).toMatchObject([{ descricao: 'Estante de armazenagem', valor: 3500 }]);
 
     await expect(
-      salvarPcp.executar({ avId, cargas: [{ operacao: 'X', cargaAtual: -1 }], custos: [] }),
-    ).rejects.toThrow(/percentual/);
+      salvarPcp.executar({ avId, cargas: [{ operacao: 'X', cargaAtualPecas: -1 }], custos: [] }),
+    ).rejects.toThrow(/carga atual/);
+    await expect(salvarPcp.executar({ avId, cargas: [{ operacao: 'X', pecasHora: -3 }], custos: [] })).rejects.toThrow(
+      /peças por hora/,
+    );
+    await expect(salvarPcp.executar({ avId, cargas: [{ operacao: 'X', conversao: 0 }], custos: [] })).rejects.toThrow(
+      /conversão/,
+    );
     await expect(salvarPcp.executar({ avId, cargas: [{ operacao: ' ' }], custos: [] })).rejects.toThrow(/operação/i);
+  });
+
+  it('grava as declarações "Sem alterações significativas" e recusa declaração com conteúdo', async () => {
+    expect(await obterPcp.executar(avId)).toMatchObject({
+      layoutSemAlteracoes: false,
+      custosSemAlteracoes: false,
+      observacoesSemAlteracoes: false,
+    });
+    await salvarPcp.executar({
+      avId,
+      cargas: [],
+      custos: [],
+      layoutSemAlteracoes: true,
+      custosSemAlteracoes: true,
+      observacoesSemAlteracoes: true,
+    });
+    expect(await obterPcp.executar(avId)).toMatchObject({
+      layoutSemAlteracoes: true,
+      custosSemAlteracoes: true,
+      observacoesSemAlteracoes: true,
+    });
+
+    await expect(
+      salvarPcp.executar({ avId, cargas: [], custos: [{ descricao: 'Estante', valor: 10 }], custosSemAlteracoes: true }),
+    ).rejects.toThrow(/Custos logísticos/);
+    await expect(
+      salvarPcp.executar({ avId, cargas: [], custos: [], observacoes: 'Algo', observacoesSemAlteracoes: true }),
+    ).rejects.toThrow(/Observações/);
+  });
+
+  it('parâmetros de capacidade: padrão 8 h × 22 dias; só administrador altera', async () => {
+    const repositorio = new RepositorioConfigCapacidadeSqlite(db);
+    expect(await new ObterCapacidadeConfig(repositorio).executar()).toEqual({ horasPorTurno: 8, diasProdutivosMes: 22 });
+
+    const admin: ConsultaDeUsuarios = {
+      usuarioAtual: () => ({ id: 'u1', nome: 'Erico', perfil: 'administrador' }),
+      listarAtivos: async () => [],
+      obterPerfilGlobal: async () => 'administrador',
+    };
+    const salvo = await new SalvarCapacidadeConfig(repositorio, admin, new RelogioFixo()).executar({
+      horasPorTurno: 8.8,
+      diasProdutivosMes: 21,
+    });
+    expect(salvo).toEqual({ horasPorTurno: 8.8, diasProdutivosMes: 21 });
+
+    const gestor: ConsultaDeUsuarios = { ...admin, usuarioAtual: () => ({ id: 'u1', nome: 'Erico', perfil: 'gestor' }) };
+    await expect(
+      new SalvarCapacidadeConfig(repositorio, gestor, new RelogioFixo()).executar({ horasPorTurno: 7, diasProdutivosMes: 20 }),
+    ).rejects.toThrow(/administradores/);
   });
 
   it('guarda a complexidade na seção da Eng. Produto', async () => {
@@ -128,6 +191,30 @@ describe('PCP e complexidade', () => {
     // Salvar de novo substitui a árvore inteira.
     await salvar([]);
     expect((await obterProduto.executar(avId)).estrutura).toEqual([]);
+  });
+
+  it('embalagem com peças por embalagem grava a quantidade 1/peças calculada no servidor', async () => {
+    await salvarProduto.executar({
+      avId,
+      investimentos: [],
+      estrutura: [
+        // A tela manda uma quantidade qualquer: o servidor recalcula a partir das peças.
+        { chave: 'e', paiChave: null, tipo: 'embalagem', descricao: 'Caixa KLT', quantidade: 9, unidade: 'cx', pecasPorEmbalagem: 50 },
+        { chave: 'l', paiChave: null, tipo: 'embalagem', descricao: 'Saco antigo', quantidade: 0.5, unidade: 'un' },
+      ],
+    });
+    const [caixa, saco] = (await obterProduto.executar(avId)).estrutura;
+    expect(caixa).toMatchObject({ pecasPorEmbalagem: 50, quantidade: 0.02 });
+    expect(saco).toMatchObject({ pecasPorEmbalagem: null, quantidade: 0.5 });
+
+    const salvar = (estrutura: Parameters<typeof salvarProduto.executar>[0]['estrutura']) =>
+      salvarProduto.executar({ avId, investimentos: [], estrutura });
+    await expect(
+      salvar([{ chave: 'c', paiChave: null, tipo: 'componente', descricao: 'C', pecasPorEmbalagem: 10 }]),
+    ).rejects.toThrow(/só valem para itens do tipo embalagem/);
+    await expect(
+      salvar([{ chave: 'e', paiChave: null, tipo: 'embalagem', descricao: 'E', pecasPorEmbalagem: 2.5 }]),
+    ).rejects.toThrow(/inteiro maior que zero/);
   });
 
   it('grava a opção N/A dos itens do checklist de entrada técnica', async () => {

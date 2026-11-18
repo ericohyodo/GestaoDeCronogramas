@@ -7,6 +7,7 @@ import { AreaTexto, CampoData, CampoTexto, Selecao } from '@/compartilhado/ui/Ca
 import { MensagemErro } from '@/compartilhado/ui/MensagemErro';
 import { useAvsStore } from '../store/use-avs-store';
 import { useAlteracoes, useRegistrarAba, ErroDaAba } from './alteracoes-da-aba';
+import { AnexosGaleria } from './AnexosGaleria';
 import { estadosDosBlocos, preenchido, tabelaObrigatoriaCompleta, todosPreenchidos } from '../blocos';
 import { CabecalhoDaSecao, SecaoAv, TituloSecao, ProgressoDaAba } from './SecaoAv';
 import { novaLinhaContato, TabelaDeContatos, type LinhaContatoEditavel } from './TabelaDeContatos';
@@ -78,6 +79,8 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
   const [erroSalvar, setErroSalvar] = useState<unknown>(null);
   // Versão lida ao abrir a aba (gravação otimista); avança a cada salvamento bem-sucedido.
   const [versao, setVersao] = useState(av.versaoComercial);
+  // Desenhos já gravados na seção (o bloco conta como completo com ao menos um; gravados na hora).
+  const [qtdDesenhos, setQtdDesenhos] = useState(0);
 
   useEffect(() => {
     let cancelado = false;
@@ -153,7 +156,7 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
 
   useRegistrarAba({ sujo, salvar });
 
-  // Liberação fracionada: Identificação → Contato → Logística → Observações (opcional).
+  // Liberação fracionada: Identificação → Desenho do item → Contato → Logística → Observações (opcional).
   const estadosBlocos = estadosDosBlocos([
     todosPreenchidos(
       campos.descricao,
@@ -168,6 +171,7 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
       campos.anoSopEop,
       campos.prazoCliente,
     ),
+    qtdDesenhos > 0,
     tabelaObrigatoriaCompleta(
       contatos ?? [],
       (contato) => [contato.nome, contato.area, contato.telefone, contato.email].some(preenchido),
@@ -278,7 +282,17 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
         </div>
       </SecaoAv>
 
-      <SecaoAv estado={estadosBlocos[1]} tom="verde" className="flex flex-col gap-4 p-5">
+      <SecaoAv estado={estadosBlocos[1]} tom="ambar" className="p-5">
+        <AnexosGaleria
+          aoMudarQuantidade={setQtdDesenhos}
+          avId={av.id}
+          secao="comercial"
+          titulo="Desenho do item"
+          ajuda="Anexe o desenho do item recebido do cliente na cotação (PDF ou imagem). Obrigatório para liberar a aba Comercial. Aceita PDF, JPG, JPEG, TIFF, PNG e BMP."
+        />
+      </SecaoAv>
+
+      <SecaoAv estado={estadosBlocos[2]} tom="verde" className="flex flex-col gap-4 p-5">
         {contatos === null ? (
           <>
             <TituloSecao>Contato</TituloSecao>
@@ -299,7 +313,7 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
         )}
       </SecaoAv>
 
-      <SecaoAv estado={estadosBlocos[2]} tom="ciano" className="flex flex-col gap-4 p-5">
+      <SecaoAv estado={estadosBlocos[3]} tom="ciano" className="flex flex-col gap-4 p-5">
         <CabecalhoDaSecao
           titulo="Logística"
           ajuda="Como o produto chega ao cliente: para onde vai, de que forma é entregue e quem cuida da embalagem."
@@ -325,7 +339,7 @@ export function AbaComercial({ av }: { av: AvDetalheDTO }) {
         </div>
       </SecaoAv>
 
-      <SecaoAv estado={estadosBlocos[3]} tom="lilas" className="flex flex-col gap-3 p-5">
+      <SecaoAv estado={estadosBlocos[4]} tom="lilas" className="flex flex-col gap-3 p-5">
         <CabecalhoDaSecao titulo="Observações" aoLimpar={() => limpar(['infoComplementarComercial'])} />
         <AreaTexto
           rotulo="Informações complementares"

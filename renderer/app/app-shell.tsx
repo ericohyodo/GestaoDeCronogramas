@@ -3,11 +3,12 @@
 import { PanelLeftOpen } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { type ReactNode, Suspense, useEffect, useState, useSyncExternalStore } from 'react';
-import { type ModuloApp, moduloDaRota } from '@/compartilhado/layout/modulo-da-rota';
+import { ehRotaDeLista, type ModuloApp, moduloDaRota } from '@/compartilhado/layout/modulo-da-rota';
+import { FaixaDeModulos } from '@/compartilhado/layout/FaixaDeModulos';
 import { clienteDesktop } from '@/compartilhado/api/cliente-desktop';
 import { BotaoIcone } from '@/compartilhado/ui/Botao';
 import { BarraDeTitulo } from '@/compartilhado/layout/BarraDeTitulo';
-import { BarraLateral, NAV_AVS, NAV_PROJETOS, NAV_SDS } from '@/compartilhado/layout/BarraLateral';
+import { BarraLateral, NAV_AVS, NAV_PORTFOLIO, NAV_PROJETOS, NAV_SDS } from '@/compartilhado/layout/BarraLateral';
 import { FundoDecorativo } from '@/compartilhado/layout/FundoDecorativo';
 import { SeletorTema } from '@/modulos/preferencias/componentes/SeletorTema';
 import { AvisoDeAtualizacao } from '@/modulos/atualizacao/componentes/AvisoDeAtualizacao';
@@ -16,6 +17,7 @@ import { TourDaApresentacao } from '@/modulos/apresentacao/componentes/TourDaApr
 import { useApresentacaoStore } from '@/modulos/apresentacao/store/use-apresentacao-store';
 import { SinoDeNotificacoes } from '@/modulos/notificacoes/componentes/SinoDeNotificacoes';
 import { useNotificacoesStore } from '@/modulos/notificacoes/store/use-notificacoes-store';
+import { BotaoReportar } from '@/modulos/reportes/componentes/BotaoReportar';
 import { MenuDoUsuario } from '@/modulos/usuarios/componentes/MenuDoUsuario';
 import { useSessaoStore } from '@/modulos/usuarios/store/use-sessao-store';
 
@@ -29,7 +31,7 @@ const assinarNada = () => () => {};
 function lerModuloSalvo(): ModuloApp | null {
   try {
     const valor = window.sessionStorage.getItem(CHAVE_MODULO);
-    return valor === 'avs' || valor === 'sds' || valor === 'projetos' ? valor : null;
+    return valor === 'avs' || valor === 'portfolio' || valor === 'sds' || valor === 'projetos' ? valor : null;
   } catch {
     return null;
   }
@@ -102,7 +104,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // O hub (dois cards) é tela cheia, sem menu lateral — não pertence nem a Projetos nem a AVs.
   const naTelaDeInicio = rota === ROTA_DE_INICIO;
-  const navegacao = { avs: NAV_AVS, sds: NAV_SDS, projetos: NAV_PROJETOS }[moduloAtual];
+  const navegacao = { avs: NAV_AVS, portfolio: NAV_PORTFOLIO, sds: NAV_SDS, projetos: NAV_PROJETOS }[moduloAtual];
 
   return (
     <>
@@ -143,9 +145,14 @@ export function AppShell({ children }: { children: ReactNode }) {
                   permissoes={permissoes}
                   contadores={{ notificacoes: naoLidas }}
                   aoRetrair={() => setLateralRetraida(true)}
+                  extras={<BotaoReportar />}
                 />
               )}
-              <main className="min-w-0 flex-1 overflow-y-auto rounded-2xl">{children}</main>
+              <main className="min-w-0 flex-1 overflow-y-auto rounded-2xl">
+                {/* Só nas listas: dentro do formulário de uma AV, SD ou PRO a faixa não aparece. */}
+                {ehRotaDeLista(rota) && <FaixaDeModulos atual={moduloAtual} />}
+                {children}
+              </main>
             </div>
           )
         ) : (

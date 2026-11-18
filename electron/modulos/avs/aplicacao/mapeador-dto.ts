@@ -20,6 +20,8 @@ function paraMembros(av: Av, nomesPorId: Map<string, string>): Partial<Record<Ar
 export function paraAvResumoDTO(av: Av, nomesPorId: Map<string, string>): AvResumoDTO {
   return {
     id: av.id,
+    tipo: av.tipo,
+    itemPortfolioId: av.itemPortfolioId,
     numero: av.numero,
     cliente: av.cliente,
     descricao: av.descricao,
@@ -38,6 +40,7 @@ export function paraAvDetalheDTO(av: Av, nomesPorId: Map<string, string>, versao
   return {
     ...paraAvResumoDTO(av, nomesPorId),
     camposPendentes: av.camposPendentes ?? [],
+    pasta: av.pasta,
     criadoPorNome: av.criadoPor ? (nomesPorId.get(av.criadoPor) ?? null) : null,
     codigo: av.codigo,
     solicitante: av.solicitante,
