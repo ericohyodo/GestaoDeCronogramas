@@ -17,6 +17,7 @@ import { AvancarEtapa } from './aplicacao/casos-de-uso/avancar-etapa';
 import { CriarAv } from './aplicacao/casos-de-uso/criar-av';
 import { ObterContatosAv, SalvarContatosAv } from './aplicacao/casos-de-uso/contatos-av';
 import { DeclinarAv } from './aplicacao/casos-de-uso/declinar-av';
+import { AbrirAnexo } from './aplicacao/casos-de-uso/abrir-anexo';
 import { ExcluirAnexo } from './aplicacao/casos-de-uso/excluir-anexo';
 import {
   AplicarAoGrupo,
@@ -301,6 +302,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     ),
     obterConteudoAnexo: new ObterConteudoAnexo(repositorioAnexos, armazenamentoDeArquivos),
     excluirAnexo: new ExcluirAnexo(repositorio, repositorioAnexos, autorizacao, armazenamentoDeArquivos),
+    abrirAnexo: new AbrirAnexo(repositorioAnexos, armazenamentoDeArquivos),
     gerarExemplos,
     listarGrupos: new ListarGruposAv(repositorioGrupos, repositorio, autorizacao),
     criarGrupo: transacional(

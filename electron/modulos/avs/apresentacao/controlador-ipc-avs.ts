@@ -22,6 +22,7 @@ import type { AvancarEtapa } from '../aplicacao/casos-de-uso/avancar-etapa';
 import type { ObterContatosAv, SalvarContatosAv } from '../aplicacao/casos-de-uso/contatos-av';
 import type { CriarAv } from '../aplicacao/casos-de-uso/criar-av';
 import type { DeclinarAv } from '../aplicacao/casos-de-uso/declinar-av';
+import type { AbrirAnexo } from '../aplicacao/casos-de-uso/abrir-anexo';
 import type { ExcluirAnexo } from '../aplicacao/casos-de-uso/excluir-anexo';
 import type {
   AplicarAoGrupo,
@@ -83,6 +84,7 @@ export interface CasosDeUsoAvs {
   selecionarEAnexar: SelecionarEAnexar;
   obterConteudoAnexo: ObterConteudoAnexo;
   excluirAnexo: ExcluirAnexo;
+  abrirAnexo: AbrirAnexo;
   gerarExemplos: GerarAvsExemplo;
   finalizarECriarPreSd: Pick<FinalizarECriarPreSd, 'executar'>;
   listarGrupos: ListarGruposAv;
@@ -349,6 +351,7 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
   ipc.registrar(CANAIS.avs.excluirAnexo, 'tarefas', esquemaId, (anexoId) =>
     casos.excluirAnexo.executar(anexoId),
   );
+  ipc.registrar(CANAIS.avs.abrirAnexo, 'leitura', esquemaId, (anexoId) => casos.abrirAnexo.executar(anexoId));
   ipc.registrar(CANAIS.avs.gerarExemplos, 'administracao', esquemaSemEntrada, () =>
     casos.gerarExemplos.executar(),
   );

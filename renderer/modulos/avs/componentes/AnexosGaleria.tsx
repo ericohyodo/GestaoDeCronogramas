@@ -1,7 +1,7 @@
 'use client';
 
 import { formatarDataHora } from '@/compartilhado/formatacao';
-import { Eye, FileText, Image as ImageIcon, Paperclip, Trash2 } from 'lucide-react';
+import { ExternalLink, Eye, FileText, Image as ImageIcon, Paperclip, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { AnexoAvDTO, AreaAvDTO, ConteudoAnexoDTO } from '@contratos/avs.contrato';
 import { clienteDesktop, mensagemDeErro } from '@/compartilhado/api/cliente-desktop';
@@ -19,6 +19,11 @@ function formatarTamanho(bytes: number): string {
 
 function ehImagem(tipoMime: string | null): boolean {
   return !!tipoMime && tipoMime.startsWith('image/');
+}
+
+/** O Chromium não desenha TIFF: esses arquivos abrem no visualizador do Windows. */
+function ehTiff(tipoMime: string | null): boolean {
+  return tipoMime === 'image/tiff';
 }
 
 function ehPdf(tipoMime: string | null): boolean {
@@ -81,6 +86,15 @@ export function AnexosGaleria({
     }
   };
 
+  const abrirExterno = async (id: string) => {
+    setErro(null);
+    try {
+      await clienteDesktop.avs.abrirAnexo(id);
+    } catch (falha) {
+      setErro(mensagemDeErro(falha));
+    }
+  };
+
   const excluir = async (id: string) => {
     setExcluindoId(id);
     setErro(null);
@@ -113,7 +127,7 @@ export function AnexosGaleria({
         <p className="text-sm text-texto-secundario">Carregando…</p>
       ) : itens.length === 0 ? (
         <p className="text-sm text-texto-secundario">
-          Nenhum arquivo anexado ainda. Aceita PDF, JPG, JPEG, PNG e BMP.
+          Nenhum arquivo anexado ainda. Aceita PDF, JPG, JPEG, TIFF, PNG e BMP.
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -137,7 +151,15 @@ export function AnexosGaleria({
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-1">
-                <BotaoIcone icone={Eye} rotulo={`Visualizar ${anexo.nomeArquivo}`} onClick={() => setVisualizando(anexo)} />
+                {ehTiff(anexo.tipoMime) ? (
+                  <BotaoIcone
+                    icone={ExternalLink}
+                    rotulo={`Abrir ${anexo.nomeArquivo} no visualizador do Windows`}
+                    onClick={() => void abrirExterno(anexo.id)}
+                  />
+                ) : (
+                  <BotaoIcone icone={Eye} rotulo={`Visualizar ${anexo.nomeArquivo}`} onClick={() => setVisualizando(anexo)} />
+                )}
                 <BotaoIcone
                   icone={Trash2}
                   rotulo={`Excluir ${anexo.nomeArquivo}`}
@@ -187,7 +209,7 @@ function ConteudoDaPrevia({ anexo }: { anexo: AnexoAvDTO }) {
       {erro && <MensagemErro mensagem={erro} />}
       {!carregando && conteudo && (
         <>
-          {ehImagem(conteudo.tipoMime) && (
+          {ehImagem(conteudo.tipoMime) && !ehTiff(conteudo.tipoMime) && (
             // eslint-disable-next-line @next/next/no-img-element -- data: URI local, sem loader de otimização
             <img
               src={`data:${conteudo.tipoMime};base64,${conteudo.base64}`}
@@ -206,7 +228,7 @@ function ConteudoDaPrevia({ anexo }: { anexo: AnexoAvDTO }) {
               className="h-full w-full rounded-lg border border-borda/60"
             />
           )}
-          {!ehImagem(conteudo.tipoMime) && !ehPdf(conteudo.tipoMime) && (
+          {(ehTiff(conteudo.tipoMime) || (!ehImagem(conteudo.tipoMime) && !ehPdf(conteudo.tipoMime))) && (
             <p className="text-sm text-texto-secundario">Pré-visualização não disponível para este arquivo.</p>
           )}
         </>

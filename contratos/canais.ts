@@ -133,6 +133,7 @@ export const CANAIS = {
     listarAnexos: 'avs:listar-anexos',
     selecionarEAnexar: 'avs:selecionar-e-anexar',
     obterConteudoAnexo: 'avs:obter-conteudo-anexo',
+    abrirAnexo: 'avs:abrir-anexo',
     excluirAnexo: 'avs:excluir-anexo',
     gerarExemplos: 'avs:gerar-exemplos',
     listarTemplates: 'avs:listar-templates',

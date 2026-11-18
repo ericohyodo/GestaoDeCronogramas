@@ -28,6 +28,8 @@ export interface AbridorDeCaminho {
 export interface ArquivoSelecionado {
   caminhoOriginal: string;
   nomeArquivo: string;
+  /** Tamanho lido no momento da seleção, para recusar arquivos grandes antes de copiar. */
+  tamanhoBytes: number;
 }
 
 export interface OpcoesSeletorDeArquivos {
@@ -52,4 +54,6 @@ export interface ArmazenamentoDeArquivos {
   copiarParaAnexos(avId: string, arquivo: ArquivoSelecionado): Promise<ArquivoArmazenado>;
   lerConteudoBase64(avId: string, nomeArmazenado: string): Promise<string>;
   excluirArquivo(avId: string, nomeArmazenado: string): Promise<void>;
+  /** Abre o arquivo no programa padrão do Windows (ex.: TIFF, que o app não pré-visualiza). */
+  abrirNoProgramaPadrao(avId: string, nomeArmazenado: string): Promise<void>;
 }

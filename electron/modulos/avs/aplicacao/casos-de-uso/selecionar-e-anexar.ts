@@ -3,7 +3,7 @@ import type { CasoDeUso } from '../../../../nucleo/aplicacao/caso-de-uso';
 import { ErroNaoEncontrado } from '../../../../nucleo/aplicacao/erros';
 import type { GeradorDeId } from '../../../../nucleo/aplicacao/portas/gerador-de-id';
 import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
-import type { Anexo } from '../../dominio/anexo';
+import { type Anexo, validarArquivoDeAnexo } from '../../dominio/anexo';
 import type { RepositorioAnexos } from '../../dominio/repositorio-anexos';
 import type { RepositorioAvs } from '../../dominio/repositorio-avs';
 import type { AutorizacaoAv } from '../autorizacao';
@@ -34,6 +34,9 @@ export class SelecionarEAnexar
     const arquivos = await this.seletor.escolher();
     if (!arquivos) return null;
 
+    // Confere todos antes de copiar o primeiro: ou entra o lote inteiro, ou nenhum.
+    for (const arquivo of arquivos) validarArquivoDeAnexo(arquivo.nomeArquivo, arquivo.tamanhoBytes);
+
     const agora = this.relogio.agora();
     for (const arquivo of arquivos) {
       const armazenado = await this.armazenamento.copiarParaAnexos(av.id, arquivo);
@@ -48,7 +51,13 @@ export class SelecionarEAnexar
         usuarioId: usuario.id,
         criadoEm: agora,
       };
-      await this.repositorio.inserir(anexo);
+      try {
+        await this.repositorio.inserir(anexo);
+      } catch (falha) {
+        // Sem a linha no banco o arquivo ficaria órfão na pasta compartilhada.
+        await this.armazenamento.excluirArquivo(av.id, armazenado.nomeArmazenado).catch(() => undefined);
+        throw falha;
+      }
     }
 
     const [anexos, ativos] = await Promise.all([

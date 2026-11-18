@@ -211,6 +211,8 @@ export interface ApiDesktop {
     selecionarEAnexar(entrada: SelecionarEAnexarEntrada): Promise<Resultado<AnexoAvDTO[] | null>>;
     /** Lê o arquivo do disco e devolve o conteúdo em base64, para pré-visualização. */
     obterConteudoAnexo(anexoId: string): Promise<Resultado<ConteudoAnexoDTO>>;
+    /** Abre o anexo no programa padrão do Windows (formatos sem pré-visualização, como TIFF). */
+    abrirAnexo(anexoId: string): Promise<Resultado<null>>;
     excluirAnexo(anexoId: string): Promise<Resultado<null>>;
     /** Cria 25 AVs de exemplo em estágios variados (só administrador; não duplica). */
     gerarExemplos(): Promise<Resultado<GerarAvsExemploSaida>>;

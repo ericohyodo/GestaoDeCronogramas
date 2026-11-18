@@ -1,6 +1,8 @@
+import { statSync } from 'node:fs';
 import path from 'node:path';
 import { BrowserWindow, dialog } from 'electron';
 import type { ArquivoSelecionado, OpcoesSeletorDeArquivos, SeletorDeArquivos } from '../aplicacao/portas';
+import { EXTENSOES_DE_DESENHO } from '../dominio/anexo';
 
 export class SeletorDeArquivosElectron implements SeletorDeArquivos {
   async escolher(opcoes: OpcoesSeletorDeArquivos = {}): Promise<ArquivoSelecionado[] | null> {
@@ -9,10 +11,8 @@ export class SeletorDeArquivosElectron implements SeletorDeArquivos {
       ? {
           title: 'Selecionar desenhos e evidências',
           properties: ['openFile', 'multiSelections'],
-          filters: [
-            { name: 'Desenhos e imagens', extensions: ['pdf', 'jpg', 'jpeg', 'png', 'bmp'] },
-            { name: 'Todos os arquivos', extensions: ['*'] },
-          ],
+          // Sem "Todos os arquivos": só os tipos aceitos (o caso de uso confere de novo no servidor).
+          filters: [{ name: 'Desenhos e imagens', extensions: [...EXTENSOES_DE_DESENHO] }],
         }
       : {
           title: 'Selecionar arquivo de evidência',
@@ -27,6 +27,7 @@ export class SeletorDeArquivosElectron implements SeletorDeArquivos {
     return resposta.filePaths.map((caminho) => ({
       caminhoOriginal: caminho,
       nomeArquivo: path.basename(caminho),
+      tamanhoBytes: statSync(caminho).size,
     }));
   }
 }

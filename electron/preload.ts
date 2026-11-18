@@ -92,6 +92,7 @@ const api: ApiDesktop = {
     listarAnexos: (avId) => invocar(CANAIS.avs.listarAnexos, avId),
     selecionarEAnexar: (entrada) => invocar(CANAIS.avs.selecionarEAnexar, entrada),
     obterConteudoAnexo: (anexoId) => invocar(CANAIS.avs.obterConteudoAnexo, anexoId),
+    abrirAnexo: (anexoId) => invocar(CANAIS.avs.abrirAnexo, anexoId),
     excluirAnexo: (anexoId) => invocar(CANAIS.avs.excluirAnexo, anexoId),
     gerarExemplos: () => invocar(CANAIS.avs.gerarExemplos),
     listarTemplates: (tipo) => invocar(CANAIS.avs.listarTemplates, tipo),

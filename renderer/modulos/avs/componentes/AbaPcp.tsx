@@ -192,7 +192,7 @@ export function AbaPcp({ av }: { av: AvDetalheDTO }) {
           avId={av.id}
           secao="pcp"
           titulo="Layout da fábrica"
-          ajuda="Anexe uma imagem ou PDF do layout da fábrica indicando o local onde o item será implantado (máquinas, áreas de armazenagem e fluxo). Aceita PDF, JPG, JPEG, PNG e BMP."
+          ajuda="Anexe uma imagem ou PDF do layout da fábrica indicando o local onde o item será implantado (máquinas, áreas de armazenagem e fluxo). Aceita PDF, JPG, JPEG, TIFF, PNG e BMP."
         />
       </SecaoAv>
 
