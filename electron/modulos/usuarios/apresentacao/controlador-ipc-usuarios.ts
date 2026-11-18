@@ -13,6 +13,7 @@ import type {
   ExcluirUsuario,
   ListarUsuarios,
 } from '../aplicacao/casos-de-uso/gerenciar-usuarios';
+import type { ObterMeuPerfil, SalvarMeuPerfil } from '../aplicacao/casos-de-uso/meu-perfil';
 import type { BaterPresenca, ListarUsuariosOnline } from '../aplicacao/casos-de-uso/presenca';
 import type { ObterSessao, Sair } from '../aplicacao/casos-de-uso/obter-sessao';
 
@@ -29,6 +30,8 @@ export interface CasosDeUsoUsuarios {
   excluir: ExcluirUsuario;
   baterPresenca: BaterPresenca;
   listarOnline: ListarUsuariosOnline;
+  obterMeuPerfil: ObterMeuPerfil;
+  salvarMeuPerfil: SalvarMeuPerfil;
 }
 
 const esquemaEntrar = z.object({ login: z.string(), senha: z.string() });
@@ -58,6 +61,29 @@ const esquemaAlterarSenha = z.object({
   id: esquemaId,
   senhaAtual: z.string().optional(),
   novaSenha: z.string(),
+});
+
+/** Foto: base64 de JPEG ou PNG de verdade (assinatura binária), até ~300 KB. */
+const esquemaFoto = z
+  .object({
+    base64: z.string().min(1).max(400_000).regex(/^[A-Za-z0-9+/]+={0,2}$/, 'Foto em formato inválido.'),
+    mime: z.enum(['image/jpeg', 'image/png']),
+  })
+  .refine(({ base64, mime }) => {
+    const inicio = Buffer.from(base64.slice(0, 16), 'base64');
+    return mime === 'image/png'
+      ? inicio.subarray(0, 4).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47]))
+      : inicio.subarray(0, 3).equals(Buffer.from([0xff, 0xd8, 0xff]));
+  }, 'O arquivo não é uma imagem JPG ou PNG.');
+
+const esquemaMeuPerfil = z.object({
+  email: z.string().max(254).nullish(),
+  departamento: z.string().max(60).nullish(),
+  cargo: z.string().max(80).nullish(),
+  ramal: z.string().max(20).nullish(),
+  celular: z.string().max(30).nullish(),
+  sobre: z.string().max(1000).nullish(),
+  foto: esquemaFoto.nullish(),
 });
 
 export function registrarIpcUsuarios(ipc: RegistradorIpc, casos: CasosDeUsoUsuarios): void {
@@ -98,5 +124,10 @@ export function registrarIpcUsuarios(ipc: RegistradorIpc, casos: CasosDeUsoUsuar
   );
   ipc.registrar(CANAIS.usuarios.excluir, 'administracao', esquemaId, (id) =>
     casos.excluir.executar(id),
+  );
+  // Meu perfil: qualquer pessoa autenticada vê e edita os próprios dados (nunca os de outra pessoa).
+  ipc.registrar(CANAIS.usuarios.obterMeuPerfil, 'leitura', esquemaSemEntrada, () => casos.obterMeuPerfil.executar());
+  ipc.registrar(CANAIS.usuarios.salvarMeuPerfil, 'leitura', esquemaMeuPerfil, (entrada) =>
+    casos.salvarMeuPerfil.executar(entrada),
   );
 }

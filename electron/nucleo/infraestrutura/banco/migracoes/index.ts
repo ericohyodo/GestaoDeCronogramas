@@ -50,6 +50,7 @@ import { migracao0048 } from './0048-reportes';
 import { migracao0049 } from './0049-pcp-carga-em-pecas';
 import { migracao0050 } from './0050-av-portfolio';
 import { migracao0051 } from './0051-templates-de-operacoes';
+import { migracao0052 } from './0052-perfil-dos-usuarios';
 
 export const MIGRACOES: readonly Migracao[] = [
   migracao0001,
@@ -103,4 +104,5 @@ export const MIGRACOES: readonly Migracao[] = [
   migracao0049,
   migracao0050,
   migracao0051,
+  migracao0052,
 ];

@@ -31,6 +31,8 @@ export const CANAIS = {
     criar: 'usuarios:criar',
     atualizar: 'usuarios:atualizar',
     alterarSenha: 'usuarios:alterar-senha',
+    obterMeuPerfil: 'usuarios:obter-meu-perfil',
+    salvarMeuPerfil: 'usuarios:salvar-meu-perfil',
     excluir: 'usuarios:excluir',
   },
   responsaveis: {

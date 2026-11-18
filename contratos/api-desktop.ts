@@ -126,6 +126,8 @@ import type {
   AlterarSenhaEntrada,
   AtualizarUsuarioEntrada,
   CriarUsuarioEntrada,
+  MeuPerfilDTO,
+  SalvarMeuPerfilEntrada,
 } from './usuarios.contrato';
 
 /** Formato de `window.api`, exposto pelo preload via contextBridge. */
@@ -167,6 +169,9 @@ export interface ApiDesktop {
     atualizar(entrada: AtualizarUsuarioEntrada): Promise<Resultado<UsuarioDTO>>;
     alterarSenha(entrada: AlterarSenhaEntrada): Promise<Resultado<null>>;
     excluir(id: string): Promise<Resultado<null>>;
+    /** Quem está logado: dados de contato e foto (página "Meu perfil"). */
+    obterMeuPerfil(): Promise<Resultado<MeuPerfilDTO>>;
+    salvarMeuPerfil(entrada: SalvarMeuPerfilEntrada): Promise<Resultado<MeuPerfilDTO>>;
   };
   responsaveis: {
     listar(): Promise<Resultado<ResponsavelDTO[]>>;

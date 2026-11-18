@@ -46,6 +46,8 @@ const api: ApiDesktop = {
     atualizar: (entrada) => invocar(CANAIS.usuarios.atualizar, entrada),
     alterarSenha: (entrada) => invocar(CANAIS.usuarios.alterarSenha, entrada),
     excluir: (id) => invocar(CANAIS.usuarios.excluir, id),
+    obterMeuPerfil: () => invocar(CANAIS.usuarios.obterMeuPerfil),
+    salvarMeuPerfil: (entrada) => invocar(CANAIS.usuarios.salvarMeuPerfil, entrada),
   },
   responsaveis: {
     listar: () => invocar(CANAIS.responsaveis.listar),
