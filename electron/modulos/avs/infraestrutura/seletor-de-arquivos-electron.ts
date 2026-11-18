@@ -6,8 +6,11 @@ import { EXTENSOES_DE_DESENHO } from '../dominio/anexo';
 
 export class SeletorDeArquivosElectron implements SeletorDeArquivos {
   async escolher(opcoes: OpcoesSeletorDeArquivos = {}): Promise<ArquivoSelecionado[] | null> {
-    const anexos = (opcoes.modo ?? 'anexos') === 'anexos';
-    const configuracao: Electron.OpenDialogOptions = anexos
+    const modo = opcoes.modo ?? 'anexos';
+    const anexos = modo === 'anexos';
+    const configuracao: Electron.OpenDialogOptions = modo === 'pasta'
+      ? { title: 'Escolher a pasta das AVs', properties: ['openDirectory', 'createDirectory'] }
+      : anexos
       ? {
           title: 'Selecionar desenhos e evidências',
           properties: ['openFile', 'multiSelections'],

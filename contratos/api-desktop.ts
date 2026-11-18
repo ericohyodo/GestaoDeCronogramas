@@ -49,6 +49,8 @@ import type {
   DashboardAvDTO,
   PrazosConfigDTO,
   CapacidadeConfigDTO,
+  ConteudoDaPastaDTO,
+  PastaConfigDTO,
   EntregasPorAreaDTO,
   DeclinarAvEntrada,
   GerarAvsExemploSaida,
@@ -245,6 +247,17 @@ export interface ApiDesktop {
     obterCapacidadeConfig(): Promise<Resultado<CapacidadeConfigDTO>>;
     /** Só administrador. */
     salvarCapacidadeConfig(entrada: CapacidadeConfigDTO): Promise<Resultado<CapacidadeConfigDTO>>;
+    /** Pasta raiz onde o app cria a pasta de cada AV nova. */
+    obterPastaConfig(): Promise<Resultado<PastaConfigDTO>>;
+    /** Só administrador; a pasta precisa existir. */
+    salvarPastaConfig(entrada: PastaConfigDTO): Promise<Resultado<PastaConfigDTO>>;
+    /** Seletor nativo de pasta; `null` quando cancela. */
+    selecionarPastaRaiz(): Promise<Resultado<string | null>>;
+    /** Cria a pasta de uma AV que ficou sem ela (Comercial ou administrador). */
+    criarPasta(avId: string): Promise<Resultado<AvDetalheDTO>>;
+    listarArquivosDaPasta(avId: string): Promise<Resultado<ConteudoDaPastaDTO>>;
+    /** Abre a pasta no Explorer (sem caminho) ou um arquivo dela no programa padrão. */
+    abrirDaPasta(entrada: { avId: string; caminhoRelativo?: string | null }): Promise<Resultado<null>>;
     avancarEtapa(entrada: AvancarEtapaEntrada): Promise<Resultado<AvDetalheDTO>>;
     declinar(entrada: DeclinarAvEntrada): Promise<Resultado<AvDetalheDTO>>;
     listarHistorico(avId: string): Promise<Resultado<HistoricoAvItemDTO[]>>;

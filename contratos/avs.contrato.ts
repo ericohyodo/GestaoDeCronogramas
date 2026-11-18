@@ -70,6 +70,8 @@ export interface AvResumoDTO {
 }
 
 export interface AvDetalheDTO extends AvResumoDTO {
+  /** Pasta da AV no Windows; `null` enquanto não foi criada. */
+  pasta: string | null;
   codigo: string | null;
   solicitante: string | null;
   desenhoClienteRef: string | null;
@@ -658,6 +660,30 @@ export interface AtualizarSecaoPcpEntrada {
 export type SituacaoAvDTO = 'em_andamento' | 'concluida' | 'declinada';
 
 /** Dias úteis que cada área da AV tem para preencher a sua aba (1 a 30). */
+/** Onde o app cria a pasta de cada AV nova (administrador define em Configurações). */
+export interface PastaConfigDTO {
+  pastaRaiz: string | null;
+}
+
+export interface ItemDaPastaDTO {
+  caminhoRelativo: string;
+  nome: string;
+  ehPasta: boolean;
+  tamanhoBytes: number | null;
+  modificadoEm: string;
+  profundidade: number;
+}
+
+/** Conteúdo da pasta da AV para o visualizador. */
+export interface ConteudoDaPastaDTO {
+  pasta: string | null;
+  /** `false`: sem pasta ou a pasta sumiu/está inacessível. */
+  existe: boolean;
+  itens: ItemDaPastaDTO[];
+  /** Mais de 500 itens: a lista foi cortada. */
+  limitado: boolean;
+}
+
 /** Parâmetros do cálculo de turnos do PCP (administrador ajusta em Configurações). */
 export interface CapacidadeConfigDTO {
   horasPorTurno: number;

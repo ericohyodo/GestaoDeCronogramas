@@ -33,8 +33,8 @@ export interface ArquivoSelecionado {
 }
 
 export interface OpcoesSeletorDeArquivos {
-  /** Padrão: seleção múltipla dos tipos de desenho/imagem aceitos como anexo. */
-  modo?: 'anexos' | 'qualquer-arquivo';
+  /** Padrão: seleção múltipla dos tipos de desenho/imagem aceitos como anexo. `pasta`: escolhe uma pasta. */
+  modo?: 'anexos' | 'qualquer-arquivo' | 'pasta';
 }
 
 /** Abre o diálogo nativo de seleção de arquivos do SO. */
@@ -56,4 +56,26 @@ export interface ArmazenamentoDeArquivos {
   excluirArquivo(avId: string, nomeArmazenado: string): Promise<void>;
   /** Abre o arquivo no programa padrão do Windows (ex.: TIFF, que o app não pré-visualiza). */
   abrirNoProgramaPadrao(avId: string, nomeArmazenado: string): Promise<void>;
+}
+
+/** Um arquivo ou subpasta dentro da pasta da AV. */
+export interface ItemDaPasta {
+  /** Caminho relativo à pasta da AV (com `\\`). */
+  caminhoRelativo: string;
+  nome: string;
+  ehPasta: boolean;
+  tamanhoBytes: number | null;
+  modificadoEm: Date;
+  /** 0 = direto na pasta da AV. */
+  profundidade: number;
+}
+
+/** Pastas das AVs no Windows (rede ou local). */
+export interface GerenciadorDePastas {
+  /** Cria `<raiz>\\<nome>` (reaproveita se já existir) e devolve o caminho completo. */
+  criar(raiz: string, nome: string): Promise<string>;
+  existe(caminho: string): Promise<boolean>;
+  listar(caminho: string): Promise<{ itens: ItemDaPasta[]; limitado: boolean }>;
+  /** Abre a pasta (relativo nulo) ou um item dela; recusa caminhos fora da pasta. */
+  abrir(base: string, relativo: string | null): Promise<void>;
 }

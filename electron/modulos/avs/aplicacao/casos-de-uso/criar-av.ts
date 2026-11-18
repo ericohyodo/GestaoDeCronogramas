@@ -4,6 +4,7 @@ import type { GeradorDeId } from '../../../../nucleo/aplicacao/portas/gerador-de
 import type { Relogio } from '../../../../nucleo/aplicacao/portas/relogio';
 import { Av, gerarNumeroAv } from '../../dominio/av';
 import type { RepositorioPortfolio } from '../../dominio/portfolio';
+import { criarPastaDaAv, type DependenciasPastaDaAv } from './pasta-da-av';
 import { ErroNaoEncontrado } from '../../../../nucleo/aplicacao/erros';
 import { ErroDeDominio } from '../../../../nucleo/dominio/erro-de-dominio';
 import type { RepositorioAvs } from '../../dominio/repositorio-avs';
@@ -28,6 +29,8 @@ export class CriarAv implements CasoDeUso<CriarAvEntrada, AvDetalheDTO> {
     private readonly notificador: Notificador = semNotificacao,
     /** Itens de portfólio: a AV de portfólio herda identificação do item escolhido. */
     private readonly portfolio: Pick<RepositorioPortfolio, 'obter'> | null = null,
+    /** Pasta da AV no Windows: criada junto com a AV quando a raiz estiver configurada. */
+    private readonly pastas: Pick<DependenciasPastaDaAv, 'avs' | 'config' | 'pastas'> | null = null,
   ) {}
 
   async executar(entrada: CriarAvEntrada): Promise<AvDetalheDTO> {
@@ -71,6 +74,10 @@ export class CriarAv implements CasoDeUso<CriarAvEntrada, AvDetalheDTO> {
       agora,
     });
     await this.repositorio.salvar(av);
+    if (this.pastas) {
+      // A AV vale mesmo sem a pasta (rede fora do ar, raiz apagada): o Comercial cria depois pelo botão.
+      await criarPastaDaAv(this.pastas, av).catch(() => null);
+    }
     await this.avisarDesignados(av, usuarioAtual?.id ?? null);
 
     return paraAvDetalheDTO(av, construirMapaDeNomes(ativos), this.versoes.obter(chaveDaSecao(av.id, 'comercial')));

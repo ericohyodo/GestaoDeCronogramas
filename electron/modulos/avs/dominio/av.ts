@@ -39,6 +39,8 @@ export interface PropsAv extends CamposComerciaisAv {
   tipo: TipoAv;
   /** Item de portfólio escolhido na abertura (só na AV de portfólio). */
   itemPortfolioId: string | null;
+  /** Pasta da AV no Windows (entradas do Comercial); `null` enquanto não foi criada. */
+  pasta: string | null;
   numero: string;
   sequencial: number;
   ano: number;
@@ -96,6 +98,7 @@ export class Av {
       id: dados.id,
       tipo,
       itemPortfolioId: tipo === 'portfolio' ? (dados.itemPortfolioId ?? null) : null,
+      pasta: null,
       numero: dados.numero,
       sequencial: dados.sequencial,
       ano: dados.ano,
@@ -154,6 +157,14 @@ export class Av {
   }
   get ehPortfolio(): boolean {
     return this.props.tipo === 'portfolio';
+  }
+  get pasta(): string | null {
+    return this.props.pasta;
+  }
+
+  /** Grava o caminho da pasta criada no Windows para esta AV. */
+  definirPasta(caminho: string): void {
+    this.props.pasta = caminho;
   }
   get sequencial(): number {
     return this.props.sequencial;

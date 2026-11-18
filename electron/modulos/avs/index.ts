@@ -67,6 +67,16 @@ import { VerificarPrazosDasAreas } from './aplicacao/casos-de-uso/verificar-praz
 import { ObterEntregasNoPrazo } from './aplicacao/casos-de-uso/obter-entregas-no-prazo';
 import { ObterPrazosConfig, SalvarPrazosConfig } from './aplicacao/casos-de-uso/configurar-prazos-das-areas';
 import { ObterCapacidadeConfig, SalvarCapacidadeConfig } from './aplicacao/casos-de-uso/configurar-capacidade';
+import {
+  AbrirDaPasta,
+  CriarPastaDaAv,
+  type DependenciasPastaDaAv,
+  ListarArquivosDaPasta,
+  ObterPastaConfig,
+  SalvarPastaConfig,
+  SelecionarPastaRaiz,
+} from './aplicacao/casos-de-uso/pasta-da-av';
+import { GerenciadorDePastasFs, RepositorioConfigPastaDasAvsSqlite } from './infraestrutura/pastas-fs';
 import { podeDarAceiteDaSd } from './dominio/papel-av';
 import { ROTULO_DA_AREA } from './aplicacao/notificacoes-av';
 import { SalvarSecaoCusto } from './aplicacao/casos-de-uso/salvar-secao-custo';
@@ -179,6 +189,15 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
   const transacao = new UnidadeDeTrabalhoSqlite(deps.db);
 
   const repositorioPortfolio = new RepositorioPortfolioSqlite(deps.db);
+  const depsPasta: DependenciasPastaDaAv = {
+    avs: repositorio,
+    config: new RepositorioConfigPastaDasAvsSqlite(deps.db),
+    pastas: new GerenciadorDePastasFs(),
+    autorizacao,
+    usuarios: deps.consultaDeUsuarios,
+    relogio: deps.relogio,
+    versoes,
+  };
   const criarAv = new CriarAv(
     repositorio,
     deps.relogio,
@@ -188,6 +207,7 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     versoes,
     notificador,
     repositorioPortfolio,
+    depsPasta,
   );
   const depsPortfolio: DependenciasPortfolio = {
     repositorio: repositorioPortfolio,
@@ -343,6 +363,12 @@ export function montarModuloAvs(deps: DependenciasModuloAvs): ModuloAvs {
     salvarPrazosConfig: new SalvarPrazosConfig(repositorioConfigPrazos, deps.consultaDeUsuarios, deps.relogio),
     obterCapacidadeConfig: new ObterCapacidadeConfig(repositorioConfigCapacidade),
     salvarCapacidadeConfig: new SalvarCapacidadeConfig(repositorioConfigCapacidade, deps.consultaDeUsuarios, deps.relogio),
+    obterPastaConfig: new ObterPastaConfig(depsPasta),
+    salvarPastaConfig: new SalvarPastaConfig(depsPasta),
+    selecionarPastaRaiz: new SelecionarPastaRaiz(seletorDeArquivos),
+    criarPasta: new CriarPastaDaAv(depsPasta),
+    listarArquivosDaPasta: new ListarArquivosDaPasta(depsPasta),
+    abrirDaPasta: new AbrirDaPasta(depsPasta),
     avancarEtapa: transacional(avancarEtapa, transacao),
     declinar: declinarAv,
     listarHistorico: new ListarHistoricoAv(repositorioHistorico, deps.consultaDeUsuarios),

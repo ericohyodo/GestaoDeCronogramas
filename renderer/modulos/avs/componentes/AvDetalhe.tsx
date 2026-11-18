@@ -21,6 +21,7 @@ import { DeclinarModal } from './DeclinarModal';
 import { EquipePanel } from './EquipePanel';
 import { EtapaBadge } from './EtapaBadge';
 import { HistoricoPanel } from './HistoricoPanel';
+import { PastaDaAv } from './PastaDaAv';
 import { useAvsStore } from '../store/use-avs-store';
 import { AbaPcpPortfolio } from './portfolio/AbaPcpPortfolio';
 import { AbaResumoPortfolio } from './portfolio/AbaResumoPortfolio';
@@ -214,6 +215,8 @@ export function AvDetalhe({ av }: { av: AvDetalheDTO }) {
                 {new Date(av.criadoEm).toLocaleDateString('pt-BR')}
               </span>
             </p>
+            {/* Pasta no Windows com as entradas do Comercial (e-mails, desenhos, orçamentos). */}
+            <PastaDaAv av={av} />
           </div>
         </div>
 

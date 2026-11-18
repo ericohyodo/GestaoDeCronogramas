@@ -6,6 +6,7 @@ import type { RepositorioAvs } from '../dominio/repositorio-avs';
 interface LinhaAv {
   tipo: 'completa' | 'portfolio';
   item_portfolio_id: string | null;
+  pasta: string | null;
   id: string;
   numero: string;
   sequencial: number;
@@ -76,7 +77,7 @@ export class RepositorioAvsSqlite implements RepositorioAvs {
           linha, origem_projeto, familia, local_entrega, conceito_logistico, resp_embalagem,
           info_complementar_comercial, etapa_atual, membro_comercial, membro_produto,
           membro_processo, membro_pcp, membro_custo, proposta_enviada, data_proposta,
-          cronograma_id, criado_por, criado_em, grupo_id, campos_pendentes, tipo, item_portfolio_id
+          cronograma_id, criado_por, criado_em, grupo_id, campos_pendentes, tipo, item_portfolio_id, pasta
         ) VALUES (
           @id, @numero, @sequencial, @ano, @cliente, @codigo, @descricao, @complexidade, @solicitante,
           @prazo_cliente, @desenho_cliente_ref, @contato_comercial, @email_comercial, @fone_comercial,
@@ -84,7 +85,7 @@ export class RepositorioAvsSqlite implements RepositorioAvs {
           @linha, @origem_projeto, @familia, @local_entrega, @conceito_logistico, @resp_embalagem,
           @info_complementar_comercial, @etapa_atual, @membro_comercial, @membro_produto,
           @membro_processo, @membro_pcp, @membro_custo, @proposta_enviada, @data_proposta,
-          @cronograma_id, @criado_por, @criado_em, @grupo_id, @campos_pendentes, @tipo, @item_portfolio_id
+          @cronograma_id, @criado_por, @criado_em, @grupo_id, @campos_pendentes, @tipo, @item_portfolio_id, @pasta
         )
         ON CONFLICT (id) DO UPDATE SET
           cliente                     = excluded.cliente,
@@ -119,7 +120,8 @@ export class RepositorioAvsSqlite implements RepositorioAvs {
           membro_custo                = excluded.membro_custo,
           proposta_enviada            = excluded.proposta_enviada,
           data_proposta               = excluded.data_proposta,
-          cronograma_id               = excluded.cronograma_id
+          cronograma_id               = excluded.cronograma_id,
+          pasta                       = excluded.pasta
       `),
     };
   }
@@ -161,6 +163,7 @@ function paraEntidade(linha: LinhaAv): Av {
     id: linha.id,
     tipo: linha.tipo ?? 'completa',
     itemPortfolioId: linha.item_portfolio_id ?? null,
+    pasta: linha.pasta ?? null,
     numero: linha.numero,
     sequencial: linha.sequencial,
     ano: linha.ano,
@@ -207,6 +210,7 @@ function paraLinha(av: Av): LinhaAv {
     id: av.id,
     tipo: av.tipo,
     item_portfolio_id: av.itemPortfolioId,
+    pasta: av.pasta,
     numero: av.numero,
     sequencial: av.sequencial,
     ano: av.ano,

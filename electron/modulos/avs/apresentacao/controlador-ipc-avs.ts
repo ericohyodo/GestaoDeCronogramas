@@ -47,6 +47,14 @@ import type { ObterDashboard } from '../aplicacao/casos-de-uso/obter-dashboard';
 import type { ObterEntregasNoPrazo } from '../aplicacao/casos-de-uso/obter-entregas-no-prazo';
 import type { ObterPrazosConfig, SalvarPrazosConfig } from '../aplicacao/casos-de-uso/configurar-prazos-das-areas';
 import type { ObterCapacidadeConfig, SalvarCapacidadeConfig } from '../aplicacao/casos-de-uso/configurar-capacidade';
+import type {
+  AbrirDaPasta,
+  CriarPastaDaAv,
+  ListarArquivosDaPasta,
+  ObterPastaConfig,
+  SalvarPastaConfig,
+  SelecionarPastaRaiz,
+} from '../aplicacao/casos-de-uso/pasta-da-av';
 import type { ObterSecaoCusto } from '../aplicacao/casos-de-uso/obter-secao-custo';
 import type { ObterSecaoProcesso } from '../aplicacao/casos-de-uso/obter-secao-processo';
 import type { ObterSecaoProduto } from '../aplicacao/casos-de-uso/obter-secao-produto';
@@ -71,6 +79,12 @@ export interface CasosDeUsoAvs {
   salvarPrazosConfig: SalvarPrazosConfig;
   obterCapacidadeConfig: ObterCapacidadeConfig;
   salvarCapacidadeConfig: SalvarCapacidadeConfig;
+  obterPastaConfig: ObterPastaConfig;
+  salvarPastaConfig: SalvarPastaConfig;
+  selecionarPastaRaiz: SelecionarPastaRaiz;
+  criarPasta: CriarPastaDaAv;
+  listarArquivosDaPasta: ListarArquivosDaPasta;
+  abrirDaPasta: AbrirDaPasta;
   avancarEtapa: Pick<AvancarEtapa, 'executar'>;
   declinar: DeclinarAv;
   listarHistorico: ListarHistoricoAv;
@@ -303,6 +317,27 @@ export function registrarIpcAvs(ipc: RegistradorIpc, casos: CasosDeUsoAvs): void
   ipc.registrar(CANAIS.avs.obterPrazosConfig, 'leitura', esquemaSemEntrada, () => casos.obterPrazosConfig.executar());
   ipc.registrar(CANAIS.avs.obterCapacidadeConfig, 'leitura', esquemaSemEntrada, () =>
     casos.obterCapacidadeConfig.executar(),
+  );
+  // Pasta da AV no Windows: raiz (administrador), criação (Comercial), visualizador e abertura (leitura).
+  ipc.registrar(CANAIS.avs.obterPastaConfig, 'leitura', esquemaSemEntrada, () => casos.obterPastaConfig.executar());
+  ipc.registrar(
+    CANAIS.avs.salvarPastaConfig,
+    'administracao',
+    z.object({ pastaRaiz: z.string().max(200).nullable() }),
+    (entrada) => casos.salvarPastaConfig.executar(entrada),
+  );
+  ipc.registrar(CANAIS.avs.selecionarPastaRaiz, 'administracao', esquemaSemEntrada, () =>
+    casos.selecionarPastaRaiz.executar(),
+  );
+  ipc.registrar(CANAIS.avs.criarPasta, 'tarefas', esquemaId, (avId) => casos.criarPasta.executar(avId));
+  ipc.registrar(CANAIS.avs.listarArquivosDaPasta, 'leitura', esquemaId, (avId) =>
+    casos.listarArquivosDaPasta.executar(avId),
+  );
+  ipc.registrar(
+    CANAIS.avs.abrirDaPasta,
+    'leitura',
+    z.object({ avId: esquemaId, caminhoRelativo: z.string().max(400).nullish() }),
+    (entrada) => casos.abrirDaPasta.executar(entrada),
   );
   ipc.registrar(
     CANAIS.avs.salvarCapacidadeConfig,

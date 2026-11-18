@@ -40,6 +40,7 @@ export function paraAvDetalheDTO(av: Av, nomesPorId: Map<string, string>, versao
   return {
     ...paraAvResumoDTO(av, nomesPorId),
     camposPendentes: av.camposPendentes ?? [],
+    pasta: av.pasta,
     criadoPorNome: av.criadoPor ? (nomesPorId.get(av.criadoPor) ?? null) : null,
     codigo: av.codigo,
     solicitante: av.solicitante,
